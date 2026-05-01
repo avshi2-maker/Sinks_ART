@@ -159,5 +159,19 @@ A running log of development sessions. **Newest at the top.** Append, never rewr
 ### Next session
 
 - Build a reusable skill so we don't re-explain the project every time → became Session 2
+## 2026-05-01 — Session 7 — Started (paused for break)
+
+### Goals
+- Run Supabase schema, verify 4 tables created
+- Wire up lib/supabase.ts client
+- Build /gallery page that pulls real data from Supabase
+
+### Notes from session start
+- Discussed Cursor (download started, install later)
+- Discussed Claude Projects vs Cloudinary for photo storage — Cloudinary URLs is the right tool for sink photo processing, projects are for PDFs/docs
+- Discussed Sink Scanner feature (analyze customer photos for quotes) — added to scope for next session, not today
+
+### On break
+- Paused at Step 1 (Supabase schema)
 
 ---
