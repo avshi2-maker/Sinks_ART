@@ -1,0 +1,1446 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="version" content="30042026-v1">
+<title>שיש אמנותי — קליטת שיחות לקוח</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700;900&family=Heebo:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+<style>
+  /* ── Reset + base ────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+
+  :root {
+    --navy:       #0d1f36;
+    --navy-soft:  #1e3a5f;
+    --navy-muted: #2c4668;
+    --gold:       #b8860b;
+    --gold-soft:  #d4a93a;
+    --gold-faint: #f4e4b1;
+    --cream:      #faf7f0;
+    --cream-2:    #f4eddc;
+    --paper:      #ffffff;
+    --ink:        #1a1a1a;
+    --ink-muted:  #5c5c5c;
+    --ink-faint:  #8a8a8a;
+    --border:     #e8dfc5;
+    --success:    #2d5f3f;
+    --error:      #8b2c2c;
+    --warm:       #c97a3a;
+    --hot:        #c1392c;
+    --cold:       #4a6e8a;
+    --shadow-sm:  0 1px 3px rgba(13, 31, 54, 0.08);
+    --shadow-md:  0 8px 24px rgba(13, 31, 54, 0.10);
+
+    --spk-0: #1e3a5f;
+    --spk-1: #b8860b;
+    --spk-2: #2d5f3f;
+    --spk-3: #8b2c2c;
+    --spk-4: #6b3a87;
+    --spk-5: #c97a3a;
+  }
+
+  body {
+    font-family: 'Heebo', system-ui, sans-serif;
+    font-weight: 400;
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--ink);
+    background: var(--cream);
+    direction: rtl;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      radial-gradient(circle at 20% 10%, rgba(184, 134, 11, 0.04) 0%, transparent 50%),
+      radial-gradient(circle at 80% 90%, rgba(30, 58, 95, 0.04) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .page {
+    position: relative;
+    z-index: 1;
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 48px 32px 80px;
+  }
+
+  /* ── Header ─────────────────────────────────────────────── */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 28px;
+    margin-bottom: 40px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .brand { display: flex; align-items: center; gap: 16px; }
+  .brand-mark {
+    width: 56px; height: 56px;
+    background: var(--navy);
+    color: var(--gold-soft);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Frank Ruhl Libre', serif;
+    font-weight: 700; font-size: 22px;
+  }
+  .brand-text h1 {
+    font-family: 'Frank Ruhl Libre', serif;
+    font-weight: 700;
+    font-size: 26px;
+    color: var(--navy);
+    line-height: 1.1;
+  }
+  .brand-text p {
+    font-size: 13px;
+    color: var(--ink-muted);
+    margin-top: 4px;
+  }
+  .header-meta {
+    font-size: 12px;
+    color: var(--ink-faint);
+    text-align: left;
+    line-height: 1.5;
+  }
+  .header-meta strong { color: var(--gold); display: block; font-size: 13px; }
+
+  /* ── Intro ──────────────────────────────────────────────── */
+  .intro {
+    background: var(--paper);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px 28px;
+    margin-bottom: 32px;
+    box-shadow: var(--shadow-sm);
+  }
+  .intro h2 {
+    font-family: 'Frank Ruhl Libre', serif;
+    font-weight: 500;
+    font-size: 20px;
+    color: var(--navy);
+    margin-bottom: 8px;
+  }
+  .intro p { color: var(--ink-muted); font-size: 14px; }
+
+  /* ── Upload zone ────────────────────────────────────────── */
+  .upload-zone {
+    background: var(--paper);
+    border: 2px dashed var(--border);
+    border-radius: 10px;
+    padding: 56px 32px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-bottom: 24px;
+    display: block;
+  }
+  .upload-zone:hover { border-color: var(--gold-soft); background: var(--cream-2); }
+  .upload-zone.drag { border-color: var(--gold); background: var(--gold-faint); }
+  .upload-zone.has-file { padding: 24px; cursor: default; text-align: right; }
+  .upload-icon {
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    background: var(--cream-2);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 28px; color: var(--gold);
+    margin-bottom: 12px;
+  }
+  .upload-zone.has-file .upload-icon,
+  .upload-zone.has-file .upload-title,
+  .upload-zone.has-file .upload-hint { display: none; }
+  .upload-title { font-weight: 500; color: var(--navy); font-size: 16px; }
+  .upload-hint { font-size: 13px; color: var(--ink-faint); margin-top: 4px; }
+
+  .file-info { display: none; align-items: center; justify-content: space-between; gap: 16px; }
+  .upload-zone.has-file .file-info { display: flex; }
+  .file-label { display: flex; align-items: center; gap: 12px; }
+  .file-label .dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--success);
+  }
+  .file-name { font-weight: 500; color: var(--navy); font-size: 14px; }
+  .file-size { font-size: 12px; color: var(--ink-faint); }
+  .btn-change {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--ink-muted);
+    padding: 6px 14px;
+    border-radius: 4px;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s ease;
+  }
+  .btn-change:hover { border-color: var(--gold); color: var(--navy); }
+  audio { width: 100%; margin-top: 16px; display: block; }
+  .upload-zone.has-file audio { display: block; }
+
+  /* ── Status / error ─────────────────────────────────────── */
+  .status-bar {
+    display: none;
+    align-items: center;
+    gap: 12px;
+    background: var(--gold-faint);
+    border: 1px solid var(--gold-soft);
+    border-radius: 6px;
+    padding: 12px 18px;
+    margin-bottom: 16px;
+    color: var(--navy);
+    font-size: 14px;
+  }
+  .status-bar.show { display: flex; }
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid var(--gold-soft);
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    flex-shrink: 0;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .error-box {
+    display: none;
+    background: #fbeaea;
+    border-right: 4px solid var(--error);
+    padding: 14px 18px;
+    border-radius: 4px;
+    margin-bottom: 16px;
+    color: var(--error);
+    font-size: 14px;
+  }
+  .error-box.show { display: block; }
+  .error-box strong { font-weight: 700; }
+
+  /* ── Action buttons ─────────────────────────────────────── */
+  .actions {
+    display: flex; gap: 12px;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+  }
+  .btn {
+    flex: 1;
+    min-width: 200px;
+    background: var(--navy);
+    color: var(--cream);
+    border: none;
+    padding: 16px 24px;
+    border-radius: 6px;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    position: relative;
+  }
+  .btn:hover:not(:disabled) { background: var(--navy-soft); transform: translateY(-1px); box-shadow: var(--shadow-md); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-secondary { background: var(--paper); color: var(--navy); border: 1px solid var(--navy); }
+  .btn-secondary:hover:not(:disabled) { background: var(--cream-2); }
+  .stage-label {
+    background: var(--gold);
+    color: var(--navy);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 3px;
+  }
+  .btn-secondary .stage-label { background: var(--navy); color: var(--gold-soft); }
+
+  /* ── Panels ─────────────────────────────────────────────── */
+  .panel {
+    display: none;
+    background: var(--paper);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 24px;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+  }
+  .panel.show { display: block; }
+  .panel-header {
+    background: var(--navy);
+    color: var(--cream);
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .panel-header h3 {
+    font-family: 'Frank Ruhl Libre', serif;
+    font-weight: 500;
+    font-size: 18px;
+  }
+  .stage-badge {
+    background: var(--gold);
+    color: var(--navy);
+    padding: 4px 10px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .panel-body { padding: 24px 28px; }
+
+  /* ── Speaker turns view (Feature 1) ─────────────────────── */
+  .turns-toolbar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .turns-toolbar .hint {
+    font-size: 12px;
+    color: var(--ink-faint);
+    margin-inline-start: auto;
+  }
+  .btn-mini {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--navy);
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s ease;
+  }
+  .btn-mini:hover { background: var(--cream-2); border-color: var(--gold-soft); }
+  .btn-mini.primary { background: var(--gold); border-color: var(--gold); color: var(--navy); font-weight: 500; }
+  .btn-mini.primary:hover { background: var(--gold-soft); }
+
+  .turns-list { display: flex; flex-direction: column; gap: 14px; }
+  .turn {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 12px 14px;
+    background: var(--cream);
+    border-radius: 6px;
+    border-right: 4px solid var(--ink-faint);
+  }
+  .turn[data-speaker="0"] { border-right-color: var(--spk-0); }
+  .turn[data-speaker="1"] { border-right-color: var(--spk-1); }
+  .turn[data-speaker="2"] { border-right-color: var(--spk-2); }
+  .turn[data-speaker="3"] { border-right-color: var(--spk-3); }
+  .turn[data-speaker="4"] { border-right-color: var(--spk-4); }
+  .turn[data-speaker="5"] { border-right-color: var(--spk-5); }
+
+  .turn-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+  }
+  .speaker-pill {
+    background: var(--ink-faint);
+    color: var(--cream);
+    padding: 3px 12px;
+    border-radius: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    user-select: none;
+    transition: opacity 0.15s ease;
+    border: none;
+    font-family: inherit;
+    font-size: 13px;
+  }
+  .speaker-pill:hover { opacity: 0.85; }
+  .turn[data-speaker="0"] .speaker-pill { background: var(--spk-0); }
+  .turn[data-speaker="1"] .speaker-pill { background: var(--spk-1); }
+  .turn[data-speaker="2"] .speaker-pill { background: var(--spk-2); }
+  .turn[data-speaker="3"] .speaker-pill { background: var(--spk-3); }
+  .turn[data-speaker="4"] .speaker-pill { background: var(--spk-4); }
+  .turn[data-speaker="5"] .speaker-pill { background: var(--spk-5); }
+
+  .turn-time { color: var(--ink-faint); font-size: 12px; }
+  .turn-text {
+    color: var(--ink);
+    line-height: 1.7;
+    padding: 4px 6px;
+    border-radius: 4px;
+    outline: none;
+    cursor: text;
+  }
+  .turn-text:focus,
+  .turn-text:hover { background: var(--paper); box-shadow: inset 0 0 0 1px var(--gold-soft); }
+
+  .speaker-rename-input {
+    background: var(--paper);
+    border: 1px solid var(--gold);
+    border-radius: 12px;
+    padding: 3px 10px;
+    font-family: inherit;
+    font-size: 13px;
+    color: var(--navy);
+    outline: none;
+    min-width: 120px;
+  }
+
+  /* ── Analysis panel ─────────────────────────────────────── */
+  .analysis-summary {
+    background: var(--cream-2);
+    border-right: 3px solid var(--gold);
+    padding: 14px 18px;
+    border-radius: 4px;
+    margin-bottom: 18px;
+  }
+  .analysis-summary-label,
+  .analysis-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--gold);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 6px;
+  }
+  .analysis-summary p { color: var(--ink); font-size: 15px; line-height: 1.7; }
+
+  .lead-temp-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
+    padding: 10px 14px;
+    background: var(--paper);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+  }
+  .lead-temp-label { font-size: 13px; color: var(--ink-muted); }
+  .lead-temp-pill {
+    padding: 4px 14px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--cream);
+  }
+  .lead-temp-pill.cold { background: var(--cold); }
+  .lead-temp-pill.warm { background: var(--warm); }
+  .lead-temp-pill.hot  { background: var(--hot); }
+  .lead-temp-pill.unknown { background: var(--ink-faint); }
+
+  .analysis-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  @media (max-width: 720px) { .analysis-grid { grid-template-columns: 1fr; } }
+  .analysis-box {
+    padding: 16px 18px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--paper);
+  }
+  .analysis-box ul { list-style: none; padding: 0; }
+  .analysis-box li {
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+    color: var(--ink);
+  }
+  .analysis-box li:last-child { border-bottom: none; }
+  .analysis-box .muted { color: var(--ink-faint); font-style: italic; }
+  .analysis-box.next-steps {
+    grid-column: 1 / -1;
+    background: var(--cream-2);
+    border-color: var(--gold-soft);
+  }
+  .analysis-box.next-steps p { font-size: 15px; line-height: 1.7; }
+
+  /* ── Design brief panel ─────────────────────────────────── */
+  .design-brief-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px 24px;
+    margin-bottom: 18px;
+  }
+  @media (max-width: 720px) { .design-brief-grid { grid-template-columns: 1fr; } }
+  .brief-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px 12px;
+    background: var(--cream);
+    border-radius: 4px;
+    border-right: 3px solid var(--gold-soft);
+  }
+  .brief-row .label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--gold);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .brief-row .value {
+    font-size: 14px;
+    color: var(--ink);
+    line-height: 1.5;
+    word-break: break-word;
+  }
+  .brief-row .value.empty { color: var(--ink-faint); font-style: italic; }
+  .brief-keywords {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 4px;
+  }
+  .brief-keywords .tag {
+    background: var(--paper);
+    border: 1px solid var(--gold-soft);
+    color: var(--navy);
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+  }
+
+  .render-handoff {
+    margin-top: 16px;
+    padding: 18px;
+    background: var(--navy);
+    color: var(--cream);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .render-handoff .text {
+    flex: 1;
+    min-width: 240px;
+  }
+  .render-handoff .title {
+    font-family: 'Frank Ruhl Libre', serif;
+    font-weight: 500;
+    font-size: 16px;
+    color: var(--gold-soft);
+    margin-bottom: 4px;
+  }
+  .render-handoff .desc {
+    font-size: 13px;
+    color: var(--cream-2);
+    opacity: 0.9;
+  }
+  .render-handoff button {
+    background: var(--gold);
+    color: var(--navy);
+    border: none;
+    padding: 10px 18px;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s ease;
+  }
+  .render-handoff button:hover { background: var(--gold-soft); }
+
+  /* ── Footer + config ────────────────────────────────────── */
+  footer {
+    text-align: center;
+    color: var(--ink-faint);
+    font-size: 12px;
+    padding-top: 32px;
+    border-top: 1px solid var(--border);
+    margin-top: 40px;
+  }
+  footer strong { color: var(--gold); }
+  .config-toggle {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--ink-muted);
+    padding: 6px 14px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .config-toggle:hover { border-color: var(--gold); }
+
+  .config-modal {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(13, 31, 54, 0.65);
+    z-index: 100;
+    align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .config-modal.show { display: flex; }
+  .config-body {
+    background: var(--paper);
+    border-radius: 8px;
+    padding: 32px;
+    max-width: 480px;
+    width: 100%;
+    box-shadow: var(--shadow-md);
+  }
+  .config-body h3 {
+    font-family: 'Frank Ruhl Libre', serif;
+    font-size: 20px;
+    color: var(--navy);
+    margin-bottom: 8px;
+  }
+  .config-body p { font-size: 13px; color: var(--ink-muted); margin-bottom: 20px; }
+  .config-body label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--navy);
+    margin-bottom: 6px;
+    margin-top: 14px;
+  }
+  .config-body input {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 10px 12px;
+    font-family: inherit;
+    font-size: 13px;
+    background: var(--cream);
+  }
+  .config-body input:focus { outline: none; border-color: var(--gold); }
+  .config-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+    justify-content: flex-end;
+  }
+  .config-actions button {
+    padding: 10px 20px;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 14px;
+    cursor: pointer;
+    border: none;
+    font-weight: 500;
+  }
+  .config-actions .cancel {
+    background: transparent;
+    color: var(--ink-muted);
+    border: 1px solid var(--border);
+  }
+  .config-actions .save {
+    background: var(--navy);
+    color: var(--cream);
+  }
+
+  .toast {
+    position: fixed;
+    bottom: 32px; left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--navy);
+    color: var(--cream);
+    padding: 12px 24px;
+    border-radius: 4px;
+    border-right: 3px solid var(--gold);
+    font-size: 14px;
+    box-shadow: var(--shadow-md);
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.25s ease;
+    z-index: 200;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+</style>
+</head>
+
+<body>
+
+<div class="page">
+
+  <header>
+    <div class="brand">
+      <div class="brand-mark">שיש</div>
+      <div class="brand-text">
+        <h1>שיש אמנותי — קליטת שיחות לקוח</h1>
+        <p>הקלטה → תמלול עם דוברים → ניתוח מכירתי</p>
+      </div>
+    </div>
+    <div class="header-meta">
+      <strong>DEMO v1</strong>
+      30 April 2026
+    </div>
+  </header>
+
+  <div class="intro">
+    <h2>שלום אבשי</h2>
+    <p>העלה הקלטה של שיחה עם לקוח פוטנציאלי (MP3 / M4A / MP4 / WAV). המערכת תתמלל את השיחה, תפריד בין הדוברים, תאפשר עריכה ושיוך שמות, ותפיק ניתוח מכירתי + בריף עיצובי שניתן להעביר לסשן רנדור עם דוגמת שיש.</p>
+  </div>
+
+  <!-- Upload zone -->
+  <label for="file-input" class="upload-zone" id="upload-zone">
+    <input type="file" id="file-input" accept="audio/*,video/*" style="display:none;">
+    <div class="upload-icon">↑</div>
+    <div class="upload-title">העלה קובץ הקלטה</div>
+    <div class="upload-hint">גרור לכאן קובץ, או לחץ לבחירה מהמחשב</div>
+    <div class="file-info">
+      <div class="file-label">
+        <div class="dot"></div>
+        <div>
+          <div class="file-name" id="file-name"></div>
+          <div class="file-size" id="file-size"></div>
+        </div>
+      </div>
+      <button class="btn-change" id="btn-change" type="button">שנה קובץ</button>
+    </div>
+    <audio id="audio-preview" controls style="display:none;"></audio>
+  </label>
+
+  <!-- Status + Error -->
+  <div class="status-bar" id="status-bar">
+    <div class="spinner"></div>
+    <div class="status-text" id="status-text">מעבד...</div>
+  </div>
+  <div class="error-box" id="error-box"></div>
+
+  <!-- Action buttons -->
+  <div class="actions">
+    <button class="btn btn-secondary" id="btn-transcribe" disabled>
+      <span class="stage-label">שלב א'</span>
+      תמלול עברית + הפרדת דוברים
+    </button>
+    <button class="btn" id="btn-analyze" disabled>
+      <span class="stage-label">שלב ב'</span>
+      ניתוח AI + בריף עיצוב
+    </button>
+  </div>
+
+  <!-- Transcript panel with editable speaker turns -->
+  <div class="panel" id="transcript-panel">
+    <div class="panel-header">
+      <h3>תמלול ההקלטה — עריכת דוברים וטקסט</h3>
+      <div class="stage-badge">שלב א' הושלם</div>
+    </div>
+    <div class="panel-body">
+      <div class="turns-toolbar">
+        <button class="btn-mini primary" id="btn-save-edits">שמור עריכות</button>
+        <span class="hint">לחץ על שם דובר כדי לערוך · לחץ על טקסט כדי לתקן</span>
+      </div>
+      <div class="turns-list" id="turns-list"></div>
+    </div>
+  </div>
+
+  <!-- Analysis panel -->
+  <div class="panel" id="analysis-panel">
+    <div class="panel-header">
+      <h3>ניתוח שיחה — תקציר ומשימות</h3>
+      <div class="stage-badge">שלב ב' הושלם</div>
+    </div>
+    <div class="panel-body">
+      <div class="analysis-summary">
+        <div class="analysis-summary-label">סיכום</div>
+        <p id="analysis-summary"></p>
+      </div>
+
+      <div class="lead-temp-row">
+        <span class="lead-temp-label">חום הליד:</span>
+        <span class="lead-temp-pill unknown" id="lead-temp-pill">לא ידוע</span>
+        <span class="lead-temp-label" id="budget-signals" style="margin-inline-start:auto;"></span>
+      </div>
+
+      <div class="analysis-grid">
+        <div class="analysis-box topics">
+          <div class="analysis-label">נושאי השיחה</div>
+          <ul id="analysis-topics"></ul>
+        </div>
+        <div class="analysis-box actions">
+          <div class="analysis-label">משימות לביצוע</div>
+          <ul id="analysis-actions"></ul>
+        </div>
+        <div class="analysis-box contacts">
+          <div class="analysis-label">אנשים שהוזכרו</div>
+          <ul id="analysis-contacts"></ul>
+        </div>
+        <div class="analysis-box next-steps">
+          <div class="analysis-label">צעד הבא מומלץ</div>
+          <p id="analysis-next"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Design brief panel — feeds the render session -->
+  <div class="panel" id="brief-panel">
+    <div class="panel-header">
+      <h3>בריף עיצוב — להעברה לסשן רנדור</h3>
+      <div class="stage-badge">שלב ג' מוכן</div>
+    </div>
+    <div class="panel-body">
+      <div class="design-brief-grid">
+        <div class="brief-row">
+          <span class="label">מידות שהוזכרו</span>
+          <span class="value" id="brief-dim"></span>
+        </div>
+        <div class="brief-row">
+          <span class="label">סוג חדר</span>
+          <span class="value" id="brief-room"></span>
+        </div>
+        <div class="brief-row">
+          <span class="label">צורה</span>
+          <span class="value" id="brief-shape"></span>
+        </div>
+        <div class="brief-row">
+          <span class="label">סוג שיש</span>
+          <span class="value" id="brief-stone"></span>
+        </div>
+        <div class="brief-row">
+          <span class="label">פלטת צבעים</span>
+          <span class="value" id="brief-color"></span>
+        </div>
+        <div class="brief-row">
+          <span class="label">סגנון</span>
+          <span class="value" id="brief-style"></span>
+        </div>
+        <div class="brief-row">
+          <span class="label">סוג התקנה</span>
+          <span class="value" id="brief-mount"></span>
+        </div>
+        <div class="brief-row">
+          <span class="label">ניקוז</span>
+          <span class="value" id="brief-drain"></span>
+        </div>
+        <div class="brief-row" style="grid-column: 1 / -1;">
+          <span class="label">הערות עיצוב חופשיות</span>
+          <span class="value" id="brief-notes"></span>
+        </div>
+        <div class="brief-row" style="grid-column: 1 / -1;">
+          <span class="label">לוח זמנים שצוין</span>
+          <span class="value" id="brief-timeline"></span>
+        </div>
+      </div>
+
+      <div class="render-handoff">
+        <div class="text">
+          <div class="title">מוכן לסשן רנדור</div>
+          <div class="desc">העתק את הבריף ופתח שיחה חדשה עם Claude. צרף תמונת דוגמה של השיש שאתה רוצה ובקש סקיצה ב-Nano Banana.</div>
+        </div>
+        <button id="btn-copy-brief">העתק בריף לרנדור</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <strong>שיש אמנותי — קליטת שיחות</strong> · גרסה 30042026-v1 · דמו פנימי<br>
+    <button class="config-toggle" id="config-toggle" style="margin-top:12px;">הגדרות מפתחות API</button>
+  </footer>
+
+</div>
+
+<!-- Config modal -->
+<div class="config-modal" id="config-modal">
+  <div class="config-body">
+    <h3>מפתחות API</h3>
+    <p>הזן את מפתחות ה-API שלך. הם נשמרים רק בדפדפן המקומי (localStorage).</p>
+    <label for="cfg-eleven">ElevenLabs API Key</label>
+    <input type="password" id="cfg-eleven" placeholder="sk_...">
+    <label for="cfg-anthropic">Anthropic (Claude) API Key</label>
+    <input type="password" id="cfg-anthropic" placeholder="sk-ant-...">
+    <div class="config-actions">
+      <button class="cancel" id="cfg-cancel">ביטול</button>
+      <button class="save" id="cfg-save">שמור</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ── State ─────────────────────────────────────────────────
+  var currentFile = null;
+  var currentTranscript = '';      // synthesized speaker-labeled transcript
+  var currentWords = [];           // raw ElevenLabs words array
+  var currentTurns = [];           // grouped turns: [{ speakerId, text, start, end }]
+  var speakerNames = {};           // map speaker_0 -> "אבשי", speaker_1 -> "לקוח"
+  var currentAnalysis = null;
+  var API = {
+    elevenlabs: '',
+    anthropic:  ''
+  };
+
+  // ── DOM ───────────────────────────────────────────────────
+  var $ = function (id) { return document.getElementById(id); };
+  var uploadZone     = $('upload-zone');
+  var fileInput      = $('file-input');
+  var fileName       = $('file-name');
+  var fileSize       = $('file-size');
+  var btnChange      = $('btn-change');
+  var audioPreview   = $('audio-preview');
+  var btnTranscribe  = $('btn-transcribe');
+  var btnAnalyze     = $('btn-analyze');
+  var statusBar      = $('status-bar');
+  var statusText     = $('status-text');
+  var errorBox       = $('error-box');
+  var transcriptPanel= $('transcript-panel');
+  var turnsList      = $('turns-list');
+  var btnSaveEdits   = $('btn-save-edits');
+  var analysisPanel  = $('analysis-panel');
+  var briefPanel     = $('brief-panel');
+  var btnCopyBrief   = $('btn-copy-brief');
+  var toastEl        = $('toast');
+  var configModal    = $('config-modal');
+  var cfgEleven      = $('cfg-eleven');
+  var cfgAnthropic   = $('cfg-anthropic');
+
+  // ── Saved keys ────────────────────────────────────────────
+  try {
+    API.elevenlabs = localStorage.getItem('el_key') || '';
+    API.anthropic  = localStorage.getItem('an_key') || '';
+    cfgEleven.value    = API.elevenlabs;
+    cfgAnthropic.value = API.anthropic;
+  } catch (e) { /* localStorage off — session only */ }
+
+  // ── Toast ─────────────────────────────────────────────────
+  function toast(msg, isError) {
+    toastEl.textContent = msg;
+    toastEl.style.borderRightColor = isError ? '#8b2c2c' : '#b8860b';
+    toastEl.classList.add('show');
+    setTimeout(function () { toastEl.classList.remove('show'); }, 2600);
+  }
+  function showStatus(msg) {
+    statusText.textContent = msg;
+    statusBar.classList.add('show');
+    errorBox.classList.remove('show');
+  }
+  function hideStatus() { statusBar.classList.remove('show'); }
+  function showError(msg) {
+    errorBox.innerHTML = '<strong>שגיאה:</strong> ' + msg;
+    errorBox.classList.add('show');
+    hideStatus();
+  }
+  function hideError() { errorBox.classList.remove('show'); }
+
+  // ── File handling ─────────────────────────────────────────
+  function formatSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / 1024 / 1024).toFixed(2) + ' MB';
+  }
+  function handleFile(file) {
+    if (!file) return;
+    if (file.size > 25 * 1024 * 1024) {
+      showError('הקובץ גדול מ-25MB. ElevenLabs מגביל גודל קובץ.');
+      return;
+    }
+    currentFile = file;
+    fileName.textContent = file.name;
+    fileSize.textContent = formatSize(file.size);
+    uploadZone.classList.add('has-file');
+    audioPreview.src = URL.createObjectURL(file);
+    audioPreview.style.display = 'block';
+    btnTranscribe.disabled = false;
+    btnAnalyze.disabled    = true;
+    transcriptPanel.classList.remove('show');
+    analysisPanel.classList.remove('show');
+    briefPanel.classList.remove('show');
+    hideError();
+  }
+  fileInput.addEventListener('change', function (e) {
+    handleFile(e.target.files[0]);
+  });
+  uploadZone.addEventListener('click', function (e) {
+    if (uploadZone.classList.contains('has-file')) e.preventDefault();
+  });
+  btnChange.addEventListener('click', function (e) {
+    e.preventDefault(); e.stopPropagation();
+    uploadZone.classList.remove('has-file');
+    fileInput.value = '';
+    currentFile = null;
+    btnTranscribe.disabled = true; btnAnalyze.disabled = true;
+    audioPreview.style.display = 'none';
+  });
+  ['dragenter', 'dragover'].forEach(function (ev) {
+    uploadZone.addEventListener(ev, function (e) {
+      e.preventDefault(); uploadZone.classList.add('drag');
+    });
+  });
+  ['dragleave', 'drop'].forEach(function (ev) {
+    uploadZone.addEventListener(ev, function (e) {
+      e.preventDefault(); uploadZone.classList.remove('drag');
+    });
+  });
+  uploadZone.addEventListener('drop', function (e) {
+    e.preventDefault();
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+  });
+
+  // ── Transcribe (ElevenLabs Scribe with diarization) ──────
+  btnTranscribe.addEventListener('click', async function () {
+    if (!currentFile) { showError('אין קובץ לתמלול.'); return; }
+    if (!API.elevenlabs) {
+      showError('מפתח ElevenLabs חסר. לחץ על "הגדרות מפתחות API" למטה כדי להוסיף.');
+      return;
+    }
+    btnTranscribe.disabled = true;
+    btnAnalyze.disabled    = true;
+    hideError();
+    transcriptPanel.classList.remove('show');
+    analysisPanel.classList.remove('show');
+    briefPanel.classList.remove('show');
+    showStatus('מעלה ל-ElevenLabs ומתמלל עברית עם הפרדת דוברים...');
+
+    try {
+      var fd = new FormData();
+      fd.append('file', currentFile, currentFile.name);
+      fd.append('model_id', 'scribe_v1');
+      fd.append('language_code', 'heb');
+      fd.append('diarize', 'true');
+      fd.append('tag_audio_events', 'false');
+
+      var resp = await fetch('https://api.elevenlabs.io/v1/speech-to-text', {
+        method: 'POST',
+        headers: { 'xi-api-key': API.elevenlabs },
+        body: fd
+      });
+      if (!resp.ok) {
+        var errTxt = await resp.text();
+        throw new Error('ElevenLabs ' + resp.status + ': ' + errTxt.substring(0, 260));
+      }
+      var data = await resp.json();
+      var fullText = data.text || data.transcript || '';
+      var words    = data.words || [];
+
+      if (!fullText && !words.length) {
+        throw new Error('לא התקבל תמלול — ייתכן שהאודיו ריק או לא מזוהה.');
+      }
+
+      currentWords  = words;
+      currentTurns  = buildTurnsFromWords(words, fullText);
+      speakerNames  = defaultSpeakerNames(currentTurns);
+      currentTranscript = synthesizeLabeledTranscript(currentTurns, speakerNames);
+
+      renderTurns();
+      transcriptPanel.classList.add('show');
+      hideStatus();
+      btnTranscribe.disabled = false;
+      btnAnalyze.disabled    = false;
+      toast('✓ תמלול הושלם — ערוך לפי הצורך');
+      setTimeout(function () {
+        transcriptPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    } catch (e) {
+      console.error(e);
+      showError(e.message || String(e));
+      btnTranscribe.disabled = false;
+      btnAnalyze.disabled    = false;
+    }
+  });
+
+  // ── Build turns from raw words (group consecutive same-speaker) ──
+  function buildTurnsFromWords(words, fallbackText) {
+    if (!words || !words.length) {
+      // Fallback: no diarization, treat as one speaker
+      return [{ speakerId: 'speaker_0', text: fallbackText || '', start: 0, end: 0 }];
+    }
+    var turns = [];
+    var current = null;
+    for (var i = 0; i < words.length; i++) {
+      var w = words[i];
+      if (w.type && w.type !== 'word' && w.type !== 'spacing') continue;
+      var spk = w.speaker_id || 'speaker_0';
+      var text = w.text || '';
+      if (!current || current.speakerId !== spk) {
+        if (current) turns.push(current);
+        current = { speakerId: spk, text: text, start: w.start || 0, end: w.end || 0 };
+      } else {
+        current.text += (current.text && !/\s$/.test(current.text) && !/^[\s,.\?!:;]/.test(text) ? ' ' : '') + text;
+        current.end = w.end || current.end;
+      }
+    }
+    if (current) turns.push(current);
+    // Clean up double spaces
+    turns.forEach(function (t) { t.text = t.text.replace(/\s+/g, ' ').trim(); });
+    return turns;
+  }
+
+  // ── Default speaker names: "דובר 1", "דובר 2", ... ────────
+  function defaultSpeakerNames(turns) {
+    var names = {};
+    var idx = 1;
+    turns.forEach(function (t) {
+      if (!names[t.speakerId]) {
+        names[t.speakerId] = 'דובר ' + idx;
+        idx++;
+      }
+    });
+    return names;
+  }
+
+  // ── Get a stable numeric index for a speakerId (for color) ──
+  function speakerIndex(speakerId) {
+    var ids = Object.keys(speakerNames);
+    var idx = ids.indexOf(speakerId);
+    return idx === -1 ? 0 : (idx % 6);
+  }
+
+  // ── Render turns to the DOM ──────────────────────────────
+  function renderTurns() {
+    turnsList.innerHTML = '';
+    currentTurns.forEach(function (turn, i) {
+      var idx = speakerIndex(turn.speakerId);
+      var row = document.createElement('div');
+      row.className = 'turn';
+      row.setAttribute('data-speaker', String(idx));
+      row.setAttribute('data-turn-index', String(i));
+
+      var header = document.createElement('div');
+      header.className = 'turn-header';
+
+      var pill = document.createElement('button');
+      pill.className = 'speaker-pill';
+      pill.type = 'button';
+      pill.textContent = speakerNames[turn.speakerId] || turn.speakerId;
+      pill.title = 'לחץ לעריכת שם הדובר';
+      pill.addEventListener('click', function () { openSpeakerRename(pill, turn.speakerId); });
+
+      var time = document.createElement('span');
+      time.className = 'turn-time';
+      time.textContent = formatTime(turn.start) + ' – ' + formatTime(turn.end);
+
+      header.appendChild(pill);
+      header.appendChild(time);
+
+      var text = document.createElement('div');
+      text.className = 'turn-text';
+      text.contentEditable = 'true';
+      text.spellcheck = false;
+      text.textContent = turn.text;
+      text.addEventListener('input', function () {
+        currentTurns[i].text = text.textContent || '';
+      });
+
+      row.appendChild(header);
+      row.appendChild(text);
+      turnsList.appendChild(row);
+    });
+  }
+
+  function formatTime(sec) {
+    if (!sec && sec !== 0) return '';
+    var s = Math.floor(sec);
+    var m = Math.floor(s / 60);
+    var rs = s % 60;
+    return m + ':' + (rs < 10 ? '0' : '') + rs;
+  }
+
+  // ── Speaker rename (inline input) ────────────────────────
+  function openSpeakerRename(pillEl, speakerId) {
+    var current = speakerNames[speakerId] || '';
+    var input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'speaker-rename-input';
+    input.value = current;
+    pillEl.replaceWith(input);
+    input.focus();
+    input.select();
+
+    function commit(save) {
+      var newName = save ? (input.value.trim() || current) : current;
+      speakerNames[speakerId] = newName;
+      // Re-render all turns so every pill for this speaker updates
+      renderTurns();
+    }
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { commit(true); }
+      else if (e.key === 'Escape') { commit(false); }
+    });
+    input.addEventListener('blur', function () { commit(true); });
+  }
+
+  // ── Save edits ───────────────────────────────────────────
+  btnSaveEdits.addEventListener('click', function () {
+    currentTranscript = synthesizeLabeledTranscript(currentTurns, speakerNames);
+    toast('✓ עריכות נשמרו — ניתן להמשיך לשלב ב\'');
+  });
+
+  // ── Synthesize a speaker-labeled transcript for Claude ───
+  function synthesizeLabeledTranscript(turns, names) {
+    return turns.map(function (t) {
+      var label = names[t.speakerId] || t.speakerId;
+      return '[' + label + ']: ' + (t.text || '');
+    }).join('\n\n');
+  }
+
+  // ── Analyze (Claude) ─────────────────────────────────────
+  btnAnalyze.addEventListener('click', async function () {
+    // Always use the latest edited state
+    currentTranscript = synthesizeLabeledTranscript(currentTurns, speakerNames);
+    if (!currentTranscript) {
+      showError('אין תמלול לניתוח. הרץ קודם את שלב א\' (תמלול).');
+      return;
+    }
+    if (!API.anthropic) {
+      showError('מפתח Anthropic חסר. לחץ על "הגדרות מפתחות API" למטה.');
+      return;
+    }
+    btnAnalyze.disabled    = true;
+    btnTranscribe.disabled = true;
+    hideError();
+    analysisPanel.classList.remove('show');
+    briefPanel.classList.remove('show');
+    showStatus('Claude מנתח את השיחה ובונה בריף עיצוב...');
+
+    try {
+      var prompt =
+        'אתה עוזר AI לאמן שיש שמייצר כיורים מעוצבים בעבודת יד.\n' +
+        'קיבלת תמלול של שיחת טלפון בין האמן/נציג לבין לקוח פוטנציאלי.\n' +
+        'הדוברים מסומנים בסוגריים מרובעים בתחילת כל שורה.\n\n' +
+        'תמלול:\n---\n' + currentTranscript + '\n---\n\n' +
+        'נתח את השיחה. החזר JSON תקין בלבד, בלי טקסט לפני או אחרי. כל הטקסט בעברית.\n' +
+        'אם פרט מסוים לא הוזכר — החזר null או "unknown". אל תמציא מידע.\n\n' +
+        '{\n' +
+        '  "summary": "1-2 משפטים שמסכמים את עיקר השיחה",\n' +
+        '  "lead_temperature": "cold | warm | hot",\n' +
+        '  "topics": ["נושא 1", "נושא 2"],\n' +
+        '  "action_items": ["משימה קונקרטית לאמן/נציג"],\n' +
+        '  "contacts": ["שמות שהוזכרו - לקוח, אדריכל, ממליץ"],\n' +
+        '  "next_steps": "צעד הבא מומלץ במשפט אחד",\n' +
+        '  "design_brief": {\n' +
+        '    "mentioned_dimensions": "מידות אם הוזכרו (למשל: 70x45x18 ס\\"מ) או null",\n' +
+        '    "room_type": "bathroom | kitchen | outdoor | unknown",\n' +
+        '    "shape_hints": "round | oval | rectangular | square | freeform | unknown",\n' +
+        '    "stone_preferences": "סוג שיש שדובר עליו או null",\n' +
+        '    "color_palette": "תיאור צבעים או null",\n' +
+        '    "style_keywords": ["מילות סגנון: מינימליסטי, מודרני, כפרי וכו\'"],\n' +
+        '    "mounting_hints": "vessel | undermount | integrated | wall_hung | unknown",\n' +
+        '    "drain_preference": "centered | off_center | slot | unknown",\n' +
+        '    "design_notes_he": "הערות חופשיות רלוונטיות לעיצוב הכיור"\n' +
+        '  },\n' +
+        '  "budget_signals": "אינדיקציה לתקציב או null",\n' +
+        '  "timeline_signals": "אינדיקציה ללוח זמנים או null"\n' +
+        '}\n\n' +
+        'הנחיה ל-lead_temperature: cold = רק מתעניין, warm = שאלות מעמיקות וחיפוש פרטים, hot = רוצה להתקדם להזמנה.';
+
+      var resp = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': API.anthropic,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 2000,
+          messages: [{ role: 'user', content: prompt }]
+        })
+      });
+      if (!resp.ok) {
+        var errTxt = await resp.text();
+        throw new Error('Claude ' + resp.status + ': ' + errTxt.substring(0, 260));
+      }
+      var data = await resp.json();
+      var raw  = (data.content && data.content[0] && data.content[0].text) || '';
+      var m    = raw.match(/\{[\s\S]*\}/);
+      if (!m) throw new Error('Claude לא החזיר JSON תקין.');
+      var parsed;
+      try { parsed = JSON.parse(m[0]); } catch (pe) { throw new Error('JSON לא תקין: ' + pe.message); }
+
+      currentAnalysis = parsed;
+      renderAnalysis(parsed);
+      renderDesignBrief(parsed.design_brief || {});
+      analysisPanel.classList.add('show');
+      briefPanel.classList.add('show');
+      hideStatus();
+      btnAnalyze.disabled    = false;
+      btnTranscribe.disabled = false;
+      toast('✓ ניתוח + בריף הושלמו');
+      setTimeout(function () {
+        analysisPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    } catch (e) {
+      console.error(e);
+      showError(e.message || String(e));
+      btnAnalyze.disabled    = false;
+      btnTranscribe.disabled = false;
+    }
+  });
+
+  function renderAnalysis(p) {
+    $('analysis-summary').textContent = p.summary || '—';
+    $('analysis-next').textContent    = p.next_steps || '—';
+    fillList('analysis-topics',   p.topics);
+    fillList('analysis-actions',  p.action_items);
+    fillList('analysis-contacts', p.contacts);
+
+    var temp = (p.lead_temperature || 'unknown').toLowerCase();
+    var pill = $('lead-temp-pill');
+    pill.className = 'lead-temp-pill ' + (['cold','warm','hot'].indexOf(temp) >= 0 ? temp : 'unknown');
+    pill.textContent = temp === 'cold' ? 'קר' : temp === 'warm' ? 'פושר' : temp === 'hot' ? 'חם' : 'לא ידוע';
+
+    var budget = $('budget-signals');
+    budget.textContent = p.budget_signals && p.budget_signals !== 'null' ? 'תקציב: ' + p.budget_signals : '';
+  }
+
+  function fillList(elId, arr) {
+    var el = $(elId);
+    el.innerHTML = '';
+    if (!arr || !arr.length) {
+      el.innerHTML = '<li><span class="muted">—</span></li>';
+      return;
+    }
+    arr.forEach(function (item) {
+      var li = document.createElement('li');
+      li.textContent = String(item || '');
+      el.appendChild(li);
+    });
+  }
+
+  function renderDesignBrief(b) {
+    setBrief('brief-dim',   b.mentioned_dimensions);
+    setBrief('brief-room',  translateRoom(b.room_type));
+    setBrief('brief-shape', translateShape(b.shape_hints));
+    setBrief('brief-stone', b.stone_preferences);
+    setBrief('brief-color', b.color_palette);
+    setBriefKeywords('brief-style', b.style_keywords);
+    setBrief('brief-mount', translateMount(b.mounting_hints));
+    setBrief('brief-drain', translateDrain(b.drain_preference));
+    setBrief('brief-notes', b.design_notes_he);
+    setBrief('brief-timeline', currentAnalysis ? currentAnalysis.timeline_signals : null);
+  }
+
+  function setBrief(elId, value) {
+    var el = $(elId);
+    el.classList.remove('empty');
+    if (!value || value === 'null' || value === 'unknown' || value === '') {
+      el.textContent = 'לא הוזכר';
+      el.classList.add('empty');
+    } else {
+      el.textContent = String(value);
+    }
+  }
+  function setBriefKeywords(elId, arr) {
+    var el = $(elId);
+    el.innerHTML = '';
+    el.classList.remove('empty');
+    if (!arr || !arr.length) {
+      el.textContent = 'לא הוזכר';
+      el.classList.add('empty');
+      return;
+    }
+    var wrap = document.createElement('span');
+    wrap.className = 'brief-keywords';
+    arr.forEach(function (k) {
+      var t = document.createElement('span');
+      t.className = 'tag';
+      t.textContent = String(k);
+      wrap.appendChild(t);
+    });
+    el.appendChild(wrap);
+  }
+  function translateRoom(v) {
+    if (!v) return null;
+    var m = { bathroom: 'אמבטיה', kitchen: 'מטבח', outdoor: 'חוץ' };
+    return m[v] || v;
+  }
+  function translateShape(v) {
+    if (!v) return null;
+    var m = { round: 'עגול', oval: 'אובלי', rectangular: 'מלבני', square: 'ריבועי', freeform: 'חופשי' };
+    return m[v] || v;
+  }
+  function translateMount(v) {
+    if (!v) return null;
+    var m = { vessel: 'כיור על משטח', undermount: 'תת-משטח', integrated: 'משולב', wall_hung: 'תלוי קיר' };
+    return m[v] || v;
+  }
+  function translateDrain(v) {
+    if (!v) return null;
+    var m = { centered: 'מרכזי', off_center: 'לא מרכזי', slot: 'חריץ' };
+    return m[v] || v;
+  }
+
+  // ── Copy brief for render session ────────────────────────
+  btnCopyBrief.addEventListener('click', async function () {
+    if (!currentAnalysis || !currentAnalysis.design_brief) {
+      toast('אין בריף להעתיק', true);
+      return;
+    }
+    var b = currentAnalysis.design_brief;
+    var lines = [
+      'Render session intake — Marble Art Sinks',
+      '=========================================',
+      'Source: customer call analyzed ' + new Date().toISOString().slice(0,10),
+      '',
+      'Design brief from call:',
+      '- Dimensions: '       + (b.mentioned_dimensions || 'not mentioned'),
+      '- Room type: '        + (b.room_type || 'unknown'),
+      '- Shape: '            + (b.shape_hints || 'unknown'),
+      '- Stone preference: ' + (b.stone_preferences || 'not mentioned'),
+      '- Color palette: '    + (b.color_palette || 'not mentioned'),
+      '- Style keywords: '   + ((b.style_keywords && b.style_keywords.length) ? b.style_keywords.join(', ') : 'none'),
+      '- Mounting: '         + (b.mounting_hints || 'unknown'),
+      '- Drain: '            + (b.drain_preference || 'unknown'),
+      '- Notes (HE): '       + (b.design_notes_he || '—'),
+      '',
+      'Budget signals: '   + (currentAnalysis.budget_signals || 'none'),
+      'Timeline signals: ' + (currentAnalysis.timeline_signals || 'none'),
+      '',
+      'Action requested:',
+      '1. Compose a Nano Banana prompt for a concept sketch matching the brief above.',
+      '2. Include placeholders where I should attach a marble texture reference image.',
+      '3. Output JSON in the AI record template format (see marble-art-sinks skill).'
+    ];
+    var text = lines.join('\n');
+    try {
+      await navigator.clipboard.writeText(text);
+      toast('✓ הבריף הועתק ללוח — הדבק בשיחה חדשה עם Claude');
+    } catch (e) {
+      // Fallback
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      toast('✓ הבריף הועתק ללוח');
+    }
+  });
+
+  // ── Config modal ─────────────────────────────────────────
+  $('config-toggle').addEventListener('click', function () {
+    configModal.classList.add('show');
+  });
+  $('cfg-cancel').addEventListener('click', function () {
+    configModal.classList.remove('show');
+  });
+  $('cfg-save').addEventListener('click', function () {
+    API.elevenlabs = cfgEleven.value.trim();
+    API.anthropic  = cfgAnthropic.value.trim();
+    try {
+      localStorage.setItem('el_key', API.elevenlabs);
+      localStorage.setItem('an_key', API.anthropic);
+    } catch (e) { /* noop */ }
+    configModal.classList.remove('show');
+    toast('✓ מפתחות נשמרו');
+  });
+  configModal.addEventListener('click', function (e) {
+    if (e.target === configModal) configModal.classList.remove('show');
+  });
+
+})();
+</script>
+
+</body>
+</html>

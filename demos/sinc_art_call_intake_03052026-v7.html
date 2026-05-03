@@ -1,0 +1,1894 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="version" content="03052026-v7">
+<title>SinC-ART | אינטייק שיחות — דוגמה</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700;900&family=Heebo:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+<style>
+  /* ── Reset + base ────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+
+  :root {
+    --navy:       #0d1f36;
+    --navy-soft:  #1e3a5f;
+    --navy-muted: #2c4668;
+    --gold:       #b8860b;
+    --gold-soft:  #d4a93a;
+    --gold-faint: #f4e4b1;
+    --cream:      #faf7f0;
+    --cream-2:    #f4eddc;
+    --paper:      #ffffff;
+    --ink:        #1a1a1a;
+    --ink-muted:  #5c5c5c;
+    --ink-faint:  #8a8a8a;
+    --border:     #e8dfc5;
+    --success:    #2d5f3f;
+    --error:      #8b2c2c;
+    --shadow-sm:  0 1px 3px rgba(13, 31, 54, 0.08);
+    --shadow-md:  0 8px 24px rgba(13, 31, 54, 0.10);
+    --shadow-lg:  0 24px 60px rgba(13, 31, 54, 0.15);
+  }
+
+  body {
+    font-family: 'Heebo', system-ui, sans-serif;
+    font-weight: 400;
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--ink);
+    background: var(--cream);
+    direction: rtl;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+
+  /* ── Subtle paper texture background ────────────────────── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      radial-gradient(circle at 20% 10%, rgba(184, 134, 11, 0.04) 0%, transparent 50%),
+      radial-gradient(circle at 80% 90%, rgba(30, 58, 95, 0.04) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .page {
+    position: relative;
+    z-index: 1;
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 48px 32px 80px;
+  }
+
+  /* ── Header ─────────────────────────────────────────────── */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 28px;
+    margin-bottom: 40px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .brand-mark {
+    width: 52px; height: 52px;
+    background: var(--navy);
+    color: var(--gold-soft);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Frank Ruhl Libre', serif;
+    font-weight: 900;
+    font-size: 28px;
+    border: 2px solid var(--gold);
+    letter-spacing: -0.02em;
+  }
+  .brand-text h1 {
+    font-family: 'Frank Ruhl Libre', serif;
+    font-weight: 700;
+    font-size: 24px;
+    color: var(--navy);
+    letter-spacing: -0.01em;
+    line-height: 1.1;
+  }
+  .brand-text p {
+    font-size: 13px;
+    color: var(--ink-muted);
+    margin-top: 4px;
+    letter-spacing: 0.02em;
+  }
+  .header-meta {
+    text-align: left;
+    font-size: 12px;
+    color: var(--ink-faint);
+    direction: ltr;
+  }
+  .header-meta strong {
+    display: block;
+    color: var(--navy);
+    font-size: 13px;
+    font-family: 'Frank Ruhl Libre', serif;
+    margin-bottom: 2px;
+  }
+
+  /* ── Intro block ────────────────────────────────────────── */
+  .intro {
+    background: var(--paper);
+    border: 1px solid var(--border);
+    padding: 32px 36px;
+    margin-bottom: 32px;
+    position: relative;
+    box-shadow: var(--shadow-sm);
+  }
+  .intro::before {
+    content: '';
+    position: absolute;
+    right: 0; top: 0; bottom: 0;
+    width: 4px;
+    background: linear-gradient(to bottom, var(--gold) 0%, var(--gold-soft) 100%);
+  }
+  .intro h2 {
+    font-family: 'Frank Ruhl Libre', serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 10px;
+  }
+  .intro p {
+    color: var(--ink-muted);
+    font-size: 14px;
+  }
+
+  /* ── Upload zone ────────────────────────────────────────── */
+  .upload-zone {
+    background: var(--paper);
+    border: 2px dashed var(--gold);
+    padding: 56px 32px;
+    text-align: center;
+    margin-bottom: 28px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    position: relative;
+  }
+  .upload-zone:hover,
+  .upload-zone.drag {
+    background: var(--cream-2);
+    border-color: var(--navy);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+  }
+  .upload-zone.has-file {
+    background: var(--cream-2);
+    border-style: solid;
+    border-color: var(--navy);
+    padding: 32px;
+    cursor: default;
+  }
+  .upload-icon {
+    width: 56px; height: 56px;
+    margin: 0 auto 16px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--navy);
+    color: var(--gold-soft);
+    border-radius: 50%;
+    font-size: 24px;
+  }
+  .upload-title {
+    font-family: 'Frank Ruhl Libre', serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 6px;
+  }
+  .upload-hint {
+    font-size: 13px;
+    color: var(--ink-muted);
+  }
+  .file-info {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    text-align: right;
+  }
+  .upload-zone.has-file .upload-icon,
+  .upload-zone.has-file .upload-title,
+  .upload-zone.has-file .upload-hint { display: none; }
+  .upload-zone.has-file .file-info { display: flex; }
+  .file-label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+  }
+  .file-label .dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--success);
+    flex-shrink: 0;
+  }
+  .file-name {
+    font-family: 'Heebo', monospace;
+    font-size: 13px;
+    color: var(--ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 360px;
+  }
+  .file-size {
+    color: var(--ink-faint);
+    font-size: 12px;
+  }
+  .btn-change {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--ink-muted);
+    padding: 8px 16px;
+    font-family: 'Heebo';
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .btn-change:hover { border-color: var(--navy); color: var(--navy); }
+
+  audio { width: 100%; margin-top: 16px; border-radius: 8px; }
+
+  /* ── Action buttons ─────────────────────────────────────── */
+  .actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  @media (max-width: 640px) { .actions { grid-template-columns: 1fr; } }
+
+  .btn {
+    position: relative;
+    background: var(--navy);
+    color: var(--paper);
+    border: 2px solid var(--navy);
+    padding: 18px 24px;
+    font-family: 'Frank Ruhl Libre', serif;
+    font-size: 17px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    letter-spacing: 0.01em;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn .stage-label {
+    font-family: 'Heebo';
+    font-size: 10px;
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--gold-soft);
+  }
+  .btn:hover:not(:disabled) {
+    background: var(--navy-soft);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+  .btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  .btn.btn-secondary {
+    background: var(--paper);
+    color: var(--navy);
+    border-color: var(--gold);
+  }
+  .btn.btn-secondary:hover:not(:disabled) {
+    background: var(--gold-faint);
+    border-color: var(--navy);
+  }
+  .btn.btn-secondary .stage-label { color: var(--navy-muted); }
+
+  /* ── Output panels ──────────────────────────────────────── */
+  .panel {
+    background: var(--paper);
+    border: 1px solid var(--border);
+    margin-bottom: 24px;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    display: none;
+  }
+  .panel.show { display: block; animation: fadeIn 0.4s ease; }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .panel-header {
+    background: var(--navy);
+    color: var(--paper);
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 2px solid var(--gold);
+  }
+  .panel-header h3 {
+    font-family: 'Frank Ruhl Libre', serif;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+  .panel-header .stage-badge {
+    background: var(--gold);
+    color: var(--navy);
+    padding: 3px 10px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-family: 'Heebo';
+  }
+  .panel-body { padding: 28px 32px; }
+
+  /* ── Transcript styling ─────────────────────────────────── */
+  .transcript-text {
+    font-size: 15px;
+    line-height: 1.9;
+    color: var(--ink);
+    white-space: pre-wrap;
+    padding: 20px 24px;
+    background: var(--cream);
+    border-right: 3px solid var(--gold);
+    font-family: 'Frank Ruhl Libre', serif;
+    max-height: 380px;
+    overflow-y: auto;
+  }
+
+  /* ── Analysis grid ──────────────────────────────────────── */
+  .analysis-summary {
+    background: var(--cream);
+    border-right: 3px solid var(--navy);
+    padding: 20px 24px;
+    margin-bottom: 20px;
+  }
+  .analysis-summary-label {
+    font-family: 'Frank Ruhl Libre', serif;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--navy);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .analysis-summary p {
+    font-family: 'Frank Ruhl Libre', serif;
+    font-size: 17px;
+    line-height: 1.6;
+    color: var(--ink);
+  }
+
+  .analysis-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  @media (max-width: 720px) { .analysis-grid { grid-template-columns: 1fr; } }
+
+  .analysis-box {
+    padding: 18px 20px;
+    border: 1px solid var(--border);
+  }
+  .analysis-box.topics      { border-top: 3px solid var(--gold); }
+  .analysis-box.actions     { border-top: 3px solid var(--success); }
+  .analysis-box.contacts    { border-top: 3px solid var(--navy-soft); }
+  .analysis-box.next-steps  { border-top: 3px solid var(--error); grid-column: span 2; }
+  @media (max-width: 720px) { .analysis-box.next-steps { grid-column: span 1; } }
+
+  .analysis-label {
+    font-family: 'Frank Ruhl Libre', serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--navy);
+    margin-bottom: 10px;
+  }
+  .analysis-box ul {
+    list-style: none;
+  }
+  .analysis-box li {
+    padding: 6px 0;
+    padding-right: 18px;
+    position: relative;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--ink);
+  }
+  .analysis-box li::before {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 14px;
+    width: 6px; height: 6px;
+    background: var(--gold);
+    border-radius: 50%;
+  }
+  .analysis-box p {
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--ink);
+  }
+  .muted { color: var(--ink-faint); font-style: italic; }
+
+  /* ── Status + loader ────────────────────────────────────── */
+  .status-bar {
+    display: none;
+    background: var(--paper);
+    border: 1px solid var(--border);
+    padding: 16px 24px;
+    margin-bottom: 20px;
+    align-items: center;
+    gap: 16px;
+    box-shadow: var(--shadow-sm);
+  }
+  .status-bar.show { display: flex; }
+  .spinner {
+    width: 20px; height: 20px;
+    border: 2px solid var(--gold-faint);
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .status-text {
+    font-size: 14px;
+    color: var(--navy);
+    font-weight: 500;
+  }
+
+  /* ── Error box ──────────────────────────────────────────── */
+  .error-box {
+    display: none;
+    background: #fdf2f2;
+    border: 1px solid #e8c4c4;
+    color: var(--error);
+    padding: 16px 24px;
+    margin-bottom: 20px;
+    font-size: 14px;
+  }
+  .error-box.show { display: block; }
+  .error-box strong { font-family: 'Frank Ruhl Libre', serif; }
+
+  /* ── Config modal ────────────────────────────────────────── */
+  .config-toggle {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--ink-muted);
+    padding: 8px 14px;
+    font-size: 12px;
+    font-family: 'Heebo';
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .config-toggle:hover { border-color: var(--navy); color: var(--navy); }
+  .config-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(13, 31, 54, 0.6);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 20px;
+  }
+  .config-modal.show { display: flex; }
+  .config-body {
+    background: var(--paper);
+    max-width: 520px;
+    width: 100%;
+    padding: 32px;
+    box-shadow: var(--shadow-lg);
+    border-top: 4px solid var(--gold);
+  }
+  .config-body h3 {
+    font-family: 'Frank Ruhl Libre', serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 6px;
+  }
+  .config-body > p {
+    color: var(--ink-muted);
+    font-size: 13px;
+    margin-bottom: 20px;
+  }
+  .config-body label {
+    display: block;
+    font-size: 12px;
+    color: var(--ink-muted);
+    font-weight: 500;
+    margin-bottom: 6px;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+  .config-body input {
+    width: 100%;
+    padding: 10px 14px;
+    font-family: 'Heebo', monospace;
+    font-size: 13px;
+    border: 1px solid var(--border);
+    background: var(--cream);
+    margin-bottom: 16px;
+    direction: ltr;
+    text-align: left;
+  }
+  .config-body input:focus {
+    outline: none;
+    border-color: var(--gold);
+    background: var(--paper);
+  }
+  .config-actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 8px; }
+  .config-actions button {
+    padding: 10px 20px;
+    font-family: 'Heebo';
+    font-size: 13px;
+    cursor: pointer;
+    border: 1px solid var(--navy);
+  }
+  .config-actions .save {
+    background: var(--navy);
+    color: var(--paper);
+  }
+  .config-actions .cancel {
+    background: transparent;
+    color: var(--ink-muted);
+    border-color: var(--border);
+  }
+
+  /* ── Footer ──────────────────────────────────────────────── */
+  footer {
+    margin-top: 48px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    text-align: center;
+    font-size: 12px;
+    color: var(--ink-faint);
+  }
+  footer strong {
+    color: var(--navy);
+    font-family: 'Frank Ruhl Libre', serif;
+  }
+
+  /* ── Toast ──────────────────────────────────────────────── */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(40px);
+    background: var(--navy);
+    color: var(--paper);
+    padding: 12px 24px;
+    box-shadow: var(--shadow-lg);
+    border-right: 3px solid var(--gold);
+    font-size: 14px;
+    opacity: 0;
+    transition: all 0.3s ease;
+    pointer-events: none;
+    z-index: 200;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* ── v4: Action button toolbar & per-section copy buttons ────── */
+  .analysis-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+  .toolbar-btn {
+    background: transparent;
+    color: var(--navy);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .toolbar-btn:hover {
+    background: var(--cream);
+    border-color: var(--navy);
+  }
+  .toolbar-btn.primary {
+    background: var(--navy);
+    color: var(--cream);
+    border-color: var(--navy);
+  }
+  .toolbar-btn.primary:hover {
+    background: #1a2f4a;
+  }
+
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .copy-section-btn {
+    background: transparent;
+    color: var(--navy);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 2px 8px;
+    font-size: 10px;
+    font-family: inherit;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.15s;
+  }
+  .copy-section-btn:hover {
+    opacity: 1;
+    background: var(--cream);
+  }
+
+  /* Print mode: hide everything except analysis panel */
+  @media print {
+    body * { visibility: hidden; }
+    #analysis-panel, #analysis-panel * { visibility: visible; }
+    #analysis-panel { position: absolute; left: 0; top: 0; width: 100%; }
+    .analysis-toolbar, .copy-section-btn { display: none !important; }
+    #marble-meter-widget { display: none !important; }
+  }
+
+</style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="api_meter.js"></script>
+</head>
+<body>
+
+<div class="page">
+
+  <header>
+    <div class="brand">
+      <div class="brand-mark">SiC</div>
+      <div class="brand-text">
+        <h1>SinC-ART | אינטייק שיחות</h1>
+        <p>שיחות עם האמנים → תמלול → סיכום למפרט עיצוב</p>
+      </div>
+    </div>
+    <div class="header-meta">
+      <strong>v03052026-v5</strong>
+      3 May 2026
+    </div>
+  </header>
+
+  <div class="intro">
+    <h2>שלום אבשי</h2>
+    <p>העלה הקלטה של שיחה עם אחד האמנים (יוסי / דני) בכל פורמט אודיו או וידאו. פורמטים נתמכים ישירות (MP3 / M4A / MP4 / WAV / WEBM / FLAC / OGG / OPUS) הולכים ישר ל-ElevenLabs. פורמטים אחרים (3GP / AMR / AVI וכו׳) מומרים אוטומטית דרך Cloudinary. המערכת תמלל לעברית ותחלץ סיכום, החלטות עיצוב, משימות לאמן, ושינויים שצריך להזין לאתר. <small style='color:#5f5e5a'>המונה בפינה הימנית-עליונה מציג עלות בזמן אמת.</small></p>
+  </div>
+
+  <!-- Upload zone -->
+  <label for="file-input" class="upload-zone" id="upload-zone">
+    <input type="file" id="file-input" accept="audio/*,video/*" style="display:none;">
+    <div class="upload-icon">↑</div>
+    <div class="upload-title">העלה קובץ הקלטה</div>
+    <div class="upload-hint">גרור לכאן קובץ, או לחץ לבחירה מהמחשב</div>
+    <div class="file-info">
+      <div class="file-label">
+        <div class="dot"></div>
+        <div>
+          <div class="file-name" id="file-name"></div>
+          <div class="file-size" id="file-size"></div>
+        </div>
+      </div>
+      <button class="btn-change" id="btn-change" type="button">שנה קובץ</button>
+    </div>
+    <audio id="audio-preview" controls style="display:none;"></audio>
+  </label>
+
+  <!-- Status + Error -->
+  <div class="status-bar" id="status-bar">
+    <div class="spinner"></div>
+    <div class="status-text" id="status-text">מעבד...</div>
+  </div>
+  <div class="error-box" id="error-box"></div>
+
+  <!-- Action buttons -->
+  <div class="actions">
+    <button class="btn btn-secondary" id="btn-transcribe" disabled>
+      <span class="stage-label">שלב א'</span>
+      תמלול עברית
+    </button>
+    <button class="btn" id="btn-analyze" disabled>
+      <span class="stage-label">שלב ב'</span>
+      ניתוח AI
+    </button>
+  </div>
+
+  <!-- Transcript panel -->
+  <div class="panel" id="transcript-panel">
+    <div class="panel-header">
+      <h3>תמלול ההקלטה</h3>
+      <div class="stage-badge">שלב א' הושלם</div>
+    </div>
+    <div class="panel-body">
+      <div id="cloudinary-link-row" style="display:none;margin-bottom:12px;padding:8px 12px;background:#f5f1e8;border-radius:6px;font-size:12px;">
+        <strong>הקובץ נשמר ב-Cloudinary:</strong>
+        <a id="cloudinary-link" href="#" target="_blank" rel="noopener" style="color:#2c3e50;text-decoration:underline;word-break:break-all;"></a>
+      </div>
+      <div class="transcript-text" id="transcript-text"></div>
+    </div>
+  </div>
+
+  <!-- Analysis panel -->
+  <div class="panel" id="analysis-panel">
+    <div class="panel-header">
+      <h3>ניתוח השיחה</h3>
+      <div class="stage-badge">שלב ב' הושלם</div>
+    </div>
+    <div class="panel-body">
+      <div class="analysis-toolbar">
+        <button class="toolbar-btn primary" id="btn-copy-all" title="העתק את כל הניתוח ללוח">
+          📋 העתק הכל
+        </button>
+        <button class="toolbar-btn" id="btn-print" title="הדפס את הניתוח">
+          🖨️ הדפס
+        </button>
+        <button class="toolbar-btn" id="btn-whatsapp" title="שלח דרך WhatsApp">
+          💬 WhatsApp
+        </button>
+        <button class="toolbar-btn" id="btn-save-project" title="שמור לפרויקט (תופעל בסשן הבא)">
+          💾 שמור לפרויקט
+        </button>
+      </div>
+      <div class="analysis-summary">
+        <div class="section-header"><div class="analysis-summary-label">סיכום</div><button class="copy-section-btn" data-section="summary" title="העתק את הסיכום">העתק</button></div>
+        <p id="analysis-summary"></p>
+      </div>
+      <div class="analysis-grid">
+        <div class="analysis-box topics">
+          <div class="section-header"><div class="analysis-label">נושאים</div><button class="copy-section-btn" data-section="topics" title="העתק את הנושאים">העתק</button></div>
+          <ul id="analysis-topics"></ul>
+        </div>
+        <div class="analysis-box actions">
+          <div class="section-header"><div class="analysis-label">משימות</div><button class="copy-section-btn" data-section="actions" title="העתק את המשימות">העתק</button></div>
+          <ul id="analysis-actions"></ul>
+        </div>
+        <div class="analysis-box web-changes">
+          <div class="section-header"><div class="analysis-label">שינויים לאתר</div><button class="copy-section-btn" data-section="web-changes" title="העתק את השינויים לאתר">העתק</button></div>
+          <ul id="analysis-web-changes"></ul>
+        </div>
+        <div class="analysis-box contacts">
+          <div class="section-header"><div class="analysis-label">אנשי קשר</div><button class="copy-section-btn" data-section="contacts" title="העתק את אנשי הקשר">העתק</button></div>
+          <ul id="analysis-contacts"></ul>
+        </div>
+        <div class="analysis-box next-steps">
+          <div class="section-header"><div class="analysis-label">צעד הבא מומלץ</div><button class="copy-section-btn" data-section="next" title="העתק את הצעד הבא">העתק</button></div>
+          <p id="analysis-next"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <strong>SinC-ART | אינטייק שיחות</strong> · דמו פנימי · לא לשימוש בנתוני לקוחות אמיתיים ללא הסכמה<br>
+    <button class="config-toggle" id="config-toggle" style="margin-top:12px;">הגדרות מפתחות API</button>
+  </footer>
+
+</div>
+
+<!-- Config modal -->
+<div class="config-modal" id="config-modal">
+  <div class="config-body">
+    <h3>מפתחות API</h3>
+    <p>הזן את מפתחות ה-API שלך. הם נשמרים רק בדפדפן המקומי (localStorage).</p>
+    <label for="cfg-eleven">ElevenLabs API Key</label>
+    <input type="password" id="cfg-eleven" placeholder="sk_...">
+    <label for="cfg-anthropic">Anthropic (Claude) API Key</label>
+    <input type="password" id="cfg-anthropic" placeholder="sk-ant-...">
+
+    <label for="cfg-supabase-url">Supabase URL <small style="color:#888">(לחיבור CRM)</small></label>
+    <input type="text" id="cfg-supabase-url" placeholder="https://xxxxxxxxxxxxx.supabase.co">
+
+    <label for="cfg-supabase-key">Supabase Anon Key</label>
+    <input type="password" id="cfg-supabase-key" placeholder="eyJhbGc...">
+
+    <div style="margin-top:16px;padding:12px;background:#f5f1e8;border-radius:6px;">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;">
+        <input type="checkbox" id="force-cloud" style="width:auto;margin:0;">
+        <span>תמיד דרך Cloudinary (גם לקבצים קטנים) — מומלץ ל-WiFi לא יציב</span>
+      </label>
+    </div>
+
+    <div class="config-actions">
+      <button class="cancel" id="cfg-cancel">ביטול</button>
+      <button class="save" id="cfg-save">שמור</button>
+    </div>
+  </div>
+</div>
+
+<!-- Save-to-Project modal (Phase 13d: project auto-create + status + notes) -->
+<div class="config-modal" id="save-project-modal">
+  <div class="config-body" style="max-width:600px;">
+    <h3>שמירת השיחה לפרויקט</h3>
+    <p>בחר את הלקוח שאליו השיחה הזו שייכת. הניתוח המלא יישמר במאגר.</p>
+
+    <label for="save-customer-select">לקוח</label>
+    <select id="save-customer-select" style="width:100%;padding:8px;font-family:inherit;font-size:14px;border:1px solid #ddd;border-radius:4px;">
+      <option value="">-- טוען לקוחות... --</option>
+    </select>
+    <small style="color:#888;display:block;margin-top:4px;" id="save-customer-status">יש להגדיר Supabase URL ו-Anon Key בהגדרות כדי לטעון לקוחות</small>
+
+    <!-- v7: Project info display (shown after customer is selected) -->
+    <div id="save-project-info-row" style="display:none;margin-top:14px;padding:10px 12px;background:#fdf6e3;border:1px solid #e8dfc5;border-radius:6px;font-size:13px;line-height:1.5;">
+      <div id="save-project-info-text">טוען פרויקט...</div>
+    </div>
+
+    <!-- v7: Status change dropdown -->
+    <div id="save-status-row" style="display:none;margin-top:12px;">
+      <label for="save-status-select" style="display:block;margin-bottom:4px;font-size:13px;font-weight:500;">שינוי סטטוס:</label>
+      <select id="save-status-select" style="width:100%;padding:8px;font-family:inherit;font-size:14px;border:1px solid #ddd;border-radius:4px;">
+        <option value="">-- ללא שינוי --</option>
+        <option value="ליד">ליד</option>
+        <option value="שיחת בירור">שיחת בירור</option>
+        <option value="הצעת מחיר נשלחה">הצעת מחיר נשלחה</option>
+        <option value="אושר">אושר</option>
+        <option value="שולמה מקדמה">שולמה מקדמה</option>
+        <option value="תשלום מלא">תשלום מלא</option>
+        <option value="הסתיים">הסתיים</option>
+        <option value="אבוד">אבוד</option>
+      </select>
+    </div>
+
+    <!-- v7: Project notes textarea (pre-filled from DB) -->
+    <div id="save-notes-row" style="display:none;margin-top:12px;">
+      <label for="save-project-notes" style="display:block;margin-bottom:4px;font-size:13px;font-weight:500;">הערות לפרויקט:</label>
+      <textarea id="save-project-notes" rows="3" style="width:100%;padding:8px;font-family:inherit;font-size:14px;border:1px solid #ddd;border-radius:4px;resize:vertical;" placeholder="טקסט חופשי שיישמר על הפרויקט"></textarea>
+    </div>
+
+    <div style="margin-top:20px;padding:12px;background:#f5f1e8;border-radius:6px;max-height:200px;overflow-y:auto;">
+      <div style="font-size:12px;color:#5f5e5a;margin-bottom:6px;">תצוגה מקדימה של מה שיישמר:</div>
+      <div id="save-preview" style="font-size:12px;line-height:1.5;white-space:pre-wrap;color:#333;"></div>
+    </div>
+
+    <div class="config-actions">
+      <button class="cancel" id="save-cancel">ביטול</button>
+      <button class="save" id="save-confirm">שמור</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  // Initialize cost meter widget
+  if (typeof window.MARBLE_METER !== 'undefined') {
+    window.MARBLE_METER.init();
+  }
+
+  // ── State ─────────────────────────────────────────────────
+  var currentFile = null;
+  var currentTranscript = '';
+  var API = {
+    elevenlabs: '',
+    anthropic:  '',
+    supabaseUrl: '',
+    supabaseKey: ''
+  };
+  var CLOUDINARY_CLOUD_NAME = 'dqdku88vv';
+  var CLOUDINARY_PRESET     = 'marble_calls';
+  var currentCloudinaryUrl  = '';
+  var supabaseClient        = null;  // Initialized when both URL+key present
+  var currentLoadedProject  = null;  // v7: project loaded for the selected customer in save modal
+
+  // ── DOM references ────────────────────────────────────────
+  var $ = function (id) { return document.getElementById(id); };
+  var uploadZone     = $('upload-zone');
+  var fileInput      = $('file-input');
+  var fileName       = $('file-name');
+  var fileSize       = $('file-size');
+  var btnChange      = $('btn-change');
+  var audioPreview   = $('audio-preview');
+  var btnTranscribe  = $('btn-transcribe');
+  var btnAnalyze     = $('btn-analyze');
+  var statusBar      = $('status-bar');
+  var statusText     = $('status-text');
+  var errorBox       = $('error-box');
+  var transcriptPanel= $('transcript-panel');
+  var transcriptText = $('transcript-text');
+  var analysisPanel  = $('analysis-panel');
+  var toastEl        = $('toast');
+  var configModal    = $('config-modal');
+  var cfgEleven      = $('cfg-eleven');
+  var cfgAnthropic   = $('cfg-anthropic');
+  var cfgSupabaseUrl = $('cfg-supabase-url');
+  var cfgSupabaseKey = $('cfg-supabase-key');
+  var forceCloudCheck= $('force-cloud');
+  var saveModal      = $('save-project-modal');
+  var saveCustomerSelect = $('save-customer-select');
+  var saveCustomerStatus = $('save-customer-status');
+  var savePreview    = $('save-preview');
+  // v7 elements
+  var saveProjectInfoRow  = $('save-project-info-row');
+  var saveProjectInfoText = $('save-project-info-text');
+  var saveStatusRow       = $('save-status-row');
+  var saveStatusSelect    = $('save-status-select');
+  var saveNotesRow        = $('save-notes-row');
+  var saveProjectNotes    = $('save-project-notes');
+
+  // ── Load saved config ─────────────────────────────────────
+  try {
+    API.elevenlabs = localStorage.getItem('el_key') || '';
+    API.supabaseUrl = localStorage.getItem('supabase_url') || '';
+    API.supabaseKey = localStorage.getItem('supabase_key') || '';
+    forceCloudCheck.checked = localStorage.getItem('force_cloud') === '1';
+    API.anthropic  = localStorage.getItem('an_key') || '';
+    cfgEleven.value    = API.elevenlabs;
+    cfgAnthropic.value = API.anthropic;
+    cfgSupabaseUrl.value = API.supabaseUrl;
+    cfgSupabaseKey.value = API.supabaseKey;
+  } catch (e) { /* localStorage disabled — use session only */ }
+
+  // ── Toast ─────────────────────────────────────────────────
+  function toast(msg, isError) {
+    toastEl.textContent = msg;
+    toastEl.style.borderRightColor = isError ? '#8b2c2c' : '#b8860b';
+    toastEl.classList.add('show');
+    setTimeout(function () { toastEl.classList.remove('show'); }, 2600);
+  }
+
+  // ── Status + error ────────────────────────────────────────
+  function showStatus(msg) {
+    statusText.textContent = msg;
+    statusBar.classList.add('show');
+    errorBox.classList.remove('show');
+  }
+  function hideStatus() { statusBar.classList.remove('show'); }
+  function showError(msg) {
+    errorBox.innerHTML = '<strong>שגיאה:</strong> ' + msg;
+    errorBox.classList.add('show');
+    hideStatus();
+  }
+  function hideError() { errorBox.classList.remove('show'); }
+
+  // ── File handling ─────────────────────────────────────────
+  function formatSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / 1024 / 1024).toFixed(2) + ' MB';
+  }
+
+  function handleFile(file) {
+    if (!file) return;
+    // No hard cap. Files >= 100MB OR force-cloud are routed via Cloudinary at transcribe time.
+    currentFile = file;
+    currentTranscript = '';
+    fileName.textContent = file.name;
+    fileSize.textContent = formatSize(file.size);
+    uploadZone.classList.add('has-file');
+    // preview
+    try {
+      var url = URL.createObjectURL(file);
+      audioPreview.src = url;
+      audioPreview.style.display = 'block';
+    } catch (e) { /* no preview possible */ }
+    // enable actions
+    btnTranscribe.disabled = false;
+    btnAnalyze.disabled    = false;  // allows direct analysis if user has existing text
+    // Reset panels
+    transcriptPanel.classList.remove('show');
+    analysisPanel.classList.remove('show');
+    hideError();
+    toast('✓ קובץ נטען');
+  }
+
+  fileInput.addEventListener('change', function (e) {
+    if (e.target.files && e.target.files[0]) handleFile(e.target.files[0]);
+  });
+  // Stop label default — we manage clicks
+  uploadZone.addEventListener('click', function (e) {
+    if (uploadZone.classList.contains('has-file')) { e.preventDefault(); }
+  });
+  btnChange.addEventListener('click', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    fileInput.value = '';
+    fileInput.click();
+  });
+  // Drag + drop
+  ['dragenter', 'dragover'].forEach(function (ev) {
+    uploadZone.addEventListener(ev, function (e) {
+      e.preventDefault(); e.stopPropagation();
+      uploadZone.classList.add('drag');
+    });
+  });
+  ['dragleave', 'drop'].forEach(function (ev) {
+    uploadZone.addEventListener(ev, function (e) {
+      e.preventDefault(); e.stopPropagation();
+      uploadZone.classList.remove('drag');
+    });
+  });
+  uploadZone.addEventListener('drop', function (e) {
+    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFile(e.dataTransfer.files[0]);
+    }
+  });
+
+  // ── Transcribe (ElevenLabs) ───────────────────────────────
+  btnTranscribe.addEventListener('click', async function () {
+    if (!currentFile) { showError('אין קובץ לתמלול.'); return; }
+    if (!API.elevenlabs) {
+      showError('מפתח ElevenLabs חסר. לחץ על "הגדרות מפתחות API" למטה כדי להוסיף.');
+      return;
+    }
+    btnTranscribe.disabled = true;
+    btnAnalyze.disabled    = true;
+    hideError();
+    transcriptPanel.classList.remove('show');
+    analysisPanel.classList.remove('show');
+    showStatus('מעלה ל-ElevenLabs ומתמלל עברית...');
+
+    try {
+      var CLOUD_THRESHOLD = 100 * 1024 * 1024; // 100 MB
+      // Formats ElevenLabs Scribe v1 natively supports
+      var SUPPORTED_FORMATS = ['mp3', 'm4a', 'mp4', 'wav', 'webm', 'flac', 'ogg', 'opus'];
+
+      // Detect file extension
+      var ext = (currentFile.name.split('.').pop() || '').toLowerCase();
+      var isFormatSupported = SUPPORTED_FORMATS.indexOf(ext) !== -1;
+
+      // Three triggers for cloud routing — any one is enough
+      var useCloudReason = '';
+      if (forceCloudCheck.checked) {
+        useCloudReason = 'force';
+      } else if (currentFile.size >= CLOUD_THRESHOLD) {
+        useCloudReason = 'size';
+      } else if (!isFormatSupported) {
+        useCloudReason = 'format';
+      }
+      var useCloud = useCloudReason !== '';
+      var resp;
+
+      if (useCloud) {
+        // Tailored status message based on WHY we're routing through cloud
+        var cloudMsg;
+        if (useCloudReason === 'format') {
+          cloudMsg =
+            'פורמט .' + ext + ' לא נתמך ישירות. ממיר דרך Cloudinary...' +
+            '<br><span style="font-size:11px;opacity:0.7;">' +
+            'Format ' + ext + ' not natively supported by ElevenLabs. ' +
+            'Auto-converting via Cloudinary first.</span>';
+        } else if (useCloudReason === 'size') {
+          cloudMsg =
+            'קובץ גדול (' + formatSize(currentFile.size) + '). ' +
+            'מעלה ל-Cloudinary...' +
+            '<br><span style="font-size:11px;opacity:0.7;">' +
+            'Large file routing via Cloudinary for reliable upload.</span>';
+        } else {
+          cloudMsg =
+            'מעלה ל-Cloudinary (' + formatSize(currentFile.size) + ')...' +
+            '<br><span style="font-size:11px;opacity:0.7;">' +
+            'Force-cloud enabled in settings.</span>';
+        }
+        showStatus(cloudMsg);
+        var cloudinaryUrl = await uploadToCloudinary(currentFile);
+        showStatus('Cloudinary OK. שולח URL ל-ElevenLabs לתמלול...');
+        // ElevenLabs supports cloud_storage_url for files hosted elsewhere
+        var cloudFd = new FormData();
+        cloudFd.append('cloud_storage_url', cloudinaryUrl);
+        cloudFd.append('model_id', 'scribe_v1');
+        cloudFd.append('language_code', 'heb');
+        cloudFd.append('diarize', 'true');
+        cloudFd.append('tag_audio_events', 'false');
+        resp = await fetch('https://api.elevenlabs.io/v1/speech-to-text', {
+          method: 'POST',
+          headers: { 'xi-api-key': API.elevenlabs },
+          body: cloudFd
+        });
+        currentCloudinaryUrl = cloudinaryUrl;
+      } else {
+        showStatus('מעלה ישירות ל-ElevenLabs (' + formatSize(currentFile.size) + ')...');
+        var fd = new FormData();
+        fd.append('file', currentFile, currentFile.name);
+        fd.append('model_id', 'scribe_v1');
+        fd.append('language_code', 'heb');
+        fd.append('diarize', 'true');
+        fd.append('tag_audio_events', 'false');
+        resp = await fetch('https://api.elevenlabs.io/v1/speech-to-text', {
+          method: 'POST',
+          headers: { 'xi-api-key': API.elevenlabs },
+          body: fd
+        });
+        currentCloudinaryUrl = '';
+      }
+      if (!resp.ok) {
+        var errTxt = await resp.text();
+        throw new Error('ElevenLabs ' + resp.status + ': ' + errTxt.substring(0, 260));
+      }
+      var data = await resp.json();
+      var text = data.text || data.transcript || '';
+      if (!text) throw new Error('לא התקבל תמלול — ייתכן שהאודיו ריק או לא מזוהה.');
+
+      // Log to API meter
+      try {
+        var audioDuration = await getAudioDuration(currentFile);
+        if (typeof window.MARBLE_METER !== 'undefined') {
+          window.MARBLE_METER.log({
+            api: 'elevenlabs',
+            durationSeconds: audioDuration,
+            label: 'Transcription: ' + currentFile.name,
+          });
+        }
+      } catch (meterErr) {
+        console.warn('Meter logging failed:', meterErr);
+      }
+
+      currentTranscript = text;
+      transcriptText.textContent = text;
+      var cloudRow  = $('cloudinary-link-row');
+      var cloudLink = $('cloudinary-link');
+      if (currentCloudinaryUrl) {
+        cloudLink.href        = currentCloudinaryUrl;
+        cloudLink.textContent = currentCloudinaryUrl;
+        cloudRow.style.display= 'block';
+      } else {
+        cloudRow.style.display= 'none';
+      }
+      transcriptPanel.classList.add('show');
+      hideStatus();
+      btnTranscribe.disabled = false;
+      btnAnalyze.disabled    = false;
+      toast('✓ תמלול הושלם');
+      // Smooth scroll to transcript
+      setTimeout(function () {
+        transcriptPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    } catch (e) {
+      console.error(e);
+      showError(e.message || String(e));
+      btnTranscribe.disabled = false;
+      btnAnalyze.disabled    = false;
+    }
+  });
+
+  // ── Analyze (Claude) ──────────────────────────────────────
+  btnAnalyze.addEventListener('click', async function () {
+    if (!currentTranscript) {
+      showError('אין תמלול לניתוח. הרץ קודם את שלב א\' (תמלול).');
+      return;
+    }
+    if (!API.anthropic) {
+      showError('מפתח Anthropic חסר. לחץ על "הגדרות מפתחות API" למטה.');
+      return;
+    }
+    btnAnalyze.disabled    = true;
+    btnTranscribe.disabled = true;
+    hideError();
+    analysisPanel.classList.remove('show');
+    showStatus('Claude מנתח את התמלול...');
+
+    try {
+      var prompt =
+        'אתה עוזר AI של אבשי, מפתח אתר sinks-art.vercel.app לאמני שיש. ' +
+        'קיבלת תמלול של שיחה בין אבשי לאחד האמנים (יוסי או דני) או עם לקוח פוטנציאלי.\n\n' +
+        'תמלול:\n---\n' + currentTranscript + '\n---\n\n' +
+        'נתח את התמלול והחזר JSON בלבד. בלי טקסט לפני או אחרי ה-JSON. עברית בתוכן.\n\n' +
+        '{\n' +
+        '  "summary": "משפט-שניים שמסכמים את השיחה",\n' +
+        '  "topics": ["החלטות עיצוב או נושא מרכזי 1", "נושא 2"],\n' +
+        '  "action_items": ["משימה לאמן או לאבשי 1", "משימה 2"],\n' +
+        '  "web_changes": ["שינוי שצריך להזין באתר 1", "שינוי 2"],\n' +
+        '  "contacts": ["שמות שהוזכרו"],\n' +
+        '  "next_steps": "הצעה קצרה לצעד הבא"\n' +
+        '}';
+
+      var resp = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': API.anthropic,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1500,
+          messages: [{ role: 'user', content: prompt }]
+        })
+      });
+      if (!resp.ok) {
+        var errTxt = await resp.text();
+        throw new Error('Claude ' + resp.status + ': ' + errTxt.substring(0, 260));
+      }
+      var data = await resp.json();
+      var raw  = (data.content && data.content[0] && data.content[0].text) || '';
+
+      // Log to API meter using token usage from response
+      try {
+        if (typeof window.MARBLE_METER !== 'undefined' && data.usage) {
+          window.MARBLE_METER.log({
+            api: 'anthropic',
+            inputTokens: data.usage.input_tokens || 0,
+            outputTokens: data.usage.output_tokens || 0,
+            model: 'sonnet',
+            label: 'Call analysis',
+          });
+        }
+      } catch (meterErr) {
+        console.warn('Meter logging failed:', meterErr);
+      }
+      var m    = raw.match(/\{[\s\S]*\}/);
+      if (!m) throw new Error('Claude לא החזיר JSON תקין.');
+      var parsed;
+      try { parsed = JSON.parse(m[0]); } catch (pe) { throw new Error('JSON לא תקין: ' + pe.message); }
+
+      renderAnalysis(parsed);
+      analysisPanel.classList.add('show');
+      hideStatus();
+      btnAnalyze.disabled    = false;
+      btnTranscribe.disabled = false;
+      toast('✓ ניתוח הושלם');
+      setTimeout(function () {
+        analysisPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    } catch (e) {
+      console.error(e);
+      showError(e.message || String(e));
+      btnAnalyze.disabled    = false;
+      btnTranscribe.disabled = false;
+    }
+  });
+
+  function renderAnalysis(p) {
+    $('analysis-summary').textContent = p.summary || '—';
+    $('analysis-next').textContent    = p.next_steps || '—';
+    fillList('analysis-topics',     p.topics);
+    fillList('analysis-actions',    p.action_items);
+    fillList('analysis-web-changes',p.web_changes);
+    fillList('analysis-contacts',   p.contacts);
+  }
+  function fillList(elId, arr) {
+    var el = $(elId);
+    el.innerHTML = '';
+    if (!arr || !arr.length) {
+      el.innerHTML = '<li><span class="muted">—</span></li>';
+      return;
+    }
+    arr.forEach(function (item) {
+      var li = document.createElement('li');
+      li.textContent = String(item || '');
+      el.appendChild(li);
+    });
+  }
+
+  // ── Config modal ──────────────────────────────────────────
+  $('config-toggle').addEventListener('click', function () {
+    configModal.classList.add('show');
+  });
+  $('cfg-cancel').addEventListener('click', function () {
+    configModal.classList.remove('show');
+  });
+  $('cfg-save').addEventListener('click', function () {
+    API.elevenlabs = cfgEleven.value.trim();
+    API.anthropic  = cfgAnthropic.value.trim();
+    API.supabaseUrl = cfgSupabaseUrl.value.trim();
+    API.supabaseKey = cfgSupabaseKey.value.trim();
+    try {
+      localStorage.setItem('el_key', API.elevenlabs);
+      localStorage.setItem('an_key', API.anthropic);
+      localStorage.setItem('supabase_url', API.supabaseUrl);
+      localStorage.setItem('supabase_key', API.supabaseKey);
+      localStorage.setItem('force_cloud', forceCloudCheck.checked ? '1' : '0');
+    } catch (e) { /* session only */ }
+    initSupabase(); // Re-init with new keys
+    configModal.classList.remove('show');
+    toast('✓ הגדרות נשמרו');
+  });
+  configModal.addEventListener('click', function (e) {
+    if (e.target === configModal) configModal.classList.remove('show');
+  });
+
+  // ── First-run hint ────────────────────────────────────────
+  if (!API.elevenlabs || !API.anthropic) {
+    setTimeout(function () {
+      toast('הוסף מפתחות API בהגדרות למטה ←', false);
+    }, 1200);
+  }
+
+
+  // Get duration in seconds from an audio/video File object (returns Promise)
+  function getAudioDuration(file) {
+    return new Promise(function (resolve) {
+      var url = URL.createObjectURL(file);
+      var media = document.createElement('video'); // works for both audio & video
+      media.preload = 'metadata';
+      media.onloadedmetadata = function () {
+        URL.revokeObjectURL(url);
+        resolve(media.duration || 0);
+      };
+      media.onerror = function () {
+        URL.revokeObjectURL(url);
+        resolve(0); // fall back to 0 if duration can't be determined
+      };
+      media.src = url;
+    });
+  }
+
+  // ── Cloudinary upload helper (XHR for progress visibility) ────────
+  function uploadToCloudinary(file) {
+    return new Promise(function (resolve, reject) {
+      var url = 'https://api.cloudinary.com/v1_1/' + CLOUDINARY_CLOUD_NAME + '/auto/upload';
+      var fd  = new FormData();
+      fd.append('file', file);
+      fd.append('upload_preset', CLOUDINARY_PRESET);
+      var xhr = new XMLHttpRequest();
+      xhr.open('POST', url);
+      xhr.upload.addEventListener('progress', function (e) {
+        if (e.lengthComputable) {
+          var pct = Math.round((e.loaded / e.total) * 100);
+          showStatus('מעלה ל-Cloudinary: ' + pct + '%');
+        }
+      });
+      xhr.onload = function () {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            var data = JSON.parse(xhr.responseText);
+            if (data.secure_url) {
+              // Log to API meter — estimate credits from file duration
+              // Cloudinary: ~1 credit per minute of video, audio is much less
+              try {
+                if (typeof window.MARBLE_METER !== 'undefined') {
+                  // Rough estimate: assume ~0.1 credit per MB for audio
+                  var estimatedCredits = (file.size / (1024 * 1024)) * 0.1;
+                  window.MARBLE_METER.log({
+                    api: 'cloudinary',
+                    credits: estimatedCredits,
+                    label: 'Upload: ' + file.name,
+                  });
+                }
+              } catch (meterErr) {
+                console.warn('Meter logging failed:', meterErr);
+              }
+              resolve(data.secure_url);
+            } else {
+              reject(new Error('Cloudinary לא החזיר secure_url'));
+            }
+          } catch (e) {
+            reject(new Error('Cloudinary JSON שגוי: ' + e.message));
+          }
+        } else {
+          reject(new Error('Cloudinary שגיאה ' + xhr.status + ': ' + xhr.responseText.substring(0, 200)));
+        }
+      };
+      xhr.onerror = function () { reject(new Error('כשל רשת בהעלאה ל-Cloudinary')); };
+      xhr.send(fd);
+    });
+  }
+
+
+  // ── v4: Action buttons wiring ──────────────────────────────────────
+  
+  // Helper: get section text in plain format suitable for clipboard / WhatsApp
+  function getSectionText(section) {
+    if (section === 'summary') {
+      return $('analysis-summary').textContent || '';
+    }
+    if (section === 'next') {
+      return $('analysis-next').textContent || '';
+    }
+    // List sections: topics, actions, web-changes, contacts
+    var listIdMap = {
+      'topics':       'analysis-topics',
+      'actions':      'analysis-actions',
+      'web-changes':  'analysis-web-changes',
+      'contacts':     'analysis-contacts'
+    };
+    var ulId = listIdMap[section];
+    if (!ulId) return '';
+    var ul = $(ulId);
+    var items = [];
+    var lis = ul.querySelectorAll('li');
+    for (var i = 0; i < lis.length; i++) {
+      var txt = lis[i].textContent.trim();
+      if (txt && txt !== '—') items.push('• ' + txt);
+    }
+    return items.join('\n');
+  }
+
+  // Helper: assemble the full analysis as formatted text
+  function getFullAnalysisText() {
+    var parts = [];
+    parts.push('═══ סיכום ═══');
+    parts.push(getSectionText('summary'));
+    parts.push('');
+    parts.push('═══ נושאים ═══');
+    parts.push(getSectionText('topics'));
+    parts.push('');
+    parts.push('═══ משימות ═══');
+    parts.push(getSectionText('actions'));
+    parts.push('');
+    parts.push('═══ שינויים לאתר ═══');
+    parts.push(getSectionText('web-changes'));
+    parts.push('');
+    parts.push('═══ אנשי קשר ═══');
+    parts.push(getSectionText('contacts'));
+    parts.push('');
+    parts.push('═══ צעד הבא מומלץ ═══');
+    parts.push(getSectionText('next'));
+    parts.push('');
+    parts.push('---');
+    parts.push('נוצר על ידי SinC-ART · ' + new Date().toLocaleString('he-IL'));
+    return parts.join('\n');
+  }
+
+  // Helper: copy text to clipboard with fallback
+  function copyToClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text);
+    }
+    // Fallback for older browsers
+    return new Promise(function (resolve, reject) {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        resolve();
+      } catch (e) {
+        document.body.removeChild(ta);
+        reject(e);
+      }
+    });
+  }
+
+  // Wire per-section copy buttons
+  document.querySelectorAll('.copy-section-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var section = btn.getAttribute('data-section');
+      var text = getSectionText(section);
+      if (!text || text === '—') {
+        toast('אין תוכן להעתקה בקטע זה', false);
+        return;
+      }
+      copyToClipboard(text).then(function () {
+        toast('✓ הועתק ללוח');
+      }).catch(function () {
+        toast('שגיאה בהעתקה', false);
+      });
+    });
+  });
+
+  // Wire toolbar buttons
+  $('btn-copy-all').addEventListener('click', function () {
+    var text = getFullAnalysisText();
+    copyToClipboard(text).then(function () {
+      toast('✓ כל הניתוח הועתק ללוח');
+    }).catch(function () {
+      toast('שגיאה בהעתקה', false);
+    });
+  });
+
+  $('btn-print').addEventListener('click', function () {
+    window.print();
+  });
+
+  $('btn-whatsapp').addEventListener('click', function () {
+    var rawNumber = prompt(
+      'הזן מספר WhatsApp של הנמען (כולל קידומת מדינה, ללא + או רווחים).\n' +
+      'לדוגמה: 972505231042 (ישראל) או 380501234567 (אוקראינה).\n\n' +
+      'השאר ריק כדי לבטל.'
+    );
+    if (!rawNumber) return; // user cancelled
+    
+    // Sanitize: keep only digits
+    var number = rawNumber.replace(/[^0-9]/g, '');
+    if (number.length < 8) {
+      toast('מספר טלפון לא תקין', false);
+      return;
+    }
+    
+    var text = getFullAnalysisText();
+    var url = 'https://wa.me/' + number + '?text=' + encodeURIComponent(text);
+    window.open(url, '_blank');
+  });
+
+  $('btn-save-project').addEventListener('click', function () {
+    if (!supabaseClient) {
+      toast('⚠️ נדרש להגדיר Supabase URL ו-Anon Key בהגדרות', false);
+      return;
+    }
+    // Populate preview with summary text
+    var preview = getFullAnalysisText();
+    if (!preview || preview.indexOf('—') === preview.length - 1) {
+      toast('⚠️ אין ניתוח לשמור — הרץ קודם ניתוח AI', false);
+      return;
+    }
+    savePreview.textContent = preview.substring(0, 400) + (preview.length > 400 ? '...' : '');
+
+    // v7: reset project-related fields before loading
+    resetSaveModalProjectFields();
+
+    // Open modal + load customers
+    saveModal.classList.add('show');
+    loadCustomersIntoSelect();
+  });
+
+  $('save-cancel').addEventListener('click', function () {
+    saveModal.classList.remove('show');
+  });
+
+  saveModal.addEventListener('click', function (e) {
+    if (e.target === saveModal) saveModal.classList.remove('show');
+  });
+
+  $('save-confirm').addEventListener('click', async function () {
+    var customerId = saveCustomerSelect.value;
+    if (!customerId) {
+      toast('⚠️ בחר לקוח לפני השמירה', false);
+      return;
+    }
+
+    if (!supabaseClient) {
+      toast('⚠️ Supabase לא מאותחל — בדוק הגדרות', true);
+      return;
+    }
+
+    var selectedOpt   = saveCustomerSelect.options[saveCustomerSelect.selectedIndex];
+    var customerName  = selectedOpt.getAttribute('data-name') || 'לקוח';
+    var newStatus     = saveStatusSelect.value;        // '' = no change
+    var notesValue    = saveProjectNotes.value;        // current textarea content
+    var originalNotes = (currentLoadedProject && currentLoadedProject.notes) || '';
+    var notesChanged  = notesValue !== originalNotes;
+
+    var btnConfirm    = $('save-confirm');
+    var originalLabel = btnConfirm.textContent;
+    btnConfirm.disabled    = true;
+    btnConfirm.textContent = 'שומר...';
+    saveCustomerStatus.textContent = 'שולח לשרת...';
+
+    try {
+      // ── Step 1: find or create project ──────────────────────────────
+      var projectId;
+      var projectCreated = false;
+
+      if (currentLoadedProject) {
+        projectId = currentLoadedProject.id;
+        console.log('[Phase 13d] Using existing project:', projectId, currentLoadedProject.title_he);
+      } else {
+        var todayStr = new Date().toLocaleDateString('he-IL');
+        var newTitle = 'פרויקט · ' + customerName + ' · ' + todayStr;
+        var createPayload = {
+          customer_id: customerId,
+          title_he:    newTitle,
+          status:      'ליד'
+          // notes left null on creation; will be set by update below if user typed any
+        };
+        console.log('[Phase 13d] Auto-creating project:', createPayload);
+
+        var createRes = await supabaseClient
+          .from('projects')
+          .insert(createPayload)
+          .select()
+          .single();
+
+        if (createRes.error) {
+          throw new Error('יצירת פרויקט נכשלה: ' + createRes.error.message);
+        }
+        projectId = createRes.data.id;
+        projectCreated = true;
+        currentLoadedProject = createRes.data;  // refresh cache
+        console.log('[Phase 13d] Created project:', projectId);
+      }
+
+      // ── Step 2: update project status/notes if user changed them ────
+      var updates = {};
+      if (newStatus) updates.status = newStatus;
+      if (notesChanged || (projectCreated && notesValue)) updates.notes = notesValue || null;
+
+      if (Object.keys(updates).length > 0) {
+        updates.updated_at = new Date().toISOString();
+        console.log('[Phase 13d] Updating project', projectId, 'with', updates);
+
+        var updateRes = await supabaseClient
+          .from('projects')
+          .update(updates)
+          .eq('id', projectId)
+          .select()
+          .single();
+
+        if (updateRes.error) {
+          throw new Error('עדכון פרויקט נכשל: ' + updateRes.error.message);
+        }
+        console.log('[Phase 13d] Project updated:', updateRes.data);
+      }
+
+      // ── Step 3: insert the call into customer_communications ───────
+      var durationSeconds = null;
+      if (audioPreview && audioPreview.duration && isFinite(audioPreview.duration)) {
+        durationSeconds = Math.round(audioPreview.duration);
+      }
+
+      var aiAnalysis = {
+        summary:      getSectionText('summary'),
+        topics:       getSectionText('topics'),
+        actions:      getSectionText('actions'),
+        web_changes:  getSectionText('web-changes'),
+        contacts:     getSectionText('contacts'),
+        next_step:    getSectionText('next'),
+        source_file:  currentFile ? { name: currentFile.name, size: currentFile.size, type: currentFile.type } : null,
+        generated_by: 'SinC-ART v7',
+        generated_at: new Date().toISOString()
+      };
+
+      var todayStr2 = new Date().toLocaleDateString('he-IL');
+      var subject   = 'שיחה · ' + customerName + ' · ' + todayStr2;
+
+      var commPayload = {
+        customer_id:      customerId,
+        project_id:       projectId,         // v7: now linked to project
+        comm_type:        'call',
+        audio_url:        currentCloudinaryUrl || null,
+        transcript:       currentTranscript || null,
+        duration_seconds: durationSeconds,
+        ai_analysis:      aiAnalysis,
+        subject:          subject,
+        body:             getFullAnalysisText()
+      };
+
+      console.log('[Phase 13d] INSERT comm payload:', commPayload);
+
+      var commRes = await supabaseClient
+        .from('customer_communications')
+        .insert(commPayload)
+        .select()
+        .single();
+
+      if (commRes.error) {
+        throw new Error('שמירת השיחה נכשלה: ' + commRes.error.message);
+      }
+      console.log('[Phase 13d] Saved comm row:', commRes.data);
+
+      // ── Success feedback ──────────────────────────────────────────
+      var parts = [];
+      if (projectCreated) parts.push('פרויקט חדש נוצר');
+      if (newStatus)       parts.push('סטטוס: ' + newStatus);
+      if (notesChanged)    parts.push('הערות עודכנו');
+      parts.push('שיחה נשמרה');
+      saveCustomerStatus.textContent = '✓ ' + parts.join(' · ');
+      toast('✓ נשמר ללקוח ' + customerName);
+
+      setTimeout(function () {
+        saveModal.classList.remove('show');
+        btnConfirm.disabled    = false;
+        btnConfirm.textContent = originalLabel;
+        resetSaveModalProjectFields();
+      }, 1800);
+
+    } catch (err) {
+      console.error('[Phase 13d] Save flow failed:', err);
+      saveCustomerStatus.textContent = 'שגיאה: ' + (err.message || 'לא ידוע');
+      toast('⚠️ ' + (err.message || 'שגיאה'), true);
+      btnConfirm.disabled    = false;
+      btnConfirm.textContent = originalLabel;
+    }
+  });
+
+
+  // ── v5: Supabase client init + customer loader ────────────────────
+  function initSupabase() {
+    if (!API.supabaseUrl || !API.supabaseKey) {
+      supabaseClient = null;
+      return;
+    }
+    if (typeof window.supabase === 'undefined') {
+      console.error('Supabase JS client not loaded — check CDN script in <head>');
+      return;
+    }
+    try {
+      supabaseClient = window.supabase.createClient(API.supabaseUrl, API.supabaseKey);
+      console.log('Supabase client initialized for:', API.supabaseUrl);
+    } catch (err) {
+      console.error('Failed to init Supabase:', err);
+      supabaseClient = null;
+    }
+  }
+
+  async function loadCustomersIntoSelect() {
+    saveCustomerStatus.textContent = 'טוען לקוחות...';
+    saveCustomerSelect.innerHTML = '<option value="">-- טוען... --</option>';
+
+    if (!supabaseClient) {
+      saveCustomerStatus.textContent = 'Supabase לא מאותחל — בדוק הגדרות';
+      return;
+    }
+
+    try {
+      // v7: fetch customers + projects in parallel for status badges
+      var custPromise = supabaseClient
+        .from('customers')
+        .select('id, name_he, phone, source')
+        .eq('is_active', true)
+        .order('name_he', { ascending: true });
+
+      var projPromise = supabaseClient
+        .from('projects')
+        .select('customer_id, status, updated_at')
+        .order('updated_at', { ascending: false });
+
+      var both = await Promise.all([custPromise, projPromise]);
+      var custRes = both[0];
+      var projRes = both[1];
+
+      if (custRes.error) {
+        console.error('Supabase customers query error:', custRes.error);
+        saveCustomerStatus.textContent = 'שגיאה בטעינת לקוחות: ' + custRes.error.message;
+        return;
+      }
+      if (projRes.error) {
+        console.error('Supabase projects query error:', projRes.error);
+        saveCustomerStatus.textContent = 'שגיאה בטעינת פרויקטים: ' + projRes.error.message;
+        return;
+      }
+
+      // Build customer_id -> most recent ACTIVE project status (skip closed)
+      var statusByCustomer = {};
+      (projRes.data || []).forEach(function (p) {
+        if (p.status === 'הסתיים' || p.status === 'אבוד') return;
+        if (statusByCustomer[p.customer_id]) return;  // already have most recent
+        statusByCustomer[p.customer_id] = p.status;
+      });
+
+      var customers = custRes.data || [];
+      saveCustomerSelect.innerHTML = '<option value="">-- בחר לקוח --</option>';
+
+      customers.forEach(function (c) {
+        var opt = document.createElement('option');
+        opt.value = c.id;
+        opt.setAttribute('data-name', c.name_he);  // bare name for save subject line
+        var status = statusByCustomer[c.id] || 'חדש';
+        var label = c.name_he;
+        if (c.phone) label += ' · ' + c.phone;
+        if (c.source) label += ' · (' + c.source + ')';
+        label += ' · [' + status + ']';
+        opt.textContent = label;
+        saveCustomerSelect.appendChild(opt);
+      });
+
+      saveCustomerStatus.textContent = '✓ נטענו ' + customers.length + ' לקוחות';
+    } catch (err) {
+      console.error('Failed to load customers:', err);
+      saveCustomerStatus.textContent = 'שגיאה: ' + err.message;
+    }
+  }
+
+  // ── v7: load active project for selected customer + populate fields ─
+  async function loadActiveProjectForCustomer(customerId) {
+    var res = await supabaseClient
+      .from('projects')
+      .select('id, title_he, status, notes, updated_at')
+      .eq('customer_id', customerId)
+      .order('updated_at', { ascending: false });
+    if (res.error) throw new Error(res.error.message);
+    return (res.data || []).find(function (p) {
+      return p.status !== 'הסתיים' && p.status !== 'אבוד';
+    }) || null;
+  }
+
+  function resetSaveModalProjectFields() {
+    currentLoadedProject = null;
+    saveProjectInfoRow.style.display = 'none';
+    saveStatusRow.style.display = 'none';
+    saveNotesRow.style.display = 'none';
+    saveProjectInfoText.textContent = '';
+    saveStatusSelect.value = '';
+    saveProjectNotes.value = '';
+  }
+
+  async function onCustomerSelectChange() {
+    var customerId = saveCustomerSelect.value;
+    if (!customerId) {
+      resetSaveModalProjectFields();
+      return;
+    }
+
+    // Show project info row in loading state
+    saveProjectInfoRow.style.display = 'block';
+    saveProjectInfoText.textContent = 'טוען פרויקט...';
+    saveStatusRow.style.display = 'none';
+    saveNotesRow.style.display = 'none';
+
+    // Disable save button until we know what we're working with
+    var btnConfirm = $('save-confirm');
+    btnConfirm.disabled = true;
+
+    try {
+      var project = await loadActiveProjectForCustomer(customerId);
+      currentLoadedProject = project;  // null if none
+
+      if (project) {
+        saveProjectInfoText.innerHTML =
+          '<strong>פרויקט:</strong> ' + escapeHtml(project.title_he) +
+          ' &nbsp;·&nbsp; <strong>סטטוס נוכחי:</strong> ' + escapeHtml(project.status);
+        saveProjectNotes.value = project.notes || '';
+      } else {
+        saveProjectInfoText.innerHTML =
+          '<strong>פרויקט חדש ייווצר עם השמירה</strong> ' +
+          '<small style="color:#7a6f4d;">(סטטוס התחלתי: ליד)</small>';
+        saveProjectNotes.value = '';
+      }
+
+      saveStatusRow.style.display    = 'block';
+      saveNotesRow.style.display     = 'block';
+      saveStatusSelect.value         = '';  // default = no change
+      btnConfirm.disabled            = false;
+    } catch (err) {
+      console.error('[Phase 13d] Failed to load project:', err);
+      saveProjectInfoText.textContent = 'שגיאה בטעינת פרויקט: ' + err.message;
+      btnConfirm.disabled = false;
+    }
+  }
+
+  // Tiny HTML-escape for the project title (defensive — Hebrew is fine but user-entered text could contain < or &)
+  function escapeHtml(s) {
+    if (s == null) return '';
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  saveCustomerSelect.addEventListener('change', onCustomerSelectChange);
+
+  // ── Debug helper: expose state to DevTools console ────────────────
+  // (Per HANDOVER_03052026 Bug 4 — supabaseClient was not console-accessible in v5)
+  // Usage in console: MARBLE_DEBUG.supabase, MARBLE_DEBUG.transcript, etc.
+  window.MARBLE_DEBUG = {
+    get supabase()         { return supabaseClient; },
+    get api()              { return API; },
+    get transcript()       { return currentTranscript; },
+    get cloudinaryUrl()    { return currentCloudinaryUrl; },
+    get currentFile()      { return currentFile; },
+    get loadedProject()    { return currentLoadedProject; },
+    loadCustomers:         loadCustomersIntoSelect,
+    loadProjectForCustomer:loadActiveProjectForCustomer,
+    initSupabase:          initSupabase,
+    version:               '03052026-v7'
+  };
+
+  // Init Supabase on page load if keys are present
+  initSupabase();
+
+})();
+</script>
+
+</body>
+</html>

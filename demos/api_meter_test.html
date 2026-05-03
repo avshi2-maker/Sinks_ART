@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <title>API Meter — Test Page</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #f5f1e8;
+      color: #1a1a1a;
+      max-width: 720px;
+      margin: 40px auto;
+      padding: 0 20px;
+      line-height: 1.6;
+    }
+    h1 { color: #0d1f36; font-weight: 700; }
+    .panel {
+      background: #fff;
+      border: 1px solid #d3d1c7;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+    button {
+      background: #0d1f36;
+      color: #f4eddc;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      margin: 4px;
+    }
+    button:hover { background: #1a2f4a; }
+    .secondary {
+      background: #fff;
+      color: #0d1f36;
+      border: 1px solid #d3d1c7;
+    }
+    code {
+      background: #f5f1e8;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 12px;
+    }
+    .label { color: #5f5e5a; font-size: 13px; margin-top: 12px; }
+    .scenario { font-style: italic; color: #5f5e5a; font-size: 13px; }
+  </style>
+</head>
+<body>
+
+  <h1>API Meter — Test Page</h1>
+
+  <p>
+    This page tests the API meter widget without needing real API calls.
+    Click the buttons below to simulate API responses. The widget in the top-right
+    will update each time.
+  </p>
+
+  <div class="panel">
+    <h3>ElevenLabs simulations</h3>
+    <p class="scenario">Simulate transcribing audio of various lengths.</p>
+    <button onclick="simulateElevenLabs(60)">1-minute call</button>
+    <button onclick="simulateElevenLabs(300)">5-minute call</button>
+    <button onclick="simulateElevenLabs(1668)">Today's 27:48 call</button>
+    <button onclick="simulateElevenLabs(3600)">1-hour call</button>
+  </div>
+
+  <div class="panel">
+    <h3>Anthropic Claude simulations</h3>
+    <p class="scenario">Simulate analyzing a transcript with Claude.</p>
+    <button onclick="simulateAnthropic(2000, 500, 'haiku')">Small analysis (Haiku)</button>
+    <button onclick="simulateAnthropic(8000, 1500, 'sonnet')">Typical analysis (Sonnet)</button>
+    <button onclick="simulateAnthropic(50000, 5000, 'sonnet')">Long-context (Sonnet)</button>
+    <button onclick="simulateAnthropic(8000, 1500, 'opus')">Same task on Opus</button>
+  </div>
+
+  <div class="panel">
+    <h3>Cloudinary simulations</h3>
+    <p class="scenario">Simulate uploading audio/video to Cloudinary (free tier credits only).</p>
+    <button onclick="simulateCloudinary(0.5)">Small upload (0.5 credits)</button>
+    <button onclick="simulateCloudinary(1)">Medium upload (1 credit)</button>
+    <button onclick="simulateCloudinary(5)">Large video (5 credits)</button>
+  </div>
+
+  <div class="panel">
+    <h3>Reset</h3>
+    <button class="secondary" onclick="MARBLE_METER.reset()">Reset session</button>
+    <button class="secondary" onclick="MARBLE_METER.resetLifetime()">Reset lifetime (careful)</button>
+  </div>
+
+  <div class="panel">
+    <h3>What you should see</h3>
+    <ul>
+      <li>The meter widget appears top-right of this page</li>
+      <li>Clicking any simulate button updates "Last call" + adds to "Session" total</li>
+      <li>"Lifetime" total persists even if you reload this page</li>
+      <li>Click <code>−</code> on the widget to minimize</li>
+      <li>Click <code>Reset session</code> to clear session counters (lifetime preserved)</li>
+    </ul>
+  </div>
+
+  <script src="api_meter.js"></script>
+  <script>
+    // Initialize the meter when page loads
+    MARBLE_METER.init();
+
+    function simulateElevenLabs(durationSeconds) {
+      MARBLE_METER.log({
+        api: 'elevenlabs',
+        durationSeconds: durationSeconds,
+        label: 'Test transcription',
+      });
+    }
+
+    function simulateAnthropic(inputTokens, outputTokens, model) {
+      MARBLE_METER.log({
+        api: 'anthropic',
+        inputTokens: inputTokens,
+        outputTokens: outputTokens,
+        model: model,
+        label: model + ' analysis',
+      });
+    }
+
+    function simulateCloudinary(credits) {
+      MARBLE_METER.log({
+        api: 'cloudinary',
+        credits: credits,
+        label: 'Test upload',
+      });
+    }
+  </script>
+</body>
+</html>
