@@ -9,6 +9,60 @@ A running log of development sessions. **Newest at the top.** Append, never rewr
 - Standard subsections per session: **Goals**, **Done**, **Decisions**, **Open questions / blockers**, **Next session**.
 - Keep it short — bullet points, not prose. This is a log, not a journal.
 - When an idea from `IDEAS_PARKING.md` becomes active, copy it into "Goals" and update its tag in the parking lot.
+## 2026-05-03 — Session 13 — Customer CRM end-to-end + editable speaker bubbles (Phases 13a-13d + Phase 14)
+
+### Goals
+- Resume from Phase 13b (RLS blocker from morning session)
+- Ship 13c (real call INSERT), 13d (project auto-create + status pipeline)
+- Build Phase 14 (editable speaker bubbles) if time allowed
+- Address known bugs from morning handover
+
+### Done
+- **Phase 13a fix:** RLS policies rewritten to allow anon reads (was blocking entire customer dropdown)
+- **Phase 13c:** Real INSERT to `customer_communications` — calls now persist with full transcript + structured `ai_analysis` jsonb + audio metadata
+- **Phase 13d:** Project auto-create + 8-stage Hebrew status pipeline + project notes
+  - New columns: `customer_communications.project_id`, status default migrated `'lead'` → `'ליד'`
+  - CHECK constraint migrated to whitelist 8 Hebrew values
+  - Customer dropdown shows status badges: `סיגל לוי · 050... · [שיחת בירור]`
+  - Auto-create project named `פרויקט · [name] · [date]` on first call when no active project exists
+- **Phase 14:** Editable speaker bubbles via ElevenLabs word-level diarization
+  - Per-speaker preset dropdown (`אמן (יוסי)` / `אמן (דני)` / `לקוח` / `מנהל` / `אחר`) + free-text custom override
+  - `contenteditable` bubbles, color-coded per speaker
+  - Labeled output `[אבשי]: ... [אלס]: ...` flows into both Claude analysis and Supabase save
+- **Bug 3 fix (settings modal closes too fast):** Now stays open 1.8s with inline confirmation + auto-warns if any key looks suspiciously short
+- **Bug 4 fix (no console access to supabaseClient):** Added `window.MARBLE_DEBUG` handle exposing client, transcript, turns, speakers, loaded project, and helpers
+- **WhatsApp popup-blocker fix:** Replaced `prompt()` flow with inline modal so `window.open()` runs inside the user-gesture click context. Pre-fills last-used number from localStorage
+- **GoTrueClient duplicate-instances warning:** Silenced by skipping reinit when URL unchanged + disabling unused auth subsystem
+- **ElevenLabs hallucinated speaker prefixes:** Detected pattern (1–3 Hebrew words ≥3 chars + colon) — auto-stripped on every transcribe via `stripHallucinatedLeadingLabels()`, plus manual 🧹 button. Sharpened Claude analysis prompt to ignore `[bracket]:` labels when extracting names from contacts
+- Versions shipped: **v5 → v6 → v7 → v8 → v9 → v10 → v11** in single working day
+
+### Files in repo (now under `demos/` in `Sinks_ART`)
+- sinc_art_call_intake_03052026-v11.html (88KB) — current
+- sinc_art_call_intake_03052026-v5/v7/v8/v9/v10.html — kept for reference
+- All previous demos (v1–v4 + marble_call_intake_30042026-v1.html + api_meter.js + api_meter_test.html) committed as well
+
+### Decisions
+- **Status lives on `projects`, not `customers`** (Path B — auto-create project per customer). Cleaner long-term model: one customer can have multiple projects over time
+- **Hebrew values stored directly in DB** for `projects.status` instead of English keys with display translation. SELECT queries readable in Hebrew; English-locale tooling looks weird. Acceptable trade-off
+- **8-stage payment-driven pipeline:** `ליד → שיחת בירור → הצעת מחיר נשלחה → אושר → שולמה מקדמה → תשלום מלא → הסתיים → אבוד`. Replaces generic sales pipeline with marble-business-specific stages
+- **Stay on ElevenLabs** despite Hebrew hallucination issues — auto-strip handles it cheaply. Did NOT migrate to Whisper (parked as last-resort if Path A failed)
+- **Console commands during debugging are useful, not overwhelming** — corrected the "stop sending console commands" lesson from morning handover. Memory updated
+
+### Open questions / blockers
+- Phase 13c row from earlier in the day (id `6257b6aa...`) has `project_id = null` because it was saved before Phase 13d existed. Backfill via SQL update or leave as-is? Currently leaving
+- `audio_url` is null on most saved calls because Force Cloud is off. If every call's audio should be archived, the toggle stays on
+- **Phase 15 (YouTube permissions architecture):** awaiting Avshi's clarification on what this feature actually is. Cannot plan without context
+
+### Next session
+- Phase 15 planning + build (after Avshi sends YouTube context)
+- Optional small items: (1) backfill old Phase 13c row's `project_id`, (2) wire `api_cost_usd` from `MARBLE_METER` into call save payload
+
+### Lessons learned (skill v11 backlog)
+- **Schema introspection before INSERT code prevents debugging cycles.** Asking for one `information_schema.columns` query saved an entire iteration round
+- **Postgres CHECK constraints are separate from column defaults.** When migrating allowed values, both must be updated — otherwise updates work but inserts of new values fail
+- **`prompt()` before `window.open()` = popup blocker.** Modern Chrome treats sync modal dialogs as consuming the user-gesture token. Use inline modals instead
+- **ElevenLabs Scribe v1 hallucinates speaker name prefixes** on Hebrew phone calls when `diarize=true`. Pattern is regular enough to auto-strip with a Hebrew-word-count regex
+- **Per-feature version bumps + tested checkpoints beat bundled changes.** Each v6→v11 had its own test cycle; nothing got stuck
 ## 2026-05-02 — Session 11 — Auto-route non-mp3 formats through Cloudinary (A1 from roadmap)
 ## 2026-05-02 — Session 12 — Action buttons on AI analysis (A4 from roadmap)
 
@@ -389,4 +443,3 @@ Modify SinC-ART end-to-end with these features (priority order):
 ### On break
 - Paused at Step 1 (Supabase schema)
 
----
