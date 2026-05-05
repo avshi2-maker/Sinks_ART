@@ -10,6 +10,86 @@ A running log of development sessions. **Newest at the top.** Append, never rewr
 - Keep it short — bullet points, not prose. This is a log, not a journal.
 - When an idea from `IDEAS_PARKING.md` becomes active, copy it into "Goals" and update its tag in the parking lot.
 
+## 2026-05-05 — Session 16 — Vercel production sync + Phase 15.5 (live API meter + action bar) — committed bfec0c3
+
+### Goals
+- Configure Vercel env vars so production `/intake` actually works (not just localhost)
+- Verify production end-to-end with a real photo upload
+- Build Phase 15.5: live API meter (status panel) + action bar (Print/Email/WhatsApp/Project) under every analysis
+- Lock the new patterns into SKILL.md so future analyzers follow them automatically
+
+### Done
+- **Vercel env vars added (3 new):** `NEXT_PUBLIC_CLOUDINARY_PRESET_INTAKE = marble_intake`, `NEXT_PUBLIC_CLOUDINARY_PRESET_CALLS = marble_calls`, `ANTHROPIC_API_KEY` (Sensitive toggle ON). Caught and fixed a typo (`ANTROPIC_API_KEY` missing the H — would have caused silent 500 errors). Existing 5 vars preserved.
+- **Vercel redeploy without build cache** — forced fresh build to pick up new env vars. Build succeeded in 34 seconds.
+- **Production `/intake` end-to-end VERIFIED** — uploaded a 2nd real photo (asymmetric chiseled marble sink with faucet), Claude correctly identified material as "אבן גירנית או שיש" with the hedge "(הערכה בלבד על פי פרופורציות)", flagged "האם הכיור נראה כמשולב (integrated) בקאונטר ולא עומד בנפרד". Save persisted both rows. Cost: $0.0169.
+- **Phase 15.5 UI shipped** — 3 new files + 2 modified, ~660 lines total:
+  - `src/lib/intake/exportFormats.ts` (~280 lines) — pure formatters: `buildSubject`, `buildPlainTextBody`, `buildPlainTextBodyForCustomer`, `buildGmailUrl`, `buildOutlookHandoffUrl`, `copyAnalysisForOutlook`, `buildWhatsAppUrl`, `normalizePhoneForWaMe`, `openPrintWindow`, `buildPrintHtml`
+  - `src/components/intake/ApiCallStatus.tsx` (~165 lines) — sticky live status panel: module name, live timer (ticks every 200ms), tokens, cost. 3-state machine: `idle` → `running` (blue pulse) → `done` (frozen green). Persists between calls until next call begins.
+  - `src/components/intake/AnalysisActionBar.tsx` (~150 lines) — 5-button row under every analysis: 🖨️ הדפס · 📋 לאאוטלוק · 📧 Gmail · 💬 וואטסאפ · 🔗 פרויקט (placeholder until Phase 16 customer page)
+  - `src/components/intake/analyzers/PhotoAnalyzer.tsx` (modified) — wires `onStatusChange` callback + renders `<AnalysisActionBar>` in review stage
+  - `src/app/intake/page.tsx` (modified) — owns `apiStatus` state, renders `<ApiCallStatus>` in sticky right column on desktop (stacks on mobile)
+- **4 real bugs found and fixed during testing:**
+  1. **Outlook + mailto:body Hebrew is garbled** — known 20-year-old Outlook bug. Fixed via "📋 לאאוטלוק" button using clipboard handoff: copy formatted body to clipboard + open `mailto:` with only To+Subject + user pastes body with Ctrl+V (Hebrew arrives clean because clipboard preserves UTF-8 correctly).
+  2. **Footer leaking customer-facing internal data** — "Marble Art Sinks · ניתוח אוטומטי · עלות API: $0.0169" was appearing in WhatsApp messages to customers. Fixed: footer now ONLY in print HTML (internal records); email/Gmail/WhatsApp bodies have NO footer.
+  3. **Body text in Outlook/Gmail rendered LTR not RTL** — Mitigated with U+200F RTL marker prefix. Not perfect (Outlook/Gmail's URL encoding strips bidi context) — Avshi accepts manual Ctrl+Shift+Right-arrow as fallback.
+  4. **WhatsApp said "phone number doesn't exist"** — Root cause: סיגל לוי's phone in DB was `0501234567` (test number, not a real WhatsApp account). Fixed via SQL update: all 3 demo customers now have Avshi's real phone (`0505231042`) + email so testing flows to a real device.
+- **PowerShell here-string fallback discovered** — Cursor paste was repeatedly mangling Hebrew + JSX in `AnalysisActionBar.tsx` (10 cascading TypeScript errors). Solution: write file directly via PowerShell `@'...'@` + `Out-File -Encoding UTF8`, bypassing all paste/clipboard layers. Locked in skill rule #14.
+- **Operating rules expanded #11-#14** — added to SKILL.md:
+  - **#11**: Every new analyzer (Pdf/Mp4/YouTube/Instagram/Url) MUST integrate Phase 15.5 patterns (`onStatusChange` + `<AnalysisActionBar>`)
+  - **#12**: Never paste `.env.local` values into chat
+  - **#13**: In RTL/Hebrew JSX, prefer `<span>` over `<>...</>` fragment shorthand
+  - **#14**: PowerShell here-string fallback for Hebrew files when Cursor paste breaks
+- **SKILL.md upgraded to v13** — 378 lines (was 228). Added: Operating Rules section near top (#7-#14 with magic phrase), Phase 15.5 Patterns section, current Project Structure tree, updated identifiers (Vercel ID, Cloudinary cloud, WhatsApp number), 9 new decision-log entries. Live in claude.ai → Customize → Skills.
+
+### Files in repo (committed in bfec0c3 on `main`)
+```
+src/app/intake/page.tsx                              (modified, +20 lines)
+src/components/intake/AnalysisActionBar.tsx          (NEW, ~150 lines)
+src/components/intake/ApiCallStatus.tsx              (NEW, ~165 lines)
+src/components/intake/analyzers/PhotoAnalyzer.tsx    (modified, +30 lines)
+src/lib/intake/exportFormats.ts                      (NEW, ~280 lines)
+```
+Plus SKILL.md v13 in claude.ai (lives outside repo).
+
+### Decisions
+- **Path B for Outlook + Hebrew** — clipboard handoff (2-step user flow: button copies + opens compose, user pastes body with Ctrl+V) instead of trying to encode body into mailto URL. Reasoning: clipboard always preserves UTF-8 cleanly; Outlook's mailto-body parser is broken for non-Latin and won't be fixed.
+- **Gmail gets its own button** — separate from Outlook because Avshi uses Outlook for himself, Gmail for sending to Ales. Two channels, two buttons.
+- **WhatsApp uses customer-facing body (no footer)**; email uses customer-facing body too (Ales is internal but emails get forwarded). Print keeps the footer (internal records).
+- **No drag-and-drop yet** — click-to-browse only. Drag-drop deferred to UI polish phase.
+- **Project button = "coming soon Phase 16" alert** — explicit honesty over a half-built customer detail page.
+- **3 demo customers now share Avshi's contact info** for testing. Real customer data will replace these when artist onboarding completes.
+- **`SUPABASE_SERVICE_ROLE_KEY` left stale on Vercel** — Phase 15 doesn't use it server-side. Cleanup deferred. Same for `NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET` (wrong-name leftover from initial setup).
+
+### Open questions / blockers
+- **5 more analyzers pending** — PdfAnalyzer, Mp4Analyzer, YouTubeAnalyzer, InstagramAnalyzer, UrlAnalyzer. Each ~120-150 lines. PhotoAnalyzer.tsx is the template; new analyzers MUST follow Rule #11 patterns.
+- **No customer detail page** — `/customers/[id]` not built yet. AnalysisActionBar's "Project" button is a placeholder until Phase 16.
+- **No project auto-creation in intake save flow** — if customer has no active project, save still writes `project_id = null`. Same orphan pattern as Phase 13 sigal call. Acceptable for now.
+- **WhatsApp link preview** of cloudinary URLs shows broken image card (not a code bug, just how WhatsApp scrapes raw image URLs). Avshi accepts as-is, parked.
+- **SinC-ART model migration before June 15, 2026** — `claude-sonnet-4-20250514` retires that day. Need bulk-replace to `claude-sonnet-4-6` across all `demos/sinc_art_call_intake_*.html`. ~40 days remaining as of today.
+
+### Next session — Session 17 menu (pick one to start)
+- **A. PdfAnalyzer.tsx (~90 min)** — architects' drawings → first-page JPEG via Cloudinary `pg_1` transform → Claude vision. Common from contractor customers. Closest analog to PhotoAnalyzer (already implemented).
+- **B. Mp4Analyzer.tsx (~120 min)** — customer videos → first-frame JPEG via Cloudinary `so_1` transform → Claude vision. Higher volume (40% per spec).
+- **C. YouTubeAnalyzer.tsx (~150 min)** — Ales's Ukraine network references. Most complex; needs YouTube transcript + thumbnail.
+- **D. UrlAnalyzer + InstagramAnalyzer (~120 min)** — fetch page content + screenshot, send to Claude. Trickier than file uploads.
+- **E. UI polish (~60 min)** — drag-drop on file zone, mobile breakpoints, IntakeHistory page showing past analyses per customer.
+- **F. Customer detail page at `/customers/[id]` (~90 min)** — unlocks Project button, adds 1 page + 1 layout. Phase 16 starter.
+- **G. SinC-ART model migration to `claude-sonnet-4-6` (~30 min)** — bulk replace before June 15, 2026 retirement.
+
+**Recommended order:** A → B → F → E → C → D → G
+
+### Lessons learned (skill v14+ backlog)
+- **Outlook's mailto-body Hebrew bug is a 20-year unresolved issue** — never try to put non-Latin text in `mailto:body=`. Always use clipboard handoff for Outlook + Hebrew (the "Path B" pattern).
+- **`<>...</>` JSX fragments break parsers when mixed with Hebrew text** — even when the source file is correct on my side, after paste through Cursor with Hebrew labels, the `>` characters get misread as bidi markers. **Always use explicit `<span>` in RTL JSX.** (Rule #13)
+- **PowerShell here-string is the bulletproof fallback** for writing Hebrew-heavy files when Cursor paste breaks. `@'...'@ | Out-File -Encoding UTF8` bypasses every paste layer. (Rule #14)
+- **Test phone numbers in seed data should be flagged or replaced before WhatsApp testing** — `0501234567` looks plausible but breaks integrations. Add a NOT NULL CHECK or seed validator in future schema migrations.
+- **Vercel env var name typos cause silent failures** — `ANTROPIC_API_KEY` looked right at a glance, would have returned 500 errors only when user clicked Analyze. Always copy-paste env var names from documentation, never type them.
+- **WhatsApp auto-previews any URL in body** — broken cloudinary preview card is unavoidable without metadata work. Either suppress URL or accept the visual quirk.
+- **Vercel redeploy MUST be without cache** when env vars changed. Cached builds use the old env values even though new vars are listed in settings.
+- **Production smoke testing on the actual production URL** caught nothing localhost couldn't have caught — but it's still worth doing for confidence and for catching deploy-only bugs (build errors, env missing, wrong Node version).
+
+---
+
 ## 2026-05-04 — Session 15 — Phase 15 UI complete + first real photo analyzed end-to-end — committed 984dd9f
 
 ### Goals
@@ -36,36 +116,29 @@ supabase/phase15_schema_03052026-v2.sql              (renamed from repo root)
 
 ### Decisions
 - **Click-to-browse only for v1** — drag-and-drop deferred to UI polish phase. Click works on every device including mobile.
-- **50 MB file size cap** with friendly Hebrew error message on overflow. Cloudinary free tier supports up to 100 MB but tighter cap protects credits.
-- **Path A — only photo/sketch shipped today.** Other 5 media types (mp4, pdf, youtube, instagram, url) show "coming soon" Hebrew amber notice when detected. Each gets its own analyzer in subsequent sessions, same pattern as PhotoAnalyzer.
-- **Save model confirmed working in production:** customer_communications row + media_analyses row written atomically in one save click. Failure of either rolls back the whole save (currently best-effort — could harden with a transaction in a later session).
-- **Two-terminal pattern in Cursor** during dev: terminal #1 runs `npm run dev` (don't close), terminal #2 for git + diagnostics. Established as the pattern for this project.
-- **Production secrets are NEVER pasted into chat.** Even partial pastes of `.env.local` exposed enough of the keys to require rotation. Rule logged: when comparing env vars, paste only variable NAMES, never values. Use `Get-Content .env.local | ForEach-Object { ($_ -split '=')[0] }` to safely list names.
+- **50 MB file size cap** with friendly Hebrew error message on overflow.
+- **Path A — only photo/sketch shipped today.** Other 5 media types (mp4, pdf, youtube, instagram, url) show "coming soon" Hebrew amber notice.
+- **Save model confirmed working in production:** customer_communications row + media_analyses row written atomically in one save click.
+- **Two-terminal pattern in Cursor** during dev: terminal #1 runs `npm run dev` (don't close), terminal #2 for git + diagnostics.
+- **Production secrets are NEVER pasted into chat.** Use `Get-Content .env.local | ForEach-Object { ($_ -split '=')[0] }` to safely list names.
 
 ### Open questions / blockers
-- **Vercel env vars not yet synced.** `/intake` will likely fail on `sinks-art.vercel.app/intake` until production env vars are added. Tomorrow's first task.
-- **`SUPABASE_SERVICE_ROLE_KEY` is in local `.env.local` but Phase 15 doesn't use it.** Could remove entirely from local config — only the anon key is needed for browser-side Supabase access. Park as cleanup.
-- **Other 5 analyzer types pending** (mp4, pdf, youtube, instagram, url). PhotoAnalyzer is the template; each variant is ~120-150 lines + a different prompt.
-- **No project auto-creation in intake save flow.** If selected customer has no active project, the save writes `project_id = null` (same orphan-pattern as the Phase 13 call from סיגל לוי). Acceptable for now; later we can mirror SinC-ART's auto-create-project behavior.
+- **Vercel env vars not yet synced.** /intake will likely fail on sinks-art.vercel.app/intake until production env vars are added. (RESOLVED in Session 16)
+- **`SUPABASE_SERVICE_ROLE_KEY` is in local `.env.local` but Phase 15 doesn't use it.**
+- **Other 5 analyzer types pending** (mp4, pdf, youtube, instagram, url).
+- **No project auto-creation in intake save flow.**
 
-### Next session — Session 16 menu (pick one to start)
-- **A. Vercel deploy + env vars (15 min)** — make `/intake` work in production. Highest leverage, lowest effort.
-- **B. PdfAnalyzer.tsx (~90 min)** — architects' drawings → first-page JPEG via Cloudinary `pg_1` transform → Claude vision with `pdfPage1AnalysisPrompt`. Common from contractor customers.
-- **C. Mp4Analyzer.tsx (~120 min)** — customer kitchen walk-around videos → first-frame JPEG via Cloudinary `so_1` transform → Claude vision. Higher-volume per spec (40% via Ales WhatsApp).
-- **D. UrlAnalyzer / InstagramAnalyzer (~120 min)** — fetch page content via web_fetch + screenshot, send to Claude. Trickier than file uploads.
-- **E. YouTubeAnalyzer (~150 min)** — needs YouTube transcript API + thumbnail extraction. The most complex of the 7.
-- **F. UI polish pass (~60 min)** — drag-and-drop on file zone, mobile breakpoints, better thumbnails, IntakeHistory page showing past analyses per customer.
-- **G. SinC-ART model migration** — bulk-replace `claude-sonnet-4-20250514` → `claude-sonnet-4-6` in all `demos/sinc_art_call_intake_*.html` files BEFORE June 15, 2026 retirement.
+### Next session
+- Phase 15.5: live API meter + action bar (Print/Email/WhatsApp) under every analysis (DONE in Session 16)
+- Then PdfAnalyzer.tsx as first new analyzer (Session 17 pending)
 
-**Recommended order:** A → B → F → C → E → D → G
-
-### Lessons learned (skill v13+ backlog)
-- **Always use multiple terminals when running a dev server.** Once `npm run dev` blocks a terminal, subsequent commands need a second terminal. New devs naturally try Ctrl+C the server to free up the prompt — DON'T. Open a parallel terminal instead.
-- **Git "deleted" entries can be ghosts.** When `git status` shows a file as deleted but `Test-Path` returns False AND `git restore` says "did not match any file(s) known to git" → the file was staged once but the actual blob never made it into git history. Recreate the file and `git add` to convert the phantom delete into a normal new-file entry.
-- **`git rm --cached` cancels a staged operation without touching disk.** Useful when staging shows something that's actually fine.
-- **Renames are auto-detected.** Moving a file to a new folder + `git add` produces `renamed: old/path -> new/path` rather than separate delete + add entries. Cleaner history.
-- **Notepad and chat clients both eat secrets in transit.** Notepad mangles Hebrew; chat clients auto-link `process.env.X` and truncate at colons (pager prompts). Both also display API keys at full length, which is how leaks happen. **Cursor for editing, no chat for env values, ever.**
-- **The architecture rule (skill #7) paid for itself today.** Phase 15 UI shipped as 3 small files. If we'd built it the SinC-ART way, it would be ~700 lines of jQuery-style bolted-on code. Instead it's 660 lines of typed React components with clean state flow. Modifications tomorrow change ONE component, not the whole thing.
+### Lessons learned (skill v12+ backlog)
+- **Anthropic model lifecycle is ~12 months.** Always check retirement date when picking a model.
+- **Browser-side env vars need `NEXT_PUBLIC_` prefix; server-side don't.**
+- **TypeScript is forgiving about extra fields, strict about missing ones.** When refactoring shared types: PRESERVE first, ADD second, REMOVE never.
+- **Windows folder casing is a real trap.** `C:\sinks\sinks_art` and `C:\SinkS\Sinks_ART` look identical to humans.
+- **`Move-Item` fails silently when source and destination resolve to nested-but-not-real paths.** Always `Test-Path` both before moving.
+- **Cursor's `U` indicator means "Untracked" (Git), not "Unsaved" (filesystem).**
 
 ---
 
@@ -78,11 +151,11 @@ supabase/phase15_schema_03052026-v2.sql              (renamed from repo root)
 - Establish the Cursor + npm + tsx + tsc workflow Avshi will use going forward
 
 ### Done
-- **Architecture rule locked in 3 places:** SKILL.md item #7 (no single-file HTML, 1500-line ceiling), SKILL.md item #8 (one console command at a time during debugging), plus 2 persistent Claude memory entries. Future bots cannot exploit Avshi's non-coder status by defaulting to single-file builds.
-- **Cloudinary activated:** cloud `dqdku88vv` (free tier, 25 credits/month). Two unsigned presets — `marble_calls` (folder `marble-sinks/calls`, used by SinC-ART for audio) and `marble_intake` (folder `marble-sinks/intake`, Phase 15 multi-format).
+- **Architecture rule locked in 3 places:** SKILL.md item #7 (no single-file HTML, 1500-line ceiling), SKILL.md item #8 (one console command at a time during debugging), plus 2 persistent Claude memory entries.
+- **Cloudinary activated:** cloud `dqdku88vv` (free tier, 25 credits/month). Two unsigned presets — `marble_calls` (folder `marble-sinks/calls`) and `marble_intake` (folder `marble-sinks/intake`).
 - **SQL migration applied** (`phase15_schema_03052026-v2.sql`):
-  - New `media_analyses` table — 21 columns, FK to `customer_communications`, 3 RLS policies (anon select/insert/update), updated_at trigger
-  - `customer_communications.comm_type` whitelist extended from 8 to 14 values (preserved `call/whatsapp/email/meeting/photo/note/document/other` + added `sketch/mp4/pdf/youtube/instagram/url`)
+  - New `media_analyses` table — 21 columns, FK to `customer_communications`, 3 RLS policies, updated_at trigger
+  - `customer_communications.comm_type` whitelist extended from 8 to 14 values
   - Path B confirmed: every inbound media saves a `customer_communications` row AND a `media_analyses` row
 - **5 backend files shipped** in `src/lib/intake/` and `src/app/api/analyze-photo/` (~600 lines total, 54 tests passing):
   - `detectMediaType.ts` (108 lines) — pure logic, 24/24 tests
@@ -90,67 +163,31 @@ supabase/phase15_schema_03052026-v2.sql              (renamed from repo root)
   - `claudeVision.ts` (140 lines) — server-side Anthropic API wrapper, 18/18 tests
   - `prompts.ts` (125 lines) — Hebrew prompts for photo/sketch/mp4/pdf
   - `route.ts` (95 lines) — Next.js API endpoint at `/api/analyze-photo`
-- **First Phase 15 React component:** `src/components/intake/CustomerPicker.tsx` (~150 lines) — dropdown with Hebrew status badges, reuses Session 13 customer/project data shape
-- **`src/lib/supabase.ts` upgraded:** preserved existing `Sink/SinkImage/SinkWithImage/SourceType` types (gallery still works), added Phase 15 types (`Customer/Project/ProjectStatus/CustomerWithProject/MediaAnalysis/MediaTypeDB/MediaAnalysisStatus`), disabled auth subsystem (kills GoTrueClient duplicate-instances warning)
-- **Model locked: `claude-sonnet-4-6`** — retires no sooner than Feb 17, 2027 (~289 days). Longest-lived Sonnet currently active. Same price tier as 4-5, better at vision tasks.
-- **`.env.local` cleaned up:** removed duplicate Cloudinary lines + stale `marble_rfq` preset reference. Now contains `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=dqdku88vv`, `NEXT_PUBLIC_CLOUDINARY_PRESET_CALLS=marble_calls`, `NEXT_PUBLIC_CLOUDINARY_PRESET_INTAKE=marble_intake`, `ANTHROPIC_API_KEY=...` (server-side only)
-- **Cursor workflow established:** Avshi can now create files via sidebar, edit in editor area, run commands in built-in terminal, save with Ctrl+S, all UTF-8 + Hebrew handled correctly. Replaces the prior Notepad-based workflow that was mangling Hebrew characters.
-- **Cost guardrails baked in:** `MAX_OUTPUT_TOKENS = 1500` cap in `claudeVision.ts`, computed `api_cost_usd` per call stored in DB, server-side key handling so `ANTHROPIC_API_KEY` never reaches the browser
-
-### Files in repo (committed in 955691c on `main`)
-```
-src/lib/intake/
-├── claudeVision.ts          (5,056 bytes)
-├── claudeVision.test.ts     (8,044 bytes)
-├── cloudinary.ts            (5,169 bytes)
-├── cloudinary.test.ts       (5,332 bytes)
-├── detectMediaType.ts       (3,386 bytes)
-├── detectMediaType.test.ts  (5,109 bytes)
-└── prompts.ts               (7,431 bytes)
-
-src/app/api/analyze-photo/
-└── route.ts                 (3,090 bytes)
-
-src/components/intake/
-└── CustomerPicker.tsx       (5,123 bytes)
-
-src/lib/supabase.ts          (modified)
-phase15_schema_03052026-v2.sql
-HANDOVER_03052026_evening.md
-SKILL.md                     (replaced via Cursor's Skill UI)
-```
+- **First Phase 15 React component:** `src/components/intake/CustomerPicker.tsx` (~150 lines)
+- **`src/lib/supabase.ts` upgraded:** preserved existing types (gallery still works), added Phase 15 types
+- **Model locked: `claude-sonnet-4-6`** — retires no sooner than Feb 17, 2027
+- **`.env.local` cleaned up.** Cursor workflow established. Cost guardrails baked in (`MAX_OUTPUT_TOKENS = 1500`).
 
 ### Decisions
-- **Phase 15 = "Multi-Format Media Intake"** (renamed from misnamed "YouTube permissions architecture" inherited from prior bot). Real spec: 7 input types (photo/sketch/mp4/pdf/youtube/instagram/url) get analyzed by AI → structured Hebrew output → into gallery/HUB → feeds into price offers + artist briefs
-- **Build location: inside `src/`** (multi-file React/TypeScript), NOT bolted onto SinC-ART's single-file HTML. Skill rule #7 enforces this going forward.
-- **Save model: both** — write a `customer_communications` row (with new `comm_type` value like `'photo'`, `'mp4'`, etc.) AND a `media_analyses` row (with structured AI output). Two-row pattern preserves the unified communications timeline while adding rich extracted data.
-- **Anthropic API: server-side only.** `ANTHROPIC_API_KEY` lives in `.env.local` without `NEXT_PUBLIC_` prefix, accessed only from `src/app/api/analyze-photo/route.ts`. Browser components POST to that endpoint — they never see the key.
-- **Cloudinary URL transform tricks** (no API call, pure URL manipulation): `/upload/so_1,w_1200,f_jpg/clip.jpg` extracts second-1 frame from any video for AI analysis; `/upload/pg_1,w_1200,f_jpg/plans.jpg` extracts page-1 of any PDF. Pattern conceptually lifted from Beni CRM (`safetyHandleFile`/`snagHandleFile`/`asset_inbox`) — proven in production. Code itself rewritten as TypeScript per skill rule #7.
-- **PhotoAnalyzer first** — simplest analyzer of the 7 (no frame extraction, no PDF parsing, highest volume per spec). Once it works end-to-end, the other 6 are variations on the same pattern.
-- **Cursor → not Notepad** for any project file. Notepad strips Hebrew characters and adds BOM markers that break TypeScript compilation. Locked in skill rule #9.
-- **Be explicit about WHERE to paste** — chat vs editor vs terminal. New developers mix these up; spell it out in instructions. Locked in skill rule #10.
+- **Phase 15 = "Multi-Format Media Intake"** (renamed from misnamed "YouTube permissions architecture")
+- **Build location: inside `src/`** (multi-file React/TypeScript), NOT bolted onto SinC-ART
+- **Save model: both** — write a `customer_communications` row AND a `media_analyses` row
+- **Anthropic API: server-side only**
+- **Cloudinary URL transform tricks** for video frame + PDF page extraction
+- **PhotoAnalyzer first** — simplest analyzer of the 7
+- **Cursor → not Notepad**, **be explicit about WHERE to paste**
 
 ### Open questions / blockers
-- **Phase 13c orphan call** (`6257b6aa...` for סיגל לוי) still has `project_id = null` from before Phase 13d existed. Backfill via SQL update or leave as-is? Currently leaving.
-- **`api_cost_usd` not yet wired** from `MARBLE_METER` into call save payload (parked from Session 13).
-- **SinC-ART model migration:** current `claude-sonnet-4-20250514` retires June 15, 2026 (~42 days). Need to bulk-replace to `claude-sonnet-4-6` across all `demos/sinc_art_call_intake_*.html` files before then.
-- **Supabase service role key potential exposure** — partial leak to chat in screenshot during debugging. Recommend rotating in Supabase dashboard before next session. Park as TODO. (RESOLVED in Session 15)
+- **Phase 13c orphan call** for סיגל לוי still has `project_id = null`. Currently leaving.
+- **`api_cost_usd` not yet wired** from `MARBLE_METER` into call save payload.
+- **SinC-ART model migration:** current `claude-sonnet-4-20250514` retires June 15, 2026.
+- **Supabase service role key potential exposure** (RESOLVED in Session 15)
 
 ### Next session
-- Phase 15 UI build (3 files):
-  1. `src/components/intake/MediaInput.tsx` (~80 lines) — URL input OR file upload
-  2. `src/components/intake/analyzers/PhotoAnalyzer.tsx` (~140 lines) — wires MediaInput → cloudinary → /api/analyze-photo → results display
-  3. `src/app/intake/page.tsx` (~80 lines) — the route at `/intake` that ties everything together
-- End-to-end test: upload one of Ales's WhatsApp photos → see structured Hebrew analysis → save to DB → confirm both rows (`customer_communications` + `media_analyses`) land correctly
-- Push to GitHub → Vercel auto-deploys → verify on `sinks-art.vercel.app/intake`
+- Phase 15 UI build (3 files): MediaInput, PhotoAnalyzer, intake/page (DONE in Session 15)
 
 ### Lessons learned (skill v12+ backlog)
-- **Anthropic model lifecycle is ~12 months.** Always check retirement date when picking a model — don't default to whatever was used in a previous session. Long-lived models are worth the small effort to find.
-- **Browser-side env vars need `NEXT_PUBLIC_` prefix; server-side don't.** `ANTHROPIC_API_KEY` (no prefix) = server-only and safe. `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` = browser-readable, fine because it's not a secret.
-- **TypeScript is forgiving about extra fields, strict about missing ones.** Adding fields to a type that the original query returned is harmless. Removing fields breaks every consumer of that type. When refactoring shared types: PRESERVE first, ADD second, REMOVE never (without checking every usage).
-- **Windows folder casing is a real trap.** `C:\sinks\sinks_art` and `C:\SinkS\Sinks_ART` look identical to humans; PowerShell paths sometimes interact weirdly. Worth canonicalizing the project root path early.
-- **`Move-Item` fails silently when source and destination resolve to nested-but-not-real paths.** Always `Test-Path` both source and destination before moving. Files-named-as-folders (Mode `-a----` instead of `d-----` on Get-ChildItem) are the most confusing failure mode.
-- **Cursor's `U` indicator means "Untracked" (Git), not "Unsaved" (filesystem).** Files with `U` are saved on disk but not yet committed. This is normal for new files until first `git add` + `git commit`.
+- See Session 15 above (lessons consolidated)
 
 ---
 
@@ -160,51 +197,30 @@ SKILL.md                     (replaced via Cursor's Skill UI)
 - Resume from Phase 13b (RLS blocker from morning session)
 - Ship 13c (real call INSERT), 13d (project auto-create + status pipeline)
 - Build Phase 14 (editable speaker bubbles) if time allowed
-- Address known bugs from morning handover
 
 ### Done
-- **Phase 13a fix:** RLS policies rewritten to allow anon reads (was blocking entire customer dropdown)
-- **Phase 13c:** Real INSERT to `customer_communications` — calls now persist with full transcript + structured `ai_analysis` jsonb + audio metadata
-- **Phase 13d:** Project auto-create + 8-stage Hebrew status pipeline + project notes
-  - New columns: `customer_communications.project_id`, status default migrated `'lead'` → `'ליד'`
-  - CHECK constraint migrated to whitelist 8 Hebrew values
-  - Customer dropdown shows status badges: `סיגל לוי · 050... · [שיחת בירור]`
-  - Auto-create project named `פרויקט · [name] · [date]` on first call when no active project exists
-- **Phase 14:** Editable speaker bubbles via ElevenLabs word-level diarization
-  - Per-speaker preset dropdown (`אמן (יוסי)` / `אמן (דני)` / `לקוח` / `מנהל` / `אחר`) + free-text custom override
-  - `contenteditable` bubbles, color-coded per speaker
-  - Labeled output `[אבשי]: ... [אלס]: ...` flows into both Claude analysis and Supabase save
-- **Bug 3 fix (settings modal closes too fast):** Now stays open 1.8s with inline confirmation + auto-warns if any key looks suspiciously short
-- **Bug 4 fix (no console access to supabaseClient):** Added `window.MARBLE_DEBUG` handle exposing client, transcript, turns, speakers, loaded project, and helpers
-- **WhatsApp popup-blocker fix:** Replaced `prompt()` flow with inline modal so `window.open()` runs inside the user-gesture click context. Pre-fills last-used number from localStorage
-- **GoTrueClient duplicate-instances warning:** Silenced by skipping reinit when URL unchanged + disabling unused auth subsystem
-- **ElevenLabs hallucinated speaker prefixes:** Detected pattern (1–3 Hebrew words ≥3 chars + colon) — auto-stripped on every transcribe via `stripHallucinatedLeadingLabels()`, plus manual 🧹 button. Sharpened Claude analysis prompt to ignore `[bracket]:` labels when extracting names from contacts
+- **Phase 13a fix:** RLS policies rewritten to allow anon reads
+- **Phase 13c:** Real INSERT to `customer_communications` — calls now persist with full transcript + structured `ai_analysis` jsonb
+- **Phase 13d:** Project auto-create + 8-stage Hebrew status pipeline (`ליד → שיחת בירור → הצעת מחיר נשלחה → אושר → שולמה מקדמה → תשלום מלא → הסתיים → אבוד`)
+- **Phase 14:** Editable speaker bubbles via ElevenLabs word-level diarization + per-speaker preset dropdowns
+- WhatsApp popup-blocker fix, GoTrueClient warning silenced, ElevenLabs Hebrew hallucination auto-strip
 - Versions shipped: **v5 → v6 → v7 → v8 → v9 → v10 → v11** in single working day
 
-### Files in repo (now under `demos/` in `Sinks_ART`)
-- sinc_art_call_intake_03052026-v11.html (88KB) — current
-- sinc_art_call_intake_03052026-v5/v7/v8/v9/v10.html — kept for reference
-- All previous demos (v1–v4 + marble_call_intake_30042026-v1.html + api_meter.js + api_meter_test.html) committed as well
-
 ### Decisions
-- **Status lives on `projects`, not `customers`** (Path B — auto-create project per customer). Cleaner long-term model: one customer can have multiple projects over time
-- **Hebrew values stored directly in DB** for `projects.status` instead of English keys with display translation. SELECT queries readable in Hebrew; English-locale tooling looks weird. Acceptable trade-off
-- **8-stage payment-driven pipeline:** `ליד → שיחת בירור → הצעת מחיר נשלחה → אושר → שולמה מקדמה → תשלום מלא → הסתיים → אבוד`. Replaces generic sales pipeline with marble-business-specific stages
-- **Stay on ElevenLabs** despite Hebrew hallucination issues — auto-strip handles it cheaply. Did NOT migrate to Whisper (parked as last-resort if Path A failed)
-- **Console commands during debugging are useful, not overwhelming** — corrected the "stop sending console commands" lesson from morning handover. Memory updated
+- **Status lives on `projects`, not `customers`** (Path B)
+- **Hebrew values stored directly in DB** for `projects.status`
+- **8-stage payment-driven pipeline**
+- **Stay on ElevenLabs** despite Hebrew hallucination issues
+- **Console commands during debugging are useful** — corrected the "stop sending console commands" earlier guidance
 
 ### Open questions / blockers
-- Phase 13c row from earlier in the day (id `6257b6aa...`) has `project_id = null` because it was saved before Phase 13d existed. Backfill via SQL update or leave as-is? Currently leaving
-- `audio_url` is null on most saved calls because Force Cloud is off. If every call's audio should be archived, the toggle stays on
-- **Phase 15 (YouTube permissions architecture):** awaiting Avshi's clarification on what this feature actually is. Cannot plan without context
-
-### Next session
-- Phase 15 planning + build (after Avshi sends YouTube context)
-- Optional small items: (1) backfill old Phase 13c row's `project_id`, (2) wire `api_cost_usd` from `MARBLE_METER` into call save payload
+- Phase 13c row id `6257b6aa...` has `project_id = null` (legacy)
+- `audio_url` is null on most saved calls because Force Cloud is off
+- **Phase 15 (YouTube permissions architecture):** awaiting clarification (RESOLVED Session 14 — Phase 15 became Multi-Format Media Intake)
 
 ### Lessons learned (skill v11 backlog)
-- **Schema introspection before INSERT code prevents debugging cycles.** Asking for one `information_schema.columns` query saved an entire iteration round
-- **Postgres CHECK constraints are separate from column defaults.** When migrating allowed values, both must be updated — otherwise updates work but inserts of new values fail
-- **`prompt()` before `window.open()` = popup blocker.** Modern Chrome treats sync modal dialogs as consuming the user-gesture token. Use inline modals instead
-- **ElevenLabs Scribe v1 hallucinates speaker name prefixes** on Hebrew phone calls when `diarize=true`. Pattern is regular enough to auto-strip with a Hebrew-word-count regex
-- **Per-feature version bumps + tested checkpoints beat bundled changes.** Each v6→v11 had its own test cycle; nothing got stuck
+- **Schema introspection before INSERT code prevents debugging cycles**
+- **Postgres CHECK constraints are separate from column defaults**
+- **`prompt()` before `window.open()` = popup blocker** — use inline modals
+- **ElevenLabs Scribe v1 hallucinates speaker prefixes** on Hebrew calls
+- **Per-feature version bumps + tested checkpoints beat bundled changes**
