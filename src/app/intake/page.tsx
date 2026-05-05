@@ -1,19 +1,14 @@
 /**
- * src/app/intake/page.tsx
+ * src/app/intake/page.tsx — v2 (Phase 15.5)
  *
- * The intake page — Avshi's internal tool for processing inbound media
- * from customers (photos, sketches, videos, PDFs, links).
- *
- * Flow:
- *   1. Pick a customer (CustomerPicker)
- *   2. Pick a file or paste a URL (MediaInput)
- *   3. Run analysis (PhotoAnalyzer for now — other types later)
- *   4. Review + edit the AI's output
- *   5. Approve → saves both customer_communications row + media_analyses row
- *   6. Go again
+ * v2 additions:
+ *   - Owns the ApiCallStatusData state (so it persists across analyses)
+ *   - Renders <ApiCallStatus> in a sticky right column
+ *   - Passes onStatusChange + customer down to PhotoAnalyzer
  *
  * Phase 15 — Multi-Format Media Intake
  * Created: 04/05/2026
+ * Updated: 05/05/2026 (Phase 15.5)
  */
 
 'use client';
@@ -23,16 +18,23 @@ import { supabase, CustomerWithProject, MediaTypeDB } from '@/lib/supabase';
 import CustomerPicker from '@/components/intake/CustomerPicker';
 import MediaInput, { MediaSelection } from '@/components/intake/MediaInput';
 import PhotoAnalyzer, { AnalysisResult } from '@/components/intake/analyzers/PhotoAnalyzer';
+import ApiCallStatus, { ApiCallStatusData } from '@/components/intake/ApiCallStatus';
 
 type SaveState = 'idle' | 'saving' | 'success' | 'error';
+
+const IDLE_STATUS: ApiCallStatusData = {
+  stage:       'idle',
+  moduleLabel: '',
+  startedAt:   0,
+};
 
 export default function IntakePage() {
   const [customer, setCustomer] = useState<CustomerWithProject | null>(null);
   const [media, setMedia] = useState<MediaSelection | null>(null);
   const [saveState, setSaveState] = useState<SaveState>('idle');
   const [saveMsg, setSaveMsg] = useState<string>('');
+  const [apiStatus, setApiStatus] = useState<ApiCallStatusData>(IDLE_STATUS);
 
-  // ── Save flow ──────────────────────────────────────────────────
   async function saveAnalysis(result: AnalysisResult) {
     if (!customer) {
       setSaveState('error');
@@ -44,7 +46,6 @@ export default function IntakePage() {
     setSaveMsg('');
 
     try {
-      // 1. Insert into customer_communications
       const commType: MediaTypeDB = result.mediaType;
       const { data: commRow, error: commErr } = await supabase
         .from('customer_communications')
@@ -64,7 +65,6 @@ export default function IntakePage() {
         throw new Error('customer_communications insert failed: ' + (commErr?.message || 'no row returned'));
       }
 
-      // 2. Insert into media_analyses (linked to the comm row above)
       const { error: maErr } = await supabase.from('media_analyses').insert({
         comm_id:               commRow.id,
         customer_id:           customer.customer.id,
@@ -90,7 +90,6 @@ export default function IntakePage() {
 
       setSaveState('success');
       setSaveMsg('✓ נשמר בהצלחה. סה״כ עלות API: $' + result.apiCostUsd.toFixed(4));
-      // Reset form for next intake
       setMedia(null);
     } catch (e) {
       setSaveState('error');
@@ -101,8 +100,6 @@ export default function IntakePage() {
   function cancelAnalysis() {
     setMedia(null);
   }
-
-  // ── Render ─────────────────────────────────────────────────────
 
   // Determine which analyzer to render based on detected media type
   const showPhotoAnalyzer =
@@ -122,7 +119,7 @@ export default function IntakePage() {
 
   return (
     <main className="min-h-screen bg-gray-50 py-8 px-4" dir="rtl">
-      <div className="max-w-3xl mx-auto">
+      <div className="max-w-5xl mx-auto">
         <header className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900">קליטת חומרי הפניה</h1>
           <p className="text-sm text-gray-600 mt-1">
@@ -130,76 +127,80 @@ export default function IntakePage() {
           </p>
         </header>
 
-        <div className="bg-white border border-gray-200 rounded-lg p-5 shadow-sm space-y-5">
-          {/* Step 1: Customer */}
-          <section>
-            <CustomerPicker onSelect={setCustomer} />
-          </section>
-
-          {customer && (
-            <div className="bg-blue-50 border border-blue-200 rounded px-3 py-2 text-sm">
-              לקוח נבחר: <strong>{customer.customer.name_he}</strong>
-              {customer.activeProject ? (
-                <> · פרויקט פעיל: {customer.activeProject.title_he} [{customer.activeProject.status}]</>
-              ) : (
-                <> · אין פרויקט פעיל (ייווצר אוטומטית בשמירה)</>
-              )}
-            </div>
-          )}
-
-          {/* Step 2: Media */}
-          {customer && (
-            <section className="border-t pt-5">
-              <h2 className="text-sm font-medium text-gray-900 mb-2">
-                בחר חומר הפניה:
-              </h2>
-              <MediaInput onChange={setMedia} disabled={saveState === 'saving'} />
+        {/* Two-column layout on desktop: main flow on the right (RTL), status on the left */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-4">
+          <div className="bg-white border border-gray-200 rounded-lg p-5 shadow-sm space-y-5">
+            {/* Step 1: Customer */}
+            <section>
+              <CustomerPicker onSelect={setCustomer} />
             </section>
-          )}
 
-          {/* Step 3: Analyzer (only photos/sketches for now) */}
-          {showPhotoAnalyzer && media && media.file && (
-            <section className="border-t pt-5">
-              <PhotoAnalyzer
-                file={media.file}
-                mediaType={media.mediaType === 'sketch' ? 'sketch' : 'photo'}
-                onComplete={saveAnalysis}
-                onCancel={cancelAnalysis}
-              />
-            </section>
-          )}
-
-          {/* Step 3 (alt): not-implemented placeholder for other media types */}
-          {otherTypeNotImplementedMessage && (
-            <section className="border-t pt-5">
-              <div className="bg-amber-50 border border-amber-200 rounded px-3 py-3 text-sm text-amber-900">
-                ℹ️ {otherTypeNotImplementedMessage}
+            {customer && (
+              <div className="bg-blue-50 border border-blue-200 rounded px-3 py-2 text-sm">
+                לקוח נבחר: <strong>{customer.customer.name_he}</strong>
+                {customer.activeProject ? (
+                  <> · פרויקט פעיל: {customer.activeProject.title_he} [{customer.activeProject.status}]</>
+                ) : (
+                  <> · אין פרויקט פעיל (ייווצר אוטומטית בשמירה)</>
+                )}
               </div>
-            </section>
-          )}
+            )}
 
-          {/* Save state feedback */}
-          {saveState !== 'idle' && (
-            <section className="border-t pt-5">
-              {saveState === 'saving' && (
-                <div className="text-sm text-gray-600">💾 שומר...</div>
-              )}
-              {saveState === 'success' && (
-                <div className="text-sm text-green-700 bg-green-50 border border-green-200 rounded px-3 py-2">
-                  {saveMsg}
+            {/* Step 2: Media */}
+            {customer && (
+              <section className="border-t pt-5">
+                <h2 className="text-sm font-medium text-gray-900 mb-2">בחר חומר הפניה:</h2>
+                <MediaInput onChange={setMedia} disabled={saveState === 'saving'} />
+              </section>
+            )}
+
+            {/* Step 3: Analyzer */}
+            {showPhotoAnalyzer && media && media.file && (
+              <section className="border-t pt-5">
+                <PhotoAnalyzer
+                  file={media.file}
+                  mediaType={media.mediaType === 'sketch' ? 'sketch' : 'photo'}
+                  customer={customer}
+                  onComplete={saveAnalysis}
+                  onCancel={cancelAnalysis}
+                  onStatusChange={setApiStatus}
+                />
+              </section>
+            )}
+
+            {otherTypeNotImplementedMessage && (
+              <section className="border-t pt-5">
+                <div className="bg-amber-50 border border-amber-200 rounded px-3 py-3 text-sm text-amber-900">
+                  ℹ️ {otherTypeNotImplementedMessage}
                 </div>
-              )}
-              {saveState === 'error' && (
-                <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">
-                  ⚠️ {saveMsg}
-                </div>
-              )}
-            </section>
-          )}
+              </section>
+            )}
+
+            {saveState !== 'idle' && (
+              <section className="border-t pt-5">
+                {saveState === 'saving' && <div className="text-sm text-gray-600">💾 שומר...</div>}
+                {saveState === 'success' && (
+                  <div className="text-sm text-green-700 bg-green-50 border border-green-200 rounded px-3 py-2">
+                    {saveMsg}
+                  </div>
+                )}
+                {saveState === 'error' && (
+                  <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">
+                    ⚠️ {saveMsg}
+                  </div>
+                )}
+              </section>
+            )}
+          </div>
+
+          {/* Sticky status panel — Phase 15.5 */}
+          <aside>
+            <ApiCallStatus status={apiStatus} />
+          </aside>
         </div>
 
         <footer className="text-xs text-gray-500 mt-4 text-center">
-          Phase 15 · Multi-Format Media Intake · v1
+          Phase 15 · Multi-Format Media Intake · v1.5
         </footer>
       </div>
     </main>
