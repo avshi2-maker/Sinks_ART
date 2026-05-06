@@ -1,31 +1,34 @@
-/**
- * PhotoAnalyzer.tsx — v2 (Phase 15.5)
+﻿/**
+ * src/components/intake/analyzers/PhotoAnalyzer.tsx — refactored Phase B
  *
- * The end-to-end photo/sketch analysis flow.
+ * Same UX as before but uses the new shared components:
+ *   - ExportFooter (replaces AnalysisActionBar)
+ *   - ApiCostMeter via parent's ApiMeterReading prop (was ApiCallStatusData)
+ *   - Generic exportFormats / ReportSnapshot
  *
- * v2 additions:
- *   - Reports status events to parent via onStatusChange so ApiCallStatus updates live
- *   - Renders <AnalysisActionBar> in the review stage (Print / Email / WhatsApp / Project)
+ * Phase 15.5 patterns preserved. Rule #11 satisfied.
  *
- * Phase 15 — Multi-Format Media Intake
- * Created: 04/05/2026
- * Updated: 05/05/2026 (Phase 15.5)
+ * Phase B refactor (Session 17, 06/05/2026)
+ * Original: Sessions 15-16
  */
 
 'use client';
 
 import { useState } from 'react';
-import { uploadToCloudinary, isCloudinaryConfigured } from '@/lib/intake/cloudinary';
-import AnalysisActionBar from '@/components/intake/AnalysisActionBar';
 import {
-  ApiCallStatusData,
-  makeRunningStatus,
-  makeDoneStatus,
-  makeErrorStatus,
-} from '@/components/intake/ApiCallStatus';
+  uploadToCloudinary,
+  isCloudinaryConfigured,
+} from '@/lib/intake/cloudinary';
+import ExportFooter from '@/components/shared/ExportFooter';
+import type { ReportSnapshot } from '@/lib/shared/exportFormats';
+import type { ApiMeterReading } from '@/lib/sinc/types';
+import {
+  makeRunningReading,
+  makeDoneReading,
+  makeErrorReading,
+} from '@/lib/sinc/apiMeter';
 import type { CustomerWithProject } from '@/lib/supabase';
 
-/** What this component reports to its parent when analysis is complete. */
 export interface AnalysisResult {
   cloudinaryUrl:        string;
   sourceFilename:       string;
@@ -46,7 +49,7 @@ interface Props {
   customer:       CustomerWithProject | null;
   onComplete:     (result: AnalysisResult) => void;
   onCancel:       () => void;
-  onStatusChange: (status: ApiCallStatusData) => void;
+  onStatusChange: (status: ApiMeterReading) => void;
 }
 
 type Stage = 'idle' | 'uploading' | 'analyzing' | 'review' | 'error';
@@ -60,6 +63,15 @@ interface AnalysisFields {
   additionalNotesHe:   string;
 }
 
+const EMPTY_FIELDS: AnalysisFields = {
+  extractedDimensions: '',
+  extractedStoneType:  '',
+  extractedShape:      '',
+  designIntentHe:      '',
+  referenceSummaryHe:  '',
+  additionalNotesHe:   '',
+};
+
 export default function PhotoAnalyzer({
   file,
   mediaType,
@@ -68,19 +80,12 @@ export default function PhotoAnalyzer({
   onCancel,
   onStatusChange,
 }: Props) {
-  const [stage, setStage] = useState<Stage>('idle');
-  const [errorMsg, setErrorMsg] = useState<string>('');
-  const [cloudinaryUrl, setCloudinaryUrl] = useState<string>('');
+  const [stage, setStage]           = useState<Stage>('idle');
+  const [errorMsg, setErrorMsg]     = useState<string>('');
+  const [imageUrl, setImageUrl]     = useState<string>('');
   const [apiCostUsd, setApiCostUsd] = useState<number>(0);
-  const [rawJson, setRawJson] = useState<Record<string, unknown> | null>(null);
-  const [fields, setFields] = useState<AnalysisFields>({
-    extractedDimensions: '',
-    extractedStoneType:  '',
-    extractedShape:      '',
-    designIntentHe:      '',
-    referenceSummaryHe:  '',
-    additionalNotesHe:   '',
-  });
+  const [rawJson, setRawJson]       = useState<Record<string, unknown> | null>(null);
+  const [fields, setFields]         = useState<AnalysisFields>(EMPTY_FIELDS);
 
   async function startAnalysis() {
     setErrorMsg('');
@@ -92,7 +97,7 @@ export default function PhotoAnalyzer({
     }
 
     setStage('uploading');
-    const runStatus = makeRunningStatus('Claude Sonnet 4-6 vision');
+    const runStatus = makeRunningReading('analyzing', mediaTypeLabel(mediaType) + ' · ' + 'Claude Sonnet 4-6');
     onStatusChange(runStatus);
 
     let uploaded;
@@ -102,10 +107,11 @@ export default function PhotoAnalyzer({
       const msg = 'שגיאת העלאה ל-Cloudinary: ' + (e instanceof Error ? e.message : String(e));
       setStage('error');
       setErrorMsg(msg);
-      onStatusChange(makeErrorStatus(runStatus, msg));
+      onStatusChange(makeErrorReading(runStatus, msg));
       return;
     }
-    setCloudinaryUrl(uploaded.url);
+
+    setImageUrl(uploaded.url);
 
     setStage('analyzing');
     try {
@@ -116,10 +122,10 @@ export default function PhotoAnalyzer({
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
-        const msg = data.error || 'שגיאה בניתוח התמונה';
+        const msg = data.error || 'שגיאה בניתוח';
         setStage('error');
         setErrorMsg(msg);
-        onStatusChange(makeErrorStatus(runStatus, msg));
+        onStatusChange(makeErrorReading(runStatus, msg));
         return;
       }
 
@@ -140,12 +146,12 @@ export default function PhotoAnalyzer({
         additionalNotesHe:   parsed.additional_notes_he   || '',
       });
       setStage('review');
-      onStatusChange(makeDoneStatus(runStatus, inputTokens, outputTokens, costUsd));
+      onStatusChange(makeDoneReading(runStatus, inputTokens, outputTokens, costUsd));
     } catch (e) {
       const msg = 'שגיאת רשת: ' + (e instanceof Error ? e.message : String(e));
       setStage('error');
       setErrorMsg(msg);
-      onStatusChange(makeErrorStatus(runStatus, msg));
+      onStatusChange(makeErrorReading(runStatus, msg));
     }
   }
 
@@ -155,7 +161,7 @@ export default function PhotoAnalyzer({
 
   function buildResult(): AnalysisResult {
     return {
-      cloudinaryUrl,
+      cloudinaryUrl:       imageUrl,
       sourceFilename:      file.name,
       mediaType,
       extractedDimensions: fields.extractedDimensions || null,
@@ -169,6 +175,32 @@ export default function PhotoAnalyzer({
     };
   }
 
+  function buildSnapshot(): ReportSnapshot {
+    return {
+      reportTypeHe:   'ניתוח ' + mediaTypeLabel(mediaType),
+      subjectSuffix:  file.name,
+      customer: customer ? {
+        nameHe: customer.customer.name_he,
+        email:  customer.customer.email,
+        phone:  customer.customer.phone,
+      } : undefined,
+      projectContext: customer?.activeProject
+        ? customer.activeProject.title_he + ' · ' + customer.activeProject.status
+        : undefined,
+      sections: [
+        { headingHe: '📐 מידות',          bodyHe: fields.extractedDimensions },
+        { headingHe: '🪨 סוג אבן',        bodyHe: fields.extractedStoneType },
+        { headingHe: '🔹 צורה',           bodyHe: fields.extractedShape },
+        { headingHe: '🎨 כוונת העיצוב',  bodyHe: fields.designIntentHe },
+        { headingHe: '📝 תיאור החומר',   bodyHe: fields.referenceSummaryHe },
+        { headingHe: '💡 הערות נוספות',  bodyHe: fields.additionalNotesHe },
+      ],
+      primaryAssetUrl:     imageUrl || undefined,
+      primaryAssetLabelHe: 'צפייה בתמונה',
+      apiCostUsd,
+    };
+  }
+
   function updateField(key: keyof AnalysisFields, value: string) {
     setFields((prev) => ({ ...prev, [key]: value }));
   }
@@ -178,17 +210,17 @@ export default function PhotoAnalyzer({
       <div className="bg-gray-50 border border-gray-200 rounded p-3 text-sm">
         <div className="font-medium text-gray-900">{file.name}</div>
         <div className="text-xs text-gray-500 mt-1">
-          {(file.size / (1024 * 1024)).toFixed(2)} מ״ב · {mediaType === 'sketch' ? 'שרטוט' : 'תמונה'}
+          {(file.size / (1024 * 1024)).toFixed(2)} מ״ב · {mediaTypeLabel(mediaType)}
         </div>
       </div>
 
       {stage === 'idle' && (
         <div className="flex gap-2">
           <button type="button" onClick={startAnalysis} className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700">
-            🪄 התחל ניתוח
+            <span>🪄 התחל ניתוח</span>
           </button>
           <button type="button" onClick={onCancel} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md text-sm hover:bg-gray-300">
-            ביטול
+            <span>ביטול</span>
           </button>
         </div>
       )}
@@ -198,9 +230,7 @@ export default function PhotoAnalyzer({
       )}
 
       {stage === 'analyzing' && (
-        <div className="text-sm text-gray-600 py-4">
-          🔍 Claude מנתח את ה{mediaType === 'sketch' ? 'שרטוט' : 'תמונה'}... (יכול לקחת 5-15 שניות)
-        </div>
+        <div className="text-sm text-gray-600 py-4">🔍 Claude מנתח... (5-15 שניות)</div>
       )}
 
       {stage === 'error' && (
@@ -208,10 +238,10 @@ export default function PhotoAnalyzer({
           <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">⚠️ {errorMsg}</div>
           <div className="flex gap-2">
             <button type="button" onClick={() => setStage('idle')} className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700">
-              נסה שוב
+              <span>נסה שוב</span>
             </button>
             <button type="button" onClick={onCancel} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md text-sm hover:bg-gray-300">
-              ביטול
+              <span>ביטול</span>
             </button>
           </div>
         </div>
@@ -223,10 +253,10 @@ export default function PhotoAnalyzer({
             ✓ ניתוח הושלם · עלות: ${apiCostUsd.toFixed(4)}
           </div>
 
-          {cloudinaryUrl && (
+          {imageUrl && (
             <div className="border border-gray-200 rounded overflow-hidden bg-gray-50 inline-block max-w-xs">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={cloudinaryUrl} alt="preview" className="block w-full" />
+              <img src={imageUrl} alt="thumbnail" className="block w-full" />
             </div>
           )}
 
@@ -240,21 +270,26 @@ export default function PhotoAnalyzer({
           <TextArea label="תיאור החומר המצורף" value={fields.referenceSummaryHe} onChange={(v) => updateField('referenceSummaryHe', v)} rows={2} />
           <TextArea label="הערות נוספות"      value={fields.additionalNotesHe}  onChange={(v) => updateField('additionalNotesHe', v)}  rows={2} />
 
-          {/* Phase 15.5: action bar (Print / Email / WhatsApp / Project) */}
-          <AnalysisActionBar result={buildResult()} customer={customer} />
+          <ExportFooter snapshot={buildSnapshot()} />
 
           <div className="flex gap-2 pt-2">
             <button type="button" onClick={approve} className="px-4 py-2 bg-green-600 text-white rounded-md text-sm hover:bg-green-700">
-              ✓ אשר ושמור
+              <span>✓ אשר ושמור</span>
             </button>
             <button type="button" onClick={onCancel} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md text-sm hover:bg-gray-300">
-              ביטול
+              <span>ביטול</span>
             </button>
           </div>
         </div>
       )}
     </div>
   );
+}
+
+function mediaTypeLabel(t: 'photo' | 'sketch' | 'mp4'): string {
+  if (t === 'sketch') return 'שרטוט';
+  if (t === 'mp4')    return 'סרטון';
+  return 'תמונה';
 }
 
 function Field(props: { label: string; value: string; onChange: (v: string) => void; placeholder?: string }) {

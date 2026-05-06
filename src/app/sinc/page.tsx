@@ -1,77 +1,73 @@
 ﻿/**
  * src/app/sinc/page.tsx
  *
- * SinC-ART — Phase A placeholder.
- * Renders a styled "loading" card to verify:
- *   - /sinc route works on Vercel
- *   - Hebrew fonts (Heebo + Frank Ruhl Libre) load correctly
- *   - Design tokens (navy, gold, cream) display correctly
- *   - RTL layout works on phone + desktop
+ * SinC-ART main route — call intake system.
+ * Replaces the Phase A placeholder with the working app:
+ *   1. AudioFilePicker — user selects audio file
+ *   2. CallProcessingFlow — uploads, transcribes, analyzes, displays
  *
- * Phases B-F will replace this with the full migrated UI.
+ * Migrated from sinc_art_call_intake_03052026-v7.html
  *
- * Migrated from: sinc_art_call_intake_03052026-v7.html (still in demos/)
- * Phase A — Foundation (Session 17, 06/05/2026)
+ * Phase B/C — Audio pipeline complete (Session 17, 06/05/2026)
  */
 
-"use client";
+'use client';
 
-import styles from "@/styles/sinc.module.css";
+import { useState } from 'react';
+import styles from '@/styles/sinc.module.css';
+import AudioFilePicker from '@/components/sinc/AudioFilePicker';
+import CallProcessingFlow from '@/components/sinc/CallProcessingFlow';
+
+interface PickedAudio {
+  file:        File;
+  durationSec: number;
+}
 
 export default function SincPage() {
+  const [picked, setPicked] = useState<PickedAudio | null>(null);
+
+  function handleFileSelected(file: File, durationSec: number) {
+    setPicked({ file, durationSec });
+  }
+
+  function handleCancel() {
+    setPicked(null);
+  }
+
   return (
     <div className={`${styles.scope} ${styles.page}`}>
       <div className={styles.container}>
-        <header style={{ textAlign: "center", marginBottom: "32px" }}>
+        <header style={{ textAlign: 'center', marginBottom: '32px' }}>
           <h1 className={styles.h1}>SinC-ART</h1>
           <p className={styles.subtitle}>
-            מערכת קליטת שיחות לקוחות · Phase A · בנייה מחודשת
+            מערכת קליטת שיחות לקוחות · ניתוח אוטומטי בעברית
           </p>
         </header>
 
-        <div className={styles.card}>
-          <h2 className={styles.h2}>🚧 בנייה בעיצומה</h2>
-          <p style={{ marginBottom: "16px", color: "var(--ink-muted)" }}>
-            הגרסה החדשה של SinC-ART נבנית בימים אלה כמערכת מודולרית מקצועית.
-            הגרסה הקיימת ממשיכה לעבוד מקומית בקובץ HTML יחיד.
-          </p>
-
-          <div
-            style={{
-              background: "var(--cream-2)",
-              border: "1px solid var(--gold-faint)",
-              borderRadius: "var(--radius-sm)",
-              padding: "16px",
-              marginBottom: "16px",
-            }}
-          >
-            <strong style={{ color: "var(--navy)" }}>שלבי הפיתוח:</strong>
-            <ul style={{ marginTop: "8px", paddingInlineStart: "20px", lineHeight: "2" }}>
-              <li>✅ <strong>Phase A</strong> — תשתית, גופנים, צבעים, פריסה</li>
-              <li>⏳ <strong>Phase B</strong> — שכבת נתונים מאובטחת (Supabase + API)</li>
-              <li>⏳ <strong>Phase C</strong> — העלאת אודיו ותמלול</li>
-              <li>⏳ <strong>Phase D</strong> — הצגת ניתוח השיחה</li>
-              <li>⏳ <strong>Phase E</strong> — שמירה וקישור ללקוחות</li>
-              <li>⏳ <strong>Phase F</strong> — שחרור גרסה סופית</li>
-            </ul>
+        {!picked && (
+          <div className={styles.card}>
+            <h2 className={styles.h2}>🎙️ בחר קובץ הקלטה</h2>
+            <p style={{ marginBottom: '16px', color: 'var(--ink-muted)', fontSize: '14px' }}>
+              העלה הקלטת שיחה עם לקוח. המערכת תתמלל את ההקלטה,
+              תזהה את הדוברים, ותפיק ניתוח מובנה בעברית.
+            </p>
+            <AudioFilePicker onFileSelected={handleFileSelected} />
           </div>
+        )}
 
-          <p style={{ fontSize: "13px", color: "var(--ink-faint)" }}>
-            <span className={styles.spinner} style={{ marginInlineEnd: "8px", verticalAlign: "middle" }}></span>
-            כשה-Phase הנוכחי יושלם, תופיע כאן הממשק האמיתי.
-          </p>
-        </div>
+        {picked && (
+          <div className={styles.card}>
+            <h2 className={styles.h2}>🪄 עיבוד השיחה</h2>
+            <CallProcessingFlow
+              file={picked.file}
+              durationSec={picked.durationSec}
+              onCancel={handleCancel}
+            />
+          </div>
+        )}
 
-        <div className={`${styles.card} ${styles.cardGold}`}>
-          <h2 className={styles.h2}>📍 אימות תשתית</h2>
-          <p style={{ color: "var(--ink-muted)", fontSize: "14px" }}>
-            אם אתה רואה דף זה עם הצבעים הנכונים (כחול-זהב-קרם), הגופן Heebo,
-            וטקסט מימין-לשמאל — Phase A הסתיים בהצלחה.
-          </p>
-        </div>
-
-        <footer style={{ textAlign: "center", marginTop: "32px", fontSize: "12px", color: "var(--ink-faint)" }}>
-          SinC-ART · Phase A · 06/05/2026
+        <footer style={{ textAlign: 'center', marginTop: '32px', fontSize: '12px', color: 'var(--ink-faint)' }}>
+          SinC-ART · Phase B/C · 06/05/2026
         </footer>
       </div>
     </div>

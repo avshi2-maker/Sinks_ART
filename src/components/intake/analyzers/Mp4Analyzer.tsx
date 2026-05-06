@@ -1,17 +1,11 @@
 ﻿/**
- * Mp4Analyzer.tsx
+ * src/components/intake/analyzers/Mp4Analyzer.tsx — refactored Phase B
  *
- * Video walk-around analysis flow:
- *   1. Receives an MP4 File from MediaInput
- *   2. Uploads to Cloudinary (folder: marble-sinks/intake) as resource_type='video'
- *   3. Extracts a JPEG frame at second N (default 1) via Cloudinary URL transform
- *   4. Sends that frame to /api/analyze-photo with mediaType='mp4'
- *   5. Displays Hebrew structured analysis with editable fields
- *   6. User can re-extract a different frame and re-analyze
- *   7. Renders <AnalysisActionBar> per Phase 15.5 Rule #11
+ * Same UX as Session 17 build (frame extraction + time picker + play toggle)
+ * but uses shared ExportFooter + ApiMeterReading instead of intake-specific
+ * AnalysisActionBar + ApiCallStatusData.
  *
- * Phase 15 — Multi-Format Media Intake (Session 17)
- * Created: 06/05/2026
+ * Phase B refactor (Session 17, 06/05/2026)
  */
 
 'use client';
@@ -22,13 +16,14 @@ import {
   getVideoFrameUrl,
   isCloudinaryConfigured,
 } from '@/lib/intake/cloudinary';
-import AnalysisActionBar from '@/components/intake/AnalysisActionBar';
+import ExportFooter from '@/components/shared/ExportFooter';
+import type { ReportSnapshot } from '@/lib/shared/exportFormats';
+import type { ApiMeterReading } from '@/lib/sinc/types';
 import {
-  ApiCallStatusData,
-  makeRunningStatus,
-  makeDoneStatus,
-  makeErrorStatus,
-} from '@/components/intake/ApiCallStatus';
+  makeRunningReading,
+  makeDoneReading,
+  makeErrorReading,
+} from '@/lib/sinc/apiMeter';
 import type { CustomerWithProject } from '@/lib/supabase';
 import type { AnalysisResult } from '@/components/intake/analyzers/PhotoAnalyzer';
 
@@ -37,7 +32,7 @@ interface Props {
   customer:       CustomerWithProject | null;
   onComplete:     (result: AnalysisResult) => void;
   onCancel:       () => void;
-  onStatusChange: (status: ApiCallStatusData) => void;
+  onStatusChange: (status: ApiMeterReading) => void;
 }
 
 type Stage = 'idle' | 'uploading' | 'extracting' | 'analyzing' | 'review' | 'error';
@@ -67,16 +62,16 @@ export default function Mp4Analyzer({
   onCancel,
   onStatusChange,
 }: Props) {
-  const [stage, setStage]               = useState<Stage>('idle');
-  const [errorMsg, setErrorMsg]         = useState<string>('');
-  const [videoUrl, setVideoUrl]         = useState<string>('');
+  const [stage, setStage]                 = useState<Stage>('idle');
+  const [errorMsg, setErrorMsg]           = useState<string>('');
+  const [videoUrl, setVideoUrl]           = useState<string>('');
   const [videoDuration, setVideoDuration] = useState<number>(0);
-  const [frameSecond, setFrameSecond]   = useState<number>(1);
-  const [frameUrl, setFrameUrl]         = useState<string>('');
-  const [showOriginal, setShowOriginal] = useState<boolean>(false);
-  const [apiCostUsd, setApiCostUsd]     = useState<number>(0);
-  const [rawJson, setRawJson]           = useState<Record<string, unknown> | null>(null);
-  const [fields, setFields]             = useState<AnalysisFields>(EMPTY_FIELDS);
+  const [frameSecond, setFrameSecond]     = useState<number>(1);
+  const [frameUrl, setFrameUrl]           = useState<string>('');
+  const [showOriginal, setShowOriginal]   = useState<boolean>(false);
+  const [apiCostUsd, setApiCostUsd]       = useState<number>(0);
+  const [rawJson, setRawJson]             = useState<Record<string, unknown> | null>(null);
+  const [fields, setFields]               = useState<AnalysisFields>(EMPTY_FIELDS);
 
   async function startAnalysis() {
     setErrorMsg('');
@@ -88,7 +83,7 @@ export default function Mp4Analyzer({
     }
 
     setStage('uploading');
-    const runStatus = makeRunningStatus('העלאת סרטון + ניתוח Claude Sonnet 4-6');
+    const runStatus = makeRunningReading('analyzing', 'העלאת סרטון + ניתוח Claude Sonnet 4-6');
     onStatusChange(runStatus);
 
     let uploaded;
@@ -98,7 +93,7 @@ export default function Mp4Analyzer({
       const msg = 'שגיאת העלאה ל-Cloudinary: ' + (e instanceof Error ? e.message : String(e));
       setStage('error');
       setErrorMsg(msg);
-      onStatusChange(makeErrorStatus(runStatus, msg));
+      onStatusChange(makeErrorReading(runStatus, msg));
       return;
     }
 
@@ -121,12 +116,12 @@ export default function Mp4Analyzer({
     setFrameUrl(newFrameUrl);
 
     setStage('analyzing');
-    const runStatus = makeRunningStatus('ניתוח פריים חדש (שניה ' + frameSecond + ')');
+    const runStatus = makeRunningReading('analyzing', 'ניתוח פריים חדש (שניה ' + frameSecond + ')');
     onStatusChange(runStatus);
     await runAnalysis(newFrameUrl, runStatus);
   }
 
-  async function runAnalysis(targetFrameUrl: string, runStatus: ApiCallStatusData) {
+  async function runAnalysis(targetFrameUrl: string, runStatus: ApiMeterReading) {
     try {
       const res = await fetch('/api/analyze-photo', {
         method:  'POST',
@@ -138,7 +133,7 @@ export default function Mp4Analyzer({
         const msg = data.error || 'שגיאה בניתוח הפריים';
         setStage('error');
         setErrorMsg(msg);
-        onStatusChange(makeErrorStatus(runStatus, msg));
+        onStatusChange(makeErrorReading(runStatus, msg));
         return;
       }
 
@@ -159,12 +154,12 @@ export default function Mp4Analyzer({
         additionalNotesHe:   parsed.additional_notes_he   || '',
       });
       setStage('review');
-      onStatusChange(makeDoneStatus(runStatus, inputTokens, outputTokens, costUsd));
+      onStatusChange(makeDoneReading(runStatus, inputTokens, outputTokens, costUsd));
     } catch (e) {
       const msg = 'שגיאת רשת: ' + (e instanceof Error ? e.message : String(e));
       setStage('error');
       setErrorMsg(msg);
-      onStatusChange(makeErrorStatus(runStatus, msg));
+      onStatusChange(makeErrorReading(runStatus, msg));
     }
   }
 
@@ -185,6 +180,32 @@ export default function Mp4Analyzer({
       additionalNotesHe:   fields.additionalNotesHe   || null,
       apiCostUsd,
       rawJson,
+    };
+  }
+
+  function buildSnapshot(): ReportSnapshot {
+    return {
+      reportTypeHe:   'ניתוח סרטון',
+      subjectSuffix:  file.name,
+      customer: customer ? {
+        nameHe: customer.customer.name_he,
+        email:  customer.customer.email,
+        phone:  customer.customer.phone,
+      } : undefined,
+      projectContext: customer?.activeProject
+        ? customer.activeProject.title_he + ' · ' + customer.activeProject.status
+        : undefined,
+      sections: [
+        { headingHe: '📐 מידות',          bodyHe: fields.extractedDimensions },
+        { headingHe: '🪨 סוג אבן',        bodyHe: fields.extractedStoneType },
+        { headingHe: '🔹 צורה',           bodyHe: fields.extractedShape },
+        { headingHe: '🎨 כוונת העיצוב',  bodyHe: fields.designIntentHe },
+        { headingHe: '📝 תיאור החומר',   bodyHe: fields.referenceSummaryHe },
+        { headingHe: '💡 הערות נוספות',  bodyHe: fields.additionalNotesHe },
+      ],
+      primaryAssetUrl:     videoUrl || undefined,
+      primaryAssetLabelHe: 'צפייה בסרטון',
+      apiCostUsd,
     };
   }
 
@@ -261,28 +282,11 @@ export default function Mp4Analyzer({
               <div className="text-xs font-medium text-gray-700">לקפוץ לזמן אחר בסרטון:</div>
               <div className="flex items-center gap-2 flex-wrap">
                 <label className="text-xs text-gray-600">שניה:</label>
-                <input
-                  type="number"
-                  min={0}
-                  max={videoDuration > 0 ? Math.floor(videoDuration) : 9999}
-                  value={frameSecond}
-                  onChange={(e) => setFrameSecond(Math.max(0, parseInt(e.target.value, 10) || 0))}
-                  className="w-20 border border-gray-300 rounded px-2 py-1 text-sm font-mono"
-                  dir="ltr"
-                />
-                <button
-                  type="button"
-                  onClick={reExtractAndAnalyze}
-                  className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700"
-                  title="ישלוף פריים חדש ויעלה עוד $0.018"
-                >
+                <input type="number" min={0} max={videoDuration > 0 ? Math.floor(videoDuration) : 9999} value={frameSecond} onChange={(e) => setFrameSecond(Math.max(0, parseInt(e.target.value, 10) || 0))} className="w-20 border border-gray-300 rounded px-2 py-1 text-sm font-mono" dir="ltr" />
+                <button type="button" onClick={reExtractAndAnalyze} className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700" title="ישלוף פריים חדש ויעלה עוד $0.018">
                   <span>🔄 שלוף ונתח שוב</span>
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setShowOriginal((v) => !v)}
-                  className="px-3 py-1 bg-white border border-gray-300 text-gray-700 rounded text-xs hover:bg-gray-50"
-                >
+                <button type="button" onClick={() => setShowOriginal((v) => !v)} className="px-3 py-1 bg-white border border-gray-300 text-gray-700 rounded text-xs hover:bg-gray-50">
                   <span>{showOriginal ? '🙈 הסתר סרטון' : '▶️ הצג סרטון מקורי'}</span>
                 </button>
               </div>
@@ -309,7 +313,7 @@ export default function Mp4Analyzer({
           <TextArea label="תיאור החומר המצורף" value={fields.referenceSummaryHe} onChange={(v) => updateField('referenceSummaryHe', v)} rows={2} />
           <TextArea label="הערות נוספות"      value={fields.additionalNotesHe}  onChange={(v) => updateField('additionalNotesHe', v)}  rows={2} />
 
-          <AnalysisActionBar result={buildResult()} customer={customer} />
+          <ExportFooter snapshot={buildSnapshot()} />
 
           <div className="flex gap-2 pt-2">
             <button type="button" onClick={approve} className="px-4 py-2 bg-green-600 text-white rounded-md text-sm hover:bg-green-700">

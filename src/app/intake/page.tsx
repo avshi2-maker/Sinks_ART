@@ -1,9 +1,10 @@
 ﻿/**
- * src/app/intake/page.tsx — v3 (Session 17: MP4 routing added)
+ * src/app/intake/page.tsx — refactored Phase B
  *
- * Phase 15 — Multi-Format Media Intake
- * Created: 04/05/2026
- * Updated: 06/05/2026 (Session 17: routes 'mp4' mediaType to Mp4Analyzer)
+ * Same UX as Session 17 (PhotoAnalyzer + Mp4Analyzer routing) but uses
+ * the new shared ApiCostMeter (replaces ApiCallStatus).
+ *
+ * Phase B refactor (Session 17, 06/05/2026)
  */
 
 'use client';
@@ -14,22 +15,18 @@ import CustomerPicker from '@/components/intake/CustomerPicker';
 import MediaInput, { MediaSelection } from '@/components/intake/MediaInput';
 import PhotoAnalyzer, { AnalysisResult } from '@/components/intake/analyzers/PhotoAnalyzer';
 import Mp4Analyzer from '@/components/intake/analyzers/Mp4Analyzer';
-import ApiCallStatus, { ApiCallStatusData } from '@/components/intake/ApiCallStatus';
+import ApiCostMeter from '@/components/shared/ApiCostMeter';
+import type { ApiMeterReading } from '@/lib/sinc/types';
+import { makeIdleReading } from '@/lib/sinc/apiMeter';
 
 type SaveState = 'idle' | 'saving' | 'success' | 'error';
 
-const IDLE_STATUS: ApiCallStatusData = {
-  stage:       'idle',
-  moduleLabel: '',
-  startedAt:   0,
-};
-
 export default function IntakePage() {
-  const [customer, setCustomer] = useState<CustomerWithProject | null>(null);
-  const [media, setMedia] = useState<MediaSelection | null>(null);
+  const [customer, setCustomer]   = useState<CustomerWithProject | null>(null);
+  const [media, setMedia]         = useState<MediaSelection | null>(null);
   const [saveState, setSaveState] = useState<SaveState>('idle');
-  const [saveMsg, setSaveMsg] = useState<string>('');
-  const [apiStatus, setApiStatus] = useState<ApiCallStatusData>(IDLE_STATUS);
+  const [saveMsg, setSaveMsg]     = useState<string>('');
+  const [apiStatus, setApiStatus] = useState<ApiMeterReading>(makeIdleReading());
 
   async function saveAnalysis(result: AnalysisResult) {
     if (!customer) {
@@ -101,7 +98,6 @@ export default function IntakePage() {
     setMedia(null);
   }
 
-  // Determine which analyzer to render based on detected media type
   const showPhotoAnalyzer =
     media &&
     media.mode === 'file' &&
@@ -208,12 +204,12 @@ export default function IntakePage() {
           </div>
 
           <aside>
-            <ApiCallStatus status={apiStatus} />
+            <ApiCostMeter mode="single" status={apiStatus} />
           </aside>
         </div>
 
         <footer className="text-xs text-gray-500 mt-4 text-center">
-          Phase 15 · Multi-Format Media Intake · v1.6
+          Phase 15 · Multi-Format Media Intake · v1.7
         </footer>
       </div>
     </main>
