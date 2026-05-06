@@ -1,0 +1,270 @@
+﻿/* ============================================================
+ * sinc.module.css
+ *
+ * Design tokens + base styles for SinC-ART (call intake system)
+ * Migrated from sinc_art_call_intake_03052026-v7.html (Session 17)
+ *
+ * Usage:
+ *   import styles from "@/styles/sinc.module.css"
+ *   <div className={styles.page}>...</div>
+ *
+ * All custom properties are scoped under .scope so they don't leak
+ * to the rest of the marble-art-sinks site (gallery, intake, etc).
+ * ============================================================ */
+
+.scope {
+  /* Colors — navy/gold artisan palette */
+  --navy:        #0d1f36;
+  --navy-soft:   #1e3a5f;
+  --navy-muted:  #2c4668;
+  --gold:        #b8860b;
+  --gold-soft:   #d4a93a;
+  --gold-faint:  #f4e4b1;
+  --cream:       #faf7f0;
+  --cream-2:     #f4eddc;
+  --paper:       #ffffff;
+  --ink:         #1a1a1a;
+  --ink-muted:   #5c5c5c;
+  --ink-faint:   #8a8a8a;
+  --border:      #e8dfc5;
+  --success:     #2d5f3f;
+  --error:       #8b2c2c;
+
+  /* Shadows */
+  --shadow-sm:   0 1px 3px rgba(13, 31, 54, 0.08);
+  --shadow-md:   0 8px 24px rgba(13, 31, 54, 0.10);
+  --shadow-lg:   0 24px 60px rgba(13, 31, 54, 0.15);
+
+  /* Typography */
+  --font-body:   "Heebo", system-ui, sans-serif;
+  --font-display: "Frank Ruhl Libre", "Heebo", serif;
+
+  /* Layout */
+  --max-width:   1100px;
+  --gutter:      24px;
+  --radius-sm:   6px;
+  --radius-md:   12px;
+  --radius-lg:   20px;
+}
+
+/* ── Page shell ─────────────────────────────────────────── */
+.page {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--ink);
+  background: var(--cream);
+  direction: rtl;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  position: relative;
+}
+
+/* Subtle paper texture background */
+.page::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 20% 10%, rgba(184, 134, 11, 0.04) 0%, transparent 50%),
+    radial-gradient(circle at 80% 90%, rgba(30, 58, 95, 0.04) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.container {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 32px var(--gutter);
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Typography helpers ────────────────────────────────── */
+.h1 {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 900;
+  color: var(--navy);
+  letter-spacing: -0.5px;
+  margin-bottom: 8px;
+}
+
+.h2 {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--navy);
+  margin-bottom: 12px;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: var(--ink-muted);
+}
+
+/* ── Cards & surfaces ──────────────────────────────────── */
+.card {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 16px;
+}
+
+.cardGold {
+  background: var(--cream-2);
+  border-color: var(--gold-faint);
+}
+
+/* ── Buttons ──────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btnPrimary {
+  background: var(--navy);
+  color: var(--paper);
+}
+.btnPrimary:hover { background: var(--navy-soft); }
+
+.btnGold {
+  background: var(--gold);
+  color: var(--paper);
+}
+.btnGold:hover { background: var(--gold-soft); }
+
+.btnGhost {
+  background: transparent;
+  color: var(--ink-muted);
+  border-color: var(--border);
+}
+.btnGhost:hover { background: var(--cream-2); color: var(--ink); }
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Forms ────────────────────────────────────────────── */
+.input,
+.textarea,
+.select {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-size: 14px;
+  background: var(--paper);
+  color: var(--ink);
+  direction: rtl;
+}
+
+.input:focus,
+.textarea:focus,
+.select:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(184, 134, 11, 0.15);
+}
+
+.label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--navy);
+  margin-bottom: 6px;
+}
+
+/* ── Status banners (toast/error) ──────────────────────── */
+.statusBar {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--navy);
+  color: var(--paper);
+  padding: 12px 24px;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
+  z-index: 100;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+  max-width: 90vw;
+}
+
+.statusBar.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.errorBox {
+  background: rgba(139, 44, 44, 0.08);
+  border: 1px solid var(--error);
+  color: var(--error);
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 16px;
+  display: none;
+  font-size: 14px;
+}
+
+.errorBox.show {
+  display: block;
+}
+
+/* ── Loading placeholder ───────────────────────────────── */
+.placeholder {
+  text-align: center;
+  padding: 80px 24px;
+  color: var(--ink-muted);
+}
+
+.placeholder .h2 {
+  margin-bottom: 16px;
+}
+
+.spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--border);
+  border-top-color: var(--gold);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Mobile responsive ─────────────────────────────────── */
+@media (max-width: 640px) {
+  .container {
+    padding: 16px 12px;
+  }
+  .card {
+    padding: 16px;
+  }
+  .h1 {
+    font-size: 24px;
+  }
+  .h2 {
+    font-size: 18px;
+  }
+}
