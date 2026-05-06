@@ -9,6 +9,89 @@ A running log of development sessions. **Newest at the top.** Append, never rewr
 - Standard subsections per session: **Goals**, **Done**, **Decisions**, **Open questions / blockers**, **Next session**.
 - Keep it short — bullet points, not prose. This is a log, not a journal.
 
+## 2026-05-06 — Session 17 (continued) — SinC-ART Phase B/C: audio pipeline + speaker map + WhatsApp emoji fix — committed 64cae72
+
+### Goals
+- Replace `/sinc` Phase A placeholder with Phase B (data layer) + Phase C (audio pipeline).
+- Wire end-to-end: Cloudinary audio upload → ElevenLabs Scribe v1 diarization → Claude Hebrew analysis.
+- Refactor `/intake` to use new shared components (ApiCostMeter generic, ExportFooter generic).
+- Test on a real Hebrew audio recording, then production verify on phone.
+
+### Done
+- **`/sinc` Phase B/C shipped end-to-end** — single A-to-Z commit `64cae72`, 21 file changes, +2,544 / -611 lines.
+- **Phase B (data layer):** new `src/lib/sinc/` with 7 files — types, prompts, claudeAnalysis, supabaseSinc, apiMeter, cloudinaryAudio, elevenlabs.
+- **Phase C (audio pipeline):** 3-stage flow shown in live ApiCostMeter — upload (Cloudinary) → transcribe (ElevenLabs scribe_v1) → analyze (claude-sonnet-4-6). Two new API routes: `/api/sinc-transcribe`, `/api/sinc-analyze`. New components: `AudioFilePicker.tsx`, `CallProcessingFlow.tsx` (408 lines).
+- **Shared components refactor:** new `src/components/shared/` and `src/lib/shared/` — `ApiCostMeter.tsx` (mode=single|pipeline) and `ExportFooter.tsx` (generic via `ReportSnapshot` interface). `/intake` PhotoAnalyzer + Mp4Analyzer migrated. Old intake-specific files removed: `AnalysisActionBar.tsx` (renamed to shared/ExportFooter), `ApiCallStatus.tsx` (deleted, replaced by ApiCostMeter), `intake/exportFormats.ts` (deleted, replaced by shared/exportFormats).
+- **ElevenLabs env vars added** to `.env.local` and Vercel Production: `ELEVENLABS_API_KEY`, `ELEVENLABS_MODEL_ID=scribe_v1`. Sensitive toggle ON in Vercel.
+- **End-to-end LOCAL test passed** on a 40-sec trimmed Hebrew audio file: full pipeline ran in ~24 sec, total cost $0.2782 (Cloudinary $0.0000 / ElevenLabs $0.2667 / Claude $0.0115). Speaker bubbles + Hebrew analysis fields populated correctly.
+- **2 bugs caught during testing — both fixed before commit (no deferred work):**
+  - **Bug 1: Speaker rename was per-bubble, not global.** Fixed via single-source-of-truth `speakerMap: Record<string, string>` (ElevenLabs original label → display name). New "👥 שמות הדוברים" amber panel above the bubbles. Edit one row → propagates to every bubble of that speaker AND to the exported transcript.
+  - **Bug 2: Every emoji in WhatsApp export rendered as U+FFFD (`�`).** Hebrew was fine. Diagnosed via free print-preview test (emoji rendered fine in print → bug confined to URL path). Cause: the `wa.me/?text=` redirect strips the leading byte of 4-byte UTF-8 sequences. Fix: switched `buildWhatsAppUrl` to `https://api.whatsapp.com/send`. **Side-effect: `/intake` PhotoAnalyzer + Mp4Analyzer WhatsApp export silently fixed too** (same shared file).
+- **Test audio quarantine:** added `TEST_*.mp3`, `TEST_*.wav`, `TEST_*.m4a`, `*.test.mp3` to `.gitignore`. Caught a 488 KB test file at the project root before it got committed.
+- **Production verified** on `sinks-art.vercel.app/sinc` (laptop + phone): cream background, Frank Ruhl Libre title, RTL dropzone, footer reads `Phase B/C · 06/05/2026`. Vercel auto-deploy succeeded first try.
+
+### Files in repo (committed in 64cae72)
+```
+.gitignore                                           (modified, TEST_*.mp3 patterns)
+src/app/intake/page.tsx                              (modified, footer v1.7)
+src/app/sinc/page.tsx                                (modified, replaced Phase A placeholder)
+src/app/api/sinc-analyze/route.ts                    (NEW)
+src/app/api/sinc-transcribe/route.ts                 (NEW)
+src/components/intake/ApiCallStatus.tsx              (DELETED → replaced by shared/ApiCostMeter)
+src/components/intake/AnalysisActionBar.tsx          (RENAMED → shared/ExportFooter.tsx)
+src/components/intake/analyzers/Mp4Analyzer.tsx      (modified, uses shared imports)
+src/components/intake/analyzers/PhotoAnalyzer.tsx    (modified, uses shared imports)
+src/components/shared/ApiCostMeter.tsx               (NEW, generic, mode=single|pipeline)
+src/components/shared/ExportFooter.tsx               (NEW, generic via ReportSnapshot)
+src/components/sinc/AudioFilePicker.tsx              (NEW)
+src/components/sinc/CallProcessingFlow.tsx           (NEW, 408 lines)
+src/lib/intake/exportFormats.ts                      (DELETED → replaced by shared/exportFormats)
+src/lib/shared/exportFormats.ts                      (NEW, 271 lines)
+src/lib/sinc/apiMeter.ts                             (NEW)
+src/lib/sinc/claudeAnalysis.ts                       (NEW)
+src/lib/sinc/cloudinaryAudio.ts                      (NEW)
+src/lib/sinc/elevenlabs.ts                           (NEW)
+src/lib/sinc/prompts.ts                              (NEW)
+src/lib/sinc/supabaseSinc.ts                         (NEW)
+src/lib/sinc/types.ts                                (NEW)
+```
+
+### Decisions
+- **3-stage pipeline shown in live meter** — user sees per-stage time + cost + token count for Cloudinary, ElevenLabs, Claude. Total cost displayed at the bottom.
+- **`speakerMap` as single source of truth** — keyed by ElevenLabs' original `דובר 1`/`דובר 2` labels. Bubbles render via `displayName(originalLabel)` lookup. No mutation of bubble data.
+- **WhatsApp URLs locked to `api.whatsapp.com/send` project-wide** (not just /sinc). Reason: the wa.me redirect mishandles 4-byte UTF-8 percent-escapes for emoji. Codified as **Rule #18** in skill v15.
+- **`normalizePhoneForWaMe` function name kept** despite the wa.me → api.whatsapp.com migration. Backwards-compat with any future imports — function output (digits-only E.164) is identical.
+- **Save flow ("✓ אשר ושמור") deliberately disabled** with "(יבוא בקרוב)" label — Phase D ships the customer/project save flow. The audio pipeline itself is feature-complete; the save button is an upcoming-feature placeholder, not deferred work.
+- **Test audio always gitignored** (`TEST_*.mp3`, `TEST_*.wav`, `TEST_*.m4a`, `*.test.mp3`) — keeps repo lean, audio artifacts can never accidentally land on GitHub.
+- **Free diagnostics first** (added to debugging toolkit) — when a bug shows at the end of a paid pipeline, look for free verification paths (print preview, console logs, source byte inspection) before re-running the pipeline.
+
+### Open questions / blockers
+- **Phase D pending** — customer/project save flow + customer linking modal (~90 min). The audio pipeline produces structured analysis ready to save to `customer_communications` + `media_analyses` tables; Phase D wires the picker UI then saves.
+- **Phase E pending** — deprecate `demos/sinc_art_call_intake_v11.html`, move to `demos/legacy/` (~30 min).
+- **`/intake` WhatsApp button silently auto-fixed** by the shared exporter change but not re-verified on production. Likely fine, but worth a 30-sec retest before declaring it done.
+- **ElevenLabs Starter plan** — 30k credits/month, ~1k credits per audio minute = ~30 min audio/month at no cost. Heavy testing days will eat through this.
+- **Commit message has cosmetic typos** (`sspeaker`, `Phase B//C`) — not amending, would change hash and force-push.
+
+### Lessons learned (skill v14 → v15)
+- **WhatsApp emoji corruption pattern:** `wa.me/?text=` strips 4-byte UTF-8 leading bytes during the redirect. Hebrew (2-byte UTF-8) survives, every emoji becomes `�`. **Always use `https://api.whatsapp.com/send`** — locked as **new Rule #18** in skill v15.
+- **`Get-Content file | Measure-Object -Line` is unreliable** for counting lines. Use `(Get-Content file).Count` instead. Cost a 5-minute false alarm during file verification.
+- **Identical bytes ≠ identical encoding behavior at every layer.** Browser-rendered emoji proves the JS string is valid; WhatsApp-mangled emoji proves the corruption point is between `encodeURIComponent` and the receiving client. The fix must go at the corruption point.
+- **"Single source of truth" beats "propagate via search-replace"** for editable categorical labels. A map (`originalKey → displayValue`) survives hallucinated/duplicate labels; text-based propagation breaks the moment two labels normalize to the same display name.
+- **`git commit -m "..." -m "..."` chained inside PowerShell is fragile** for long messages. Use `git commit -F <tempfile>` with a here-string-built message file instead.
+- **Long PowerShell here-strings work great for `.tsx`/`.ts`** (Rule #14) but should NOT be used for files >10 KB or markdown (Rule #17). Hit this boundary today; download → Move-Item was the right call for both `CallProcessingFlow.tsx` (17 KB) and `exportFormats.ts` (11 KB).
+- **`encodeURIComponent` is correct for emoji URL-encoding** — bug was in the wa.me redirect, not the encoder. Don't rewrite encoders without proof they're broken.
+
+### Next session — Session 18 candidates (in order of likelihood)
+- **A. Phase D — SinC-ART save flow** (~90 min). Customer/project linking modal, save analysis to `customer_communications` (comm_type='call') + `media_analyses`. Activates the disabled "✓ אשר ושמור" button.
+- **B. /intake WhatsApp re-verify on production** (~5 min). Quick phone test that the silent auto-fix works.
+- **C. Phase E — Demos cleanup** (~30 min). Move `demos/sinc_art_call_intake_*.html` to `demos/legacy/`. Update README.
+- **D. Q1+Q2 — Library/Gallery page** (~90 min). `/customers/[id]` for customer-scoped browsing, `/library` for cross-customer reference, new `is_reference_library` boolean on `media_analyses`.
+- **E. PdfAnalyzer.tsx** (~90 min). Architects' drawings via `pg_1` Cloudinary transform.
+
+**Avshi's likely path: A → B → C → Q1+Q2 (unlocks Phase 16 price-offer engine).**
+
+---
+
 ## 2026-05-06 — Session 17 — Mp4Analyzer with frame extraction + time picker — committed 4aac95e
 
 ### Goals
