@@ -10,9 +10,10 @@
 import type { AnalysisResult } from '@/components/intake/analyzers/PhotoAnalyzer';
 import type { CustomerWithProject } from '@/lib/supabase';
 
-const MEDIA_TYPE_LABEL_HE: Record<'photo' | 'sketch', string> = {
+const MEDIA_TYPE_LABEL_HE: Record<'photo' | 'sketch' | 'mp4', string> = {
   photo:  'תמונה',
   sketch: 'שרטוט',
+  mp4:    'סרטון',
 };
 
 const RTL_MARKER = '\u200F';

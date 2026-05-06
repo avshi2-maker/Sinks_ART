@@ -1,14 +1,9 @@
-/**
- * src/app/intake/page.tsx — v2 (Phase 15.5)
- *
- * v2 additions:
- *   - Owns the ApiCallStatusData state (so it persists across analyses)
- *   - Renders <ApiCallStatus> in a sticky right column
- *   - Passes onStatusChange + customer down to PhotoAnalyzer
+﻿/**
+ * src/app/intake/page.tsx — v3 (Session 17: MP4 routing added)
  *
  * Phase 15 — Multi-Format Media Intake
  * Created: 04/05/2026
- * Updated: 05/05/2026 (Phase 15.5)
+ * Updated: 06/05/2026 (Session 17: routes 'mp4' mediaType to Mp4Analyzer)
  */
 
 'use client';
@@ -18,6 +13,7 @@ import { supabase, CustomerWithProject, MediaTypeDB } from '@/lib/supabase';
 import CustomerPicker from '@/components/intake/CustomerPicker';
 import MediaInput, { MediaSelection } from '@/components/intake/MediaInput';
 import PhotoAnalyzer, { AnalysisResult } from '@/components/intake/analyzers/PhotoAnalyzer';
+import Mp4Analyzer from '@/components/intake/analyzers/Mp4Analyzer';
 import ApiCallStatus, { ApiCallStatusData } from '@/components/intake/ApiCallStatus';
 
 type SaveState = 'idle' | 'saving' | 'success' | 'error';
@@ -47,13 +43,17 @@ export default function IntakePage() {
 
     try {
       const commType: MediaTypeDB = result.mediaType;
+      const subjectKind = result.mediaType === 'sketch' ? 'שרטוט'
+                       : result.mediaType === 'mp4'    ? 'סרטון'
+                       : 'תמונה';
+
       const { data: commRow, error: commErr } = await supabase
         .from('customer_communications')
         .insert({
           customer_id:  customer.customer.id,
           project_id:   customer.activeProject?.id || null,
           comm_type:    commType,
-          subject:      'ניתוח ' + (result.mediaType === 'sketch' ? 'שרטוט' : 'תמונה') + ': ' + result.sourceFilename,
+          subject:      'ניתוח ' + subjectKind + ': ' + result.sourceFilename,
           body:         result.designIntentHe || result.referenceSummaryHe || '',
           api_cost_usd: result.apiCostUsd,
           ai_analysis:  result.rawJson || {},
@@ -108,12 +108,18 @@ export default function IntakePage() {
     media.file &&
     (media.mediaType === 'photo' || media.mediaType === 'sketch');
 
+  const showMp4Analyzer =
+    media &&
+    media.mode === 'file' &&
+    media.file &&
+    media.mediaType === 'mp4';
+
   const otherTypeNotImplementedMessage =
-    media && !showPhotoAnalyzer
+    media && !showPhotoAnalyzer && !showMp4Analyzer
       ? media.mediaType === 'youtube' || media.mediaType === 'instagram' || media.mediaType === 'url'
-        ? 'ניתוח קישורים יבוא בעדכון הבא. בינתיים תוכל לטפל ב-תמונות ושרטוטים.'
-        : media.mediaType === 'mp4' || media.mediaType === 'pdf'
-        ? 'ניתוח ' + (media.mediaType === 'mp4' ? 'סרטונים' : 'PDF') + ' יבוא בעדכון הבא. בינתיים תוכל לטפל ב-תמונות ושרטוטים.'
+        ? 'ניתוח קישורים יבוא בעדכון הבא. בינתיים תוכל לטפל ב-תמונות, שרטוטים וסרטונים.'
+        : media.mediaType === 'pdf'
+        ? 'ניתוח PDF יבוא בעדכון הבא. בינתיים תוכל לטפל ב-תמונות, שרטוטים וסרטונים.'
         : null
       : null;
 
@@ -127,10 +133,8 @@ export default function IntakePage() {
           </p>
         </header>
 
-        {/* Two-column layout on desktop: main flow on the right (RTL), status on the left */}
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-4">
           <div className="bg-white border border-gray-200 rounded-lg p-5 shadow-sm space-y-5">
-            {/* Step 1: Customer */}
             <section>
               <CustomerPicker onSelect={setCustomer} />
             </section>
@@ -146,7 +150,6 @@ export default function IntakePage() {
               </div>
             )}
 
-            {/* Step 2: Media */}
             {customer && (
               <section className="border-t pt-5">
                 <h2 className="text-sm font-medium text-gray-900 mb-2">בחר חומר הפניה:</h2>
@@ -154,12 +157,23 @@ export default function IntakePage() {
               </section>
             )}
 
-            {/* Step 3: Analyzer */}
             {showPhotoAnalyzer && media && media.file && (
               <section className="border-t pt-5">
                 <PhotoAnalyzer
                   file={media.file}
                   mediaType={media.mediaType === 'sketch' ? 'sketch' : 'photo'}
+                  customer={customer}
+                  onComplete={saveAnalysis}
+                  onCancel={cancelAnalysis}
+                  onStatusChange={setApiStatus}
+                />
+              </section>
+            )}
+
+            {showMp4Analyzer && media && media.file && (
+              <section className="border-t pt-5">
+                <Mp4Analyzer
+                  file={media.file}
                   customer={customer}
                   onComplete={saveAnalysis}
                   onCancel={cancelAnalysis}
@@ -193,14 +207,13 @@ export default function IntakePage() {
             )}
           </div>
 
-          {/* Sticky status panel — Phase 15.5 */}
           <aside>
             <ApiCallStatus status={apiStatus} />
           </aside>
         </div>
 
         <footer className="text-xs text-gray-500 mt-4 text-center">
-          Phase 15 · Multi-Format Media Intake · v1.5
+          Phase 15 · Multi-Format Media Intake · v1.6
         </footer>
       </div>
     </main>

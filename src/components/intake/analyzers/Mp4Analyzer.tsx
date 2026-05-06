@@ -1,21 +1,27 @@
-/**
- * PhotoAnalyzer.tsx — v2 (Phase 15.5)
+﻿/**
+ * Mp4Analyzer.tsx
  *
- * The end-to-end photo/sketch analysis flow.
+ * Video walk-around analysis flow:
+ *   1. Receives an MP4 File from MediaInput
+ *   2. Uploads to Cloudinary (folder: marble-sinks/intake) as resource_type='video'
+ *   3. Extracts a JPEG frame at second N (default 1) via Cloudinary URL transform
+ *   4. Sends that frame to /api/analyze-photo with mediaType='mp4'
+ *   5. Displays Hebrew structured analysis with editable fields
+ *   6. User can re-extract a different frame and re-analyze
+ *   7. Renders <AnalysisActionBar> per Phase 15.5 Rule #11
  *
- * v2 additions:
- *   - Reports status events to parent via onStatusChange so ApiCallStatus updates live
- *   - Renders <AnalysisActionBar> in the review stage (Print / Email / WhatsApp / Project)
- *
- * Phase 15 — Multi-Format Media Intake
- * Created: 04/05/2026
- * Updated: 05/05/2026 (Phase 15.5)
+ * Phase 15 — Multi-Format Media Intake (Session 17)
+ * Created: 06/05/2026
  */
 
 'use client';
 
 import { useState } from 'react';
-import { uploadToCloudinary, isCloudinaryConfigured } from '@/lib/intake/cloudinary';
+import {
+  uploadToCloudinary,
+  getVideoFrameUrl,
+  isCloudinaryConfigured,
+} from '@/lib/intake/cloudinary';
 import AnalysisActionBar from '@/components/intake/AnalysisActionBar';
 import {
   ApiCallStatusData,
@@ -24,32 +30,17 @@ import {
   makeErrorStatus,
 } from '@/components/intake/ApiCallStatus';
 import type { CustomerWithProject } from '@/lib/supabase';
-
-/** What this component reports to its parent when analysis is complete. */
-export interface AnalysisResult {
-  cloudinaryUrl:        string;
-  sourceFilename:       string;
-  mediaType:            'photo' | 'sketch' | 'mp4';
-  extractedDimensions:  string | null;
-  extractedStoneType:   string | null;
-  extractedShape:       string | null;
-  designIntentHe:       string | null;
-  referenceSummaryHe:   string | null;
-  additionalNotesHe:    string | null;
-  apiCostUsd:           number;
-  rawJson:              Record<string, unknown> | null;
-}
+import type { AnalysisResult } from '@/components/intake/analyzers/PhotoAnalyzer';
 
 interface Props {
   file:           File;
-  mediaType:      'photo' | 'sketch' | 'mp4';
   customer:       CustomerWithProject | null;
   onComplete:     (result: AnalysisResult) => void;
   onCancel:       () => void;
   onStatusChange: (status: ApiCallStatusData) => void;
 }
 
-type Stage = 'idle' | 'uploading' | 'analyzing' | 'review' | 'error';
+type Stage = 'idle' | 'uploading' | 'extracting' | 'analyzing' | 'review' | 'error';
 
 interface AnalysisFields {
   extractedDimensions: string;
@@ -60,27 +51,32 @@ interface AnalysisFields {
   additionalNotesHe:   string;
 }
 
-export default function PhotoAnalyzer({
+const EMPTY_FIELDS: AnalysisFields = {
+  extractedDimensions: '',
+  extractedStoneType:  '',
+  extractedShape:      '',
+  designIntentHe:      '',
+  referenceSummaryHe:  '',
+  additionalNotesHe:   '',
+};
+
+export default function Mp4Analyzer({
   file,
-  mediaType,
   customer,
   onComplete,
   onCancel,
   onStatusChange,
 }: Props) {
-  const [stage, setStage] = useState<Stage>('idle');
-  const [errorMsg, setErrorMsg] = useState<string>('');
-  const [cloudinaryUrl, setCloudinaryUrl] = useState<string>('');
-  const [apiCostUsd, setApiCostUsd] = useState<number>(0);
-  const [rawJson, setRawJson] = useState<Record<string, unknown> | null>(null);
-  const [fields, setFields] = useState<AnalysisFields>({
-    extractedDimensions: '',
-    extractedStoneType:  '',
-    extractedShape:      '',
-    designIntentHe:      '',
-    referenceSummaryHe:  '',
-    additionalNotesHe:   '',
-  });
+  const [stage, setStage]               = useState<Stage>('idle');
+  const [errorMsg, setErrorMsg]         = useState<string>('');
+  const [videoUrl, setVideoUrl]         = useState<string>('');
+  const [videoDuration, setVideoDuration] = useState<number>(0);
+  const [frameSecond, setFrameSecond]   = useState<number>(1);
+  const [frameUrl, setFrameUrl]         = useState<string>('');
+  const [showOriginal, setShowOriginal] = useState<boolean>(false);
+  const [apiCostUsd, setApiCostUsd]     = useState<number>(0);
+  const [rawJson, setRawJson]           = useState<Record<string, unknown> | null>(null);
+  const [fields, setFields]             = useState<AnalysisFields>(EMPTY_FIELDS);
 
   async function startAnalysis() {
     setErrorMsg('');
@@ -92,7 +88,7 @@ export default function PhotoAnalyzer({
     }
 
     setStage('uploading');
-    const runStatus = makeRunningStatus('Claude Sonnet 4-6 vision');
+    const runStatus = makeRunningStatus('העלאת סרטון + ניתוח Claude Sonnet 4-6');
     onStatusChange(runStatus);
 
     let uploaded;
@@ -105,18 +101,41 @@ export default function PhotoAnalyzer({
       onStatusChange(makeErrorStatus(runStatus, msg));
       return;
     }
-    setCloudinaryUrl(uploaded.url);
+
+    setVideoUrl(uploaded.url);
+    setVideoDuration(uploaded.duration || 0);
+
+    const extractedFrameUrl = getVideoFrameUrl(uploaded.url, 1);
+    setFrameUrl(extractedFrameUrl);
+    setFrameSecond(1);
 
     setStage('analyzing');
+    await runAnalysis(extractedFrameUrl, runStatus);
+  }
+
+  async function reExtractAndAnalyze() {
+    if (!videoUrl) return;
+    setErrorMsg('');
+
+    const newFrameUrl = getVideoFrameUrl(videoUrl, frameSecond);
+    setFrameUrl(newFrameUrl);
+
+    setStage('analyzing');
+    const runStatus = makeRunningStatus('ניתוח פריים חדש (שניה ' + frameSecond + ')');
+    onStatusChange(runStatus);
+    await runAnalysis(newFrameUrl, runStatus);
+  }
+
+  async function runAnalysis(targetFrameUrl: string, runStatus: ApiCallStatusData) {
     try {
       const res = await fetch('/api/analyze-photo', {
         method:  'POST',
         headers: { 'content-type': 'application/json' },
-        body:    JSON.stringify({ imageUrl: uploaded.url, mediaType }),
+        body:    JSON.stringify({ imageUrl: targetFrameUrl, mediaType: 'mp4' }),
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
-        const msg = data.error || 'שגיאה בניתוח התמונה';
+        const msg = data.error || 'שגיאה בניתוח הפריים';
         setStage('error');
         setErrorMsg(msg);
         onStatusChange(makeErrorStatus(runStatus, msg));
@@ -155,9 +174,9 @@ export default function PhotoAnalyzer({
 
   function buildResult(): AnalysisResult {
     return {
-      cloudinaryUrl,
+      cloudinaryUrl:       videoUrl,
       sourceFilename:      file.name,
-      mediaType,
+      mediaType:           'mp4',
       extractedDimensions: fields.extractedDimensions || null,
       extractedStoneType:  fields.extractedStoneType  || null,
       extractedShape:      fields.extractedShape      || null,
@@ -174,32 +193,34 @@ export default function PhotoAnalyzer({
   }
 
   return (
-    <div className="photo-analyzer space-y-4" dir="rtl">
+    <div className="mp4-analyzer space-y-4" dir="rtl">
       <div className="bg-gray-50 border border-gray-200 rounded p-3 text-sm">
         <div className="font-medium text-gray-900">{file.name}</div>
         <div className="text-xs text-gray-500 mt-1">
-          {(file.size / (1024 * 1024)).toFixed(2)} מ״ב · {mediaType === 'sketch' ? 'שרטוט' : 'תמונה'}
+          {(file.size / (1024 * 1024)).toFixed(2)} מ״ב · סרטון
         </div>
       </div>
 
       {stage === 'idle' && (
         <div className="flex gap-2">
           <button type="button" onClick={startAnalysis} className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700">
-            🪄 התחל ניתוח
+            <span>🪄 העלה ונתח</span>
           </button>
           <button type="button" onClick={onCancel} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md text-sm hover:bg-gray-300">
-            ביטול
+            <span>ביטול</span>
           </button>
         </div>
       )}
 
       {stage === 'uploading' && (
-        <div className="text-sm text-gray-600 py-4">⬆️ מעלה ל-Cloudinary...</div>
+        <div className="text-sm text-gray-600 py-4">
+          ⬆️ מעלה סרטון ל-Cloudinary... (יכול לקחת 10-30 שניות לקבצים גדולים)
+        </div>
       )}
 
       {stage === 'analyzing' && (
         <div className="text-sm text-gray-600 py-4">
-          🔍 Claude מנתח את ה{mediaType === 'sketch' ? 'שרטוט' : 'תמונה'}... (יכול לקחת 5-15 שניות)
+          🔍 Claude מנתח את הפריים... (5-15 שניות)
         </div>
       )}
 
@@ -208,10 +229,10 @@ export default function PhotoAnalyzer({
           <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">⚠️ {errorMsg}</div>
           <div className="flex gap-2">
             <button type="button" onClick={() => setStage('idle')} className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700">
-              נסה שוב
+              <span>נסה שוב</span>
             </button>
             <button type="button" onClick={onCancel} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md text-sm hover:bg-gray-300">
-              ביטול
+              <span>ביטול</span>
             </button>
           </div>
         </div>
@@ -223,10 +244,58 @@ export default function PhotoAnalyzer({
             ✓ ניתוח הושלם · עלות: ${apiCostUsd.toFixed(4)}
           </div>
 
-          {cloudinaryUrl && (
-            <div className="border border-gray-200 rounded overflow-hidden bg-gray-50 inline-block max-w-xs">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={cloudinaryUrl} alt="preview" className="block w-full" />
+          {frameUrl && (
+            <div className="space-y-2">
+              <div className="text-xs text-gray-600">
+                פריים שנותח (שניה {frameSecond}{videoDuration > 0 ? ' מתוך ' + Math.floor(videoDuration) : ''}):
+              </div>
+              <div className="border border-gray-200 rounded overflow-hidden bg-gray-50 inline-block max-w-xs">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={frameUrl} alt="extracted frame" className="block w-full" />
+              </div>
+            </div>
+          )}
+
+          {videoUrl && (
+            <div className="bg-blue-50 border border-blue-200 rounded p-3 space-y-2">
+              <div className="text-xs font-medium text-gray-700">לקפוץ לזמן אחר בסרטון:</div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <label className="text-xs text-gray-600">שניה:</label>
+                <input
+                  type="number"
+                  min={0}
+                  max={videoDuration > 0 ? Math.floor(videoDuration) : 9999}
+                  value={frameSecond}
+                  onChange={(e) => setFrameSecond(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                  className="w-20 border border-gray-300 rounded px-2 py-1 text-sm font-mono"
+                  dir="ltr"
+                />
+                <button
+                  type="button"
+                  onClick={reExtractAndAnalyze}
+                  className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700"
+                  title="ישלוף פריים חדש ויעלה עוד $0.018"
+                >
+                  <span>🔄 שלוף ונתח שוב</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowOriginal((v) => !v)}
+                  className="px-3 py-1 bg-white border border-gray-300 text-gray-700 rounded text-xs hover:bg-gray-50"
+                >
+                  <span>{showOriginal ? '🙈 הסתר סרטון' : '▶️ הצג סרטון מקורי'}</span>
+                </button>
+              </div>
+              <div className="text-xs text-gray-500">
+                💡 טיפ: לרוב הפריים בשניה הראשונה מספיק. שנה רק אם הפריים מטושטש או לא רלוונטי.
+              </div>
+            </div>
+          )}
+
+          {showOriginal && videoUrl && (
+            <div className="border border-gray-200 rounded overflow-hidden bg-black">
+              {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+              <video src={videoUrl} controls className="block w-full max-w-md" />
             </div>
           )}
 
@@ -240,15 +309,14 @@ export default function PhotoAnalyzer({
           <TextArea label="תיאור החומר המצורף" value={fields.referenceSummaryHe} onChange={(v) => updateField('referenceSummaryHe', v)} rows={2} />
           <TextArea label="הערות נוספות"      value={fields.additionalNotesHe}  onChange={(v) => updateField('additionalNotesHe', v)}  rows={2} />
 
-          {/* Phase 15.5: action bar (Print / Email / WhatsApp / Project) */}
           <AnalysisActionBar result={buildResult()} customer={customer} />
 
           <div className="flex gap-2 pt-2">
             <button type="button" onClick={approve} className="px-4 py-2 bg-green-600 text-white rounded-md text-sm hover:bg-green-700">
-              ✓ אשר ושמור
+              <span>✓ אשר ושמור</span>
             </button>
             <button type="button" onClick={onCancel} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md text-sm hover:bg-gray-300">
-              ביטול
+              <span>ביטול</span>
             </button>
           </div>
         </div>
