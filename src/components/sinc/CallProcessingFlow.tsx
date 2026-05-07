@@ -8,14 +8,15 @@
  *   4. Analyze via /api/sinc-analyze
  *   5. Display editable speaker bubbles + Hebrew analysis fields
  *   6. ExportFooter + ApiCostMeter integrated per Rule #11
+ *   7. PHASE D: SaveCustomerModal -> saveCallFull -> success state
  *
- * Speaker rename model (Session 17 fix):
- *   A single `speakerMap` (originalLabel -> displayName) is the only source of
- *   truth for speaker names. Editing one row in the SpeakerNamePanel
- *   propagates to EVERY bubble with that original label, AND to the exported
- *   transcript. Bubbles themselves stay immutable as received from ElevenLabs.
+ * Speaker rename model: a single `speakerMap` (originalLabel -> displayName) is
+ * the only source of truth for speaker names. Editing one row in the
+ * SpeakerNamePanel propagates to EVERY bubble with that original label, AND
+ * to the exported transcript AND to the saved transcript body.
  *
  * Phase B/C - Audio pipeline (Session 17, 06/05/2026)
+ * Phase D - Save flow (Session 18, 06/05/2026)
  */
 
 'use client';
@@ -28,13 +29,16 @@ import {
   makeErrorReading,
   calcElevenLabsCost,
 } from '@/lib/sinc/apiMeter';
+import { saveCallFull, buildCallSubject } from '@/lib/sinc/supabaseSinc';
 import ApiCostMeter from '@/components/shared/ApiCostMeter';
 import ExportFooter from '@/components/shared/ExportFooter';
+import SaveCustomerModal from '@/components/sinc/SaveCustomerModal';
 import type {
   ApiMeterReading,
   CallAnalysis,
   TranscriptionResult,
   SpeakerBubble,
+  SincCallSaveResult,
 } from '@/lib/sinc/types';
 import type { ReportSnapshot } from '@/lib/shared/exportFormats';
 
@@ -44,17 +48,16 @@ interface Props {
   onCancel:    () => void;
 }
 
-type Stage = 'idle' | 'uploading' | 'transcribing' | 'analyzing' | 'review' | 'error';
+type Stage     = 'idle' | 'uploading' | 'transcribing' | 'analyzing' | 'review' | 'error';
+type SaveState = 'idle' | 'modal_open' | 'saving' | 'saved' | 'save_error';
 
 export default function CallProcessingFlow({ file, durationSec, onCancel }: Props) {
   const [stage, setStage]                 = useState<Stage>('idle');
   const [error, setError]                 = useState<string>('');
   const [uploadPct, setUploadPct]         = useState<number>(0);
 
-  // Live API meter — array of stages for the pipeline display
   const [meterStages, setMeterStages]     = useState<ApiMeterReading[]>([]);
 
-  // Pipeline outputs
   const [audioUrl, setAudioUrl]           = useState<string>('');
   const [transcription, setTranscription] = useState<TranscriptionResult | null>(null);
   const [analysis, setAnalysis]           = useState<CallAnalysis | null>(null);
@@ -62,18 +65,15 @@ export default function CallProcessingFlow({ file, durationSec, onCancel }: Prop
   const [transcribeCost, setTranscribeCost] = useState<number>(0);
   const [analyzeCost, setAnalyzeCost]     = useState<number>(0);
 
-  // Bubbles are stored AS RECEIVED from ElevenLabs (speaker_label is immutable).
-  // Display names come from speakerMap below.
   const [bubbles, setBubbles]             = useState<SpeakerBubble[]>([]);
-
-  // Single source of truth for speaker display names.
-  //   Key   = original label from ElevenLabs (e.g. "דובר 1")
-  //   Value = the name shown to the user (defaults to the key).
-  // Editing one entry here updates every bubble + the export at once.
   const [speakerMap, setSpeakerMap]       = useState<Record<string, string>>({});
 
-  // ── Helpers: meter ──
+  // Phase D: save state
+  const [saveState, setSaveState]         = useState<SaveState>('idle');
+  const [saveError, setSaveError]         = useState<string>('');
+  const [saveResult, setSaveResult]       = useState<SincCallSaveResult | null>(null);
 
+  // ── Helpers: meter ──
   function pushStage(reading: ApiMeterReading) {
     setMeterStages((prev) => [...prev, reading]);
   }
@@ -114,7 +114,6 @@ export default function CallProcessingFlow({ file, durationSec, onCancel }: Prop
     setError('');
     setMeterStages([]);
 
-    // Stage 1: Upload to Cloudinary
     setStage('uploading');
     const uploadStage = makeRunningReading('uploading', 'העלאה ל-Cloudinary');
     pushStage(uploadStage);
@@ -133,7 +132,6 @@ export default function CallProcessingFlow({ file, durationSec, onCancel }: Prop
       return;
     }
 
-    // Stage 2: Transcribe via ElevenLabs
     setStage('transcribing');
     const transcribeStage = makeRunningReading('transcribing', 'תמלול ElevenLabs');
     pushStage(transcribeStage);
@@ -165,7 +163,6 @@ export default function CallProcessingFlow({ file, durationSec, onCancel }: Prop
       return;
     }
 
-    // Stage 3: Analyze via Claude
     setStage('analyzing');
     const analyzeStage = makeRunningReading('analyzing', 'ניתוח Claude');
     pushStage(analyzeStage);
@@ -201,16 +198,18 @@ export default function CallProcessingFlow({ file, durationSec, onCancel }: Prop
 
   // ── Build snapshot for ExportFooter ──
 
+  function buildTranscriptText(): string {
+    return bubbles
+      .map((b) => `${displayName(b.speaker_label)}: ${b.text}`)
+      .join('\n');
+  }
+
   function buildSnapshot(): ReportSnapshot {
     if (!analysis) {
       return { reportTypeHe: 'שיחה עם לקוח', subjectSuffix: file.name, sections: [] };
     }
-    const totalCost = transcribeCost + analyzeCost;
-
-    // Use displayName() so renamed speakers appear in email/WhatsApp/Print exports too.
-    const transcriptText = bubbles
-      .map((b) => `${displayName(b.speaker_label)}: ${b.text}`)
-      .join('\n');
+    const totalCost      = transcribeCost + analyzeCost;
+    const transcriptText = buildTranscriptText();
 
     return {
       reportTypeHe:   'שיחה עם לקוח',
@@ -230,6 +229,56 @@ export default function CallProcessingFlow({ file, durationSec, onCancel }: Prop
       primaryAssetLabelHe: 'הקלטה',
       apiCostUsd:          totalCost,
     };
+  }
+
+  // ── Phase D: save flow ──
+
+  function openSaveModal() {
+    if (!analysis) return;
+    setSaveError('');
+    setSaveState('modal_open');
+  }
+
+  async function handleModalConfirm(sel: { customer_id: string; project_id: string | null }) {
+    if (!analysis) return;
+    setSaveState('saving');
+    setSaveError('');
+
+    try {
+      const totalCost      = transcribeCost + analyzeCost;
+      const transcriptText = buildTranscriptText();
+
+      const result = await saveCallFull({
+        customer_id:         sel.customer_id,
+        project_id:          sel.project_id,
+        subject:             buildCallSubject(analysis),
+        body:                transcriptText,
+        ai_analysis:         analysis,
+        audio_url:           audioUrl,
+        api_cost_usd:        totalCost,
+        source_filename:     file.name,
+        speaker_map:         speakerMap,
+        bubbles:             bubbles,
+        raw_transcript_text: transcription?.rawText || transcriptText,
+        duration_sec:        transcription?.durationSec || durationSec,
+      });
+
+      setSaveResult(result);
+      setSaveState('saved');
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setSaveError(msg);
+      setSaveState('save_error');
+    }
+  }
+
+  function handleModalCancel() {
+    setSaveState('idle');
+  }
+
+  function handleSaveErrorRetry() {
+    setSaveState('modal_open');
+    setSaveError('');
   }
 
   // ── Render ──
@@ -291,7 +340,6 @@ export default function CallProcessingFlow({ file, durationSec, onCancel }: Prop
 
           {stage === 'review' && analysis && (
             <div className="space-y-4">
-              {/* Analysis card */}
               <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-3">
                 <div className="text-sm text-green-700 bg-green-50 border border-green-200 rounded px-3 py-2">
                   ✓ הניתוח הושלם · עלות כוללת: ${(transcribeCost + analyzeCost).toFixed(4)}
@@ -312,7 +360,6 @@ export default function CallProcessingFlow({ file, durationSec, onCancel }: Prop
                 <Section heading="💡 הערות נוספות"         body={analysis.notes_he} />
               </div>
 
-              {/* Speaker name panel — single source of truth (Session 17 fix) */}
               {speakerOriginals.length > 0 && (
                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 space-y-2">
                   <div className="text-sm font-medium text-amber-900">
@@ -338,7 +385,6 @@ export default function CallProcessingFlow({ file, durationSec, onCancel }: Prop
                 </div>
               )}
 
-              {/* Speaker bubbles — display only; names pulled from speakerMap */}
               {bubbles.length > 0 && (
                 <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-3">
                   <div className="text-sm font-medium text-gray-900">
@@ -357,26 +403,95 @@ export default function CallProcessingFlow({ file, durationSec, onCancel }: Prop
                 </div>
               )}
 
-              {/* Export footer (Rule #11) */}
               <ExportFooter snapshot={buildSnapshot()} />
 
-              <div className="flex gap-2 pt-2">
-                <button type="button" disabled className="px-4 py-2 bg-green-600 text-white rounded-md text-sm opacity-50 cursor-not-allowed" title="שמירה ללקוח/פרויקט תיווסף בPhase D">
-                  <span>✓ אשר ושמור (יבוא בקרוב)</span>
-                </button>
-                <button type="button" onClick={onCancel} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md text-sm hover:bg-gray-300">
-                  <span>ביטול</span>
-                </button>
+              {/* Phase D — Save action area */}
+              <div className="flex gap-2 pt-2 items-center flex-wrap">
+                {saveState === 'idle' && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={openSaveModal}
+                      className="px-4 py-2 bg-green-600 text-white rounded-md text-sm hover:bg-green-700"
+                    >
+                      <span>✓ אשר ושמור</span>
+                    </button>
+                    <button type="button" onClick={onCancel} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md text-sm hover:bg-gray-300">
+                      <span>ביטול</span>
+                    </button>
+                  </>
+                )}
+
+                {saveState === 'saving' && (
+                  <button
+                    type="button"
+                    disabled
+                    className="px-4 py-2 bg-green-600 text-white rounded-md text-sm opacity-70 cursor-wait"
+                  >
+                    <span>💾 שומר...</span>
+                  </button>
+                )}
+
+                {saveState === 'saved' && saveResult && (
+                  <div className="flex gap-2 items-center flex-wrap">
+                    <div className="text-sm text-green-700 bg-green-50 border border-green-200 rounded px-3 py-2">
+                      <span>
+                        ✓ נשמר! מספר שיחה: {saveResult.comm_id.substring(0, 8)}...
+                        {saveResult.project_was_new ? ' · פרויקט חדש נוצר' : ''}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={onCancel}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
+                    >
+                      <span>שיחה חדשה</span>
+                    </button>
+                  </div>
+                )}
+
+                {saveState === 'save_error' && (
+                  <div className="space-y-2 w-full">
+                    <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded px-3 py-2">
+                      <span>⚠️ שגיאת שמירה: {saveError}</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={handleSaveErrorRetry}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
+                      >
+                        <span>נסה שוב</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSaveState('idle')}
+                        className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md text-sm hover:bg-gray-300"
+                      >
+                        <span>ביטול</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
         </div>
 
-        {/* Live API meter (sidebar) */}
         <aside>
           <ApiCostMeter mode="pipeline" stages={meterStages} />
         </aside>
       </div>
+
+      {/* Phase D — Customer/project picker modal */}
+      {saveState === 'modal_open' && analysis && (
+        <SaveCustomerModal
+          suggestedName={analysis.customer_name_he}
+          suggestedPhone={analysis.customer_phone}
+          onConfirm={handleModalConfirm}
+          onCancel={handleModalCancel}
+        />
+      )}
     </div>
   );
 }
