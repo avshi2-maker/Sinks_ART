@@ -9,6 +9,95 @@ A running log of development sessions. **Newest at the top.** Append, never rewr
 - Standard subsections per session: **Goals**, **Done**, **Decisions**, **Open questions / blockers**, **Next session**.
 - Keep it short — bullet points, not prose. This is a log, not a journal.
 
+## 2026-05-07 — Session 18 — SinC-ART Phase D: customer/project save flow — committed 548cb76
+
+### Goals
+- Activate the disabled "✓ אשר ושמור" button on /sinc.
+- Two-path UX: pick existing customer OR create new + auto-link to project.
+- Save runs the full chain: customer (if new) → project (if needed) → customer_communications → media_analyses (with media_type='audio').
+- Verify both paths end-to-end in Supabase.
+- Production verify on phone.
+
+### Done
+- **Phase D shipped end-to-end** — single A-to-Z commit `548cb76`, 7 file changes, +899 / -172 lines.
+- **Schema diagnostic FIRST (lesson from previous sessions):** ran 5 queries against Supabase to verify whitelists + RLS state before writing TypeScript. Found media_type whitelist missing 'audio'; everything else looked OK on first pass. (3 more schema gaps surfaced during testing — see "Lessons learned".)
+- **SQL migration #1:** `phase_d_audio_media_type_06052026-v1.sql` — added 'audio' to `media_analyses.media_type` whitelist. Atomic ALTER TABLE, no data touched.
+- **SQL migration #2:** `phase_d_anon_insert_customers_07052026-v1.sql` — added missing `anon_insert_customers` RLS policy on customers table (mirrors the existing `anon_insert_projects` pattern).
+- **types.ts updated:**
+  - Added `SincCallFullSavePayload` (full save bundle including speakerMap + bubbles + raw transcript)
+  - Added `SincCallSaveResult` (returns comm_id + media_id + project_id + project_was_new flag)
+  - Fixed `SincProjectRow` to match actual schema: dropped `notes_jsonb`, added `description_he` + `notes` (text) + `inquiry_date`
+  - Marked legacy `SincCallSavePayload` as `@deprecated` (kept for backwards-compat per Rule #3)
+- **supabaseSinc.ts updated:**
+  - New `createCustomer(nameHe, phone, notes)` — uses `source='phone'` (matches whitelist)
+  - New `listActiveProjectsForCustomer(customerId)` — returns ALL active projects, not just most-recent
+  - New `saveCallFull(payload)` — chains createLeadProject (if needed) → INSERT customer_communications → INSERT media_analyses, with orphan-id error message if step 3 fails after step 2
+  - Single `PROJECT_COLS` constant reused across 3 SELECTs (DRY fix from earlier inconsistency)
+  - Legacy `saveCallAnalysis` kept with `@deprecated` JSDoc per Rule #3
+- **SaveCustomerModal.tsx (NEW, 350 lines):**
+  - Two-tab UX: 🔍 לקוח קיים + ➕ לקוח חדש
+  - Pick tab: searchable customer list + project picker (existing or auto-create new)
+  - New tab: name (required) / phone / notes form, name pre-filled from Claude's `customer_name_he` extraction
+  - Modal pattern: dismissable, click-outside-to-close, ESC implicit via backdrop
+- **CallProcessingFlow.tsx updated:**
+  - 5-state save state machine: `idle` → `modal_open` → `saving` → `saved` | `save_error`
+  - Replaced disabled placeholder button with real flow
+  - Success badge shows comm_id (first 8 chars) + " · פרויקט חדש נוצר" when applicable
+  - Error state with retry button (preserves analysis state — no re-pipeline cost)
+  - "שיחה חדשה" button on success → calls onCancel → returns to file picker
+- **End-to-end LOCAL test PASSED — Path A (existing customer):** comm `0e572a17`, ~280ms total write time, full row chain in Supabase verified (customer + project + comm + media all linked correctly). Cost: $0.5458.
+- **End-to-end LOCAL test PASSED — Path B (new customer):** customer "גל ספיר חדש" + auto-created project + comm `2a74496c` + media row, ~342ms total. All 4 inserts succeeded after 2 RLS/whitelist patches. Cost: $0.2780.
+- **Production verified on phone** — `sinks-art.vercel.app/sinc` loads cleanly, footer shows expected Phase B/C label (Phase D doesn't change visible markers, only adds save functionality).
+
+### Files in repo (committed in 548cb76)
+```
+phase_d_audio_media_type_06052026-v1.sql                              (NEW, stray copy at root — TO BE CLEANED)
+src/components/sinc/CallProcessingFlow.tsx                            (modified — Phase D save state machine)
+src/components/sinc/SaveCustomerModal.tsx                             (NEW, 350 lines)
+src/lib/sinc/supabaseSinc.ts                                          (modified — saveCallFull, createCustomer, etc.)
+src/lib/sinc/types.ts                                                 (modified — Phase D types + schema fix)
+supabase/phase_d_anon_insert_customers_07052026-v1.sql                (NEW, applied to Supabase)
+supabase/phase_d_audio_media_type_06052026-v1.sql                     (NEW, applied to Supabase)
+```
+
+### Decisions
+- **Save runs client-side** (not via new server endpoint) — matches existing /intake pattern. RLS is the enforcement layer; supabase service key stays server-only.
+- **Auto-create "ליד" project when customer has no active project** — title `שיחה - dd/mm/yyyy`, description "נוצר אוטומטית משיחת לקוח (SinC-ART)", inquiry_date set to today.
+- **`source='phone'` for sinc-call customers** — semantic match (a SinC call IS a phone call). Available on existing whitelist; no migration needed.
+- **NOT atomic across the 3 INSERTs** — if step 3 (media_analyses) fails after step 2 (comm), the orphan comm_id is included in the error message for future cleanup. Acceptable tradeoff for Phase D; transactional pattern can be added in a future RPC if needed.
+- **Modal dismissable mid-save?** No. Once save fires, modal closes and the flow stays committed; cancel button is intentionally not shown during the `saving` state.
+- **Save success preserves the analysis on screen** — user can re-export, re-print, etc. The "שיחה חדשה" button is the explicit reset.
+- **Speaker map saved into ai_full_report JSONB** — full bubbles + raw_transcript_text + speakerMap preserved so a future view-saved-call page can re-render the editable transcript exactly as it was at save time.
+
+### Open questions / blockers
+- **Stray `phase_d_audio_media_type_06052026-v1.sql` at repo root** — duplicate of the `supabase/` copy. Got committed accidentally. Cleanup commit pending Session 18 close.
+- **Commit message has cosmetic typos** (`savve`, `Phase D::`) — same paste artifact as Session 17's `sspeaker`. Not amending (would change hash + force-push).
+- **Customer detail page (`/customers/[id]`)** — referenced by ExportFooter's "פרויקט" button but still not built. Phase 16. To view a saved call right now, go directly to Supabase Table Editor.
+- **No edit/delete UI for saved calls yet** — Phase 16+.
+- **/intake save flow doesn't yet write to media_analyses with media_type='audio'** — N/A, /intake is photo/sketch/mp4 only. SinC-ART is the only audio source today.
+- **Cosmetic: GoTrueClient warning** in browser console on save — "Multiple GoTrueClient instances detected". Harmless (lazy init pattern), can be cleaned up in a future polish phase by centralizing the client factory.
+
+### Lessons learned (skill v15 → v16)
+- **ALWAYS do a complete schema diagnostic FIRST, BEFORE writing any code that touches the DB.** Three schema gaps surfaced during this session — all preventable. The pattern: `pg_get_constraintdef()` for ALL check constraints + `pg_policies` for ALL tables in scope + `information_schema.columns` for the actual column names. Cost: 30 sec upfront. Saves ~30 min of test-fail-patch cycles.
+- **Skill documentation drifts from reality.** I assumed `projects.notes_jsonb` from the skill's schema doc — actual column is `notes` (text). Reality is the source of truth, skill is reference-only. **New Rule #20 in skill v16:** "Skill docs may be stale. Always verify schema against `information_schema.columns` before writing INSERT/SELECT code that touches a table."
+- **CHECK constraints are silent until they fire.** `customers.source` had a whitelist with 8 values; "sinc_call" wasn't on it. Used "phone" instead — perfect semantic match. Same pattern hit twice this session (media_type + source). **New Rule #21 in skill v16:** "Before INSERTing into ANY column you control, check for a `*_check` constraint and verify your value is allowed."
+- **RLS gaps follow the read/write asymmetry pattern.** `customers` had `anon_read_*` but no `anon_insert_*`. `customer_communications` had both. Different tables get different treatment in the same DB — never assume symmetry. **Reinforces Rule #19** (verify with `(Get-Content).Count`) and the new Rule #20.
+- **Fast Refresh keeps state across small file changes** — verified that an open modal with form data filled in survives a here-string write to one of its dependency files. Big productivity win for testing — fix code, retry save without re-running the audio pipeline ($0).
+- **`git status --short` rename detection is imperfect** when files are added at the wrong path then later moved. The stray `phase_d_audio_media_type_06052026-v1.sql` at root proves this — the original write to `.\` then later move to `.\supabase\` should have been a single Move-Item, but the duplicate file at root persisted because we wrote it twice (once initially, once after diagnostic).
+- **Markdown "expected output" tables in chat get accidentally pasted as SQL.** Caught when Avshi ran `policyname | cmd | with_check_clause` as a query and Supabase reported `syntax error at or near "policyname"`. **For Claude going forward:** prefix expected-output blocks with `>` quote markers or wrap in non-SQL syntax to make them visually un-paste-friendly.
+- **The user's actual download path is `C:\SinkS\Sinks_ART\` — NEVER Desktop, NEVER Downloads, NEVER Dropbox-redirected paths.** Locked in last session. Did NOT violate this session. Proof the rule sticks.
+
+### Next session — Session 19 candidates (in order of likelihood)
+- **A. /intake WhatsApp re-verify on production** (~5 min). Still pending from end of Session 17 — phone test that the silent auto-fix to PhotoAnalyzer/Mp4Analyzer's WhatsApp button works in production.
+- **B. Phase E — Demos cleanup** (~30 min). Move `demos/sinc_art_call_intake_*.html` to `demos/legacy/`. Update README to point at `/sinc`.
+- **C. /customers/[id] page** (~120 min). The "פרויקט" button in the export footer is still a placeholder. A real customer detail page would let Avshi browse saved calls + photos + projects per customer. Unlocks Phase 16.
+- **D. PdfAnalyzer.tsx** (~90 min). pg_1 Cloudinary transform. Same Phase 15.5 pattern as Photo/Mp4. Architects' drawings.
+- **E. Cosmetic polish** (~30 min). Centralize Supabase client to silence GoTrueClient warning. Clean up the `wta` typo recurrence (PowerShell here-string commit messages need a different approach for long bodies).
+
+**Avshi's likely path: A → B → C (unlocks Phase 16 price-offer engine work).**
+
+---
+
 ## 2026-05-06 — Session 17 (continued) — SinC-ART Phase B/C: audio pipeline + speaker map + WhatsApp emoji fix — committed 64cae72
 
 ### Goals
