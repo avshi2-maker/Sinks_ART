@@ -45,3 +45,8 @@ TEST_*.mp3
 TEST_*.wav
 TEST_*.m4a
 *.test.mp3
+
+# Skill upload artifacts (Session 17 cleanup)
+SKILL.md
+marble-art-sinks/
+marble-art-sinks.zip
