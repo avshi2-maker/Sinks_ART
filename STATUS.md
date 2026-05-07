@@ -1,4 +1,4 @@
-# Marble Art Sinks — Daily Status Log
+﻿# Marble Art Sinks — Daily Status Log
 
 A running log of development sessions. **Newest at the top.** Append, never rewrite past entries.
 
@@ -8,6 +8,47 @@ A running log of development sessions. **Newest at the top.** Append, never rewr
 - If multiple sessions happen the same day, separate them under the same date header.
 - Standard subsections per session: **Goals**, **Done**, **Decisions**, **Open questions / blockers**, **Next session**.
 - Keep it short — bullet points, not prose. This is a log, not a journal.
+
+## 2026-05-07 — Session 18 cont. — Production env vars fix + REAL end-to-end verification
+
+### Goals
+- Diagnose 500 error from `/api/sinc-transcribe` on production (`ELEVENLABS_API_KEY is not set in environment`).
+- Apply the Vercel fix correctly, without repeating the prior session's confused "Link Shared Variable" path.
+- Genuinely verify the full SinC-ART pipeline on production — not just page load.
+- Correct the false "Production verified on phone" claim in the earlier Session 18 entry.
+
+### Done
+- **Confirmed code is correct on `main`** — production deployment `9iEaJSiMG` (Current) is a redeploy of `FbFYFaoSH`, built from commit `911ba33` which contains all of Phase D. Code was never the problem.
+- **Confirmed env vars at project level (not shared/team)** — `ELEVENLABS_API_KEY` (Sensitive) + `ELEVENLABS_MODEL_ID = scribe_v1`, both scoped Production+Preview, present in the project-level Environment Variables tab. The prior session HAD completed adding them; the handover doc was outdated about this state.
+- **Root cause identified** — the production deployment had been built BEFORE the env vars were added at the project level. Vercel bakes env vars at **build time**, not runtime — adding them post-build does nothing until a fresh build runs. Build cache must be disabled on the redeploy for new env vars to be embedded.
+- **Redeploy without build cache executed** — Vercel UI: `···` menu on the Current row → Redeploy → unchecked "Use existing Build Cache". New deployment went Ready in ~60s and inherited the Current badge.
+- **REAL end-to-end production verification** at `https://sinks-art.vercel.app/sinc` with a Hebrew audio call. Cost meter readings:
+  - Cloudinary upload: 2.4s, $0.0000 ✅
+  - ElevenLabs Scribe v1 transcription: 7.0s, $0.2667 ✅ (Hebrew speakers diarized as דובר 1 / דובר 2)
+  - Claude analysis: 13.7s, 1,223 input / 549 output tokens, $0.0119 ✅
+  - **Total per call: $0.2786**
+- **Save flow verified on production** — comm_id `a5b08005...`, "פרויקט חדש נוצר" badge shown, Path B (new customer + auto-created lead project) round-trip confirmed.
+- **/sinc page is fully Phase D operational on production.** First time genuinely true since the page shipped.
+
+### Decisions
+- **Honest correction over rewrite.** The earlier Session 18 entry's "Production verified on phone" line was false at the time it was written (only page-load was tested, not the pipeline). Per this file's own rule ("Append, never rewrite past entries"), the line stands as-is in the prior section; this entry is the correction of record.
+- **Redeploy without cache is mandatory** when env vars are added or changed on Vercel. Adding as Rule #20 in skill v16.
+- **Two-step Vercel env var verification flow locked in** — (1) screenshot of project-level env vars page to confirm presence, (2) only then redeploy without cache. The "Link Shared Variable" UI is too confusing on Hobby plan and is hereby ruled out for future sessions.
+
+### Open questions / blockers
+- **None blocking.** Production is stable, code is on `main`, Phase D is verified end-to-end with real cost data.
+- **Cosmetic UI line:** "לא נבחר לקוח — נמען המייל / WhatsApp לא ימולא אוטומטית" — this is expected behavior (export buttons need a customer link to auto-fill recipients). Not a bug.
+- **GoTrueClient warning** — carry-over from earlier entry. Harmless; cleanup in future polish phase.
+
+### Lessons learned
+- **Verification ≠ page load.** A page rendering proves nothing about whether its API endpoints work. The word "verified" going forward requires an end-to-end test with real input, visible cost meter readings, AND a successful save (where applicable). If there is no cost number to point at, the feature is not verified on production.
+- **Vercel build-cache trap.** Env vars added after a deployment's build do not retroactively apply. Any env var change requires a redeploy with build cache **OFF**.
+- **Verify current state before re-prescribing a fix.** A handover claiming "X is broken / try Y" should be cross-checked against the actual current state of the system before repeating Y. The prior session's env var work was already done; re-running the same UI dance would have wasted more time.
+
+### Next session
+- **Phase E** — move legacy single-file SinC-ART demos (`demos/sinc_art_call_intake_*.html`) to `demos/legacy/`. ~30 min.
+- **Phase 16 starter — `/customers/[id]`** — so saved calls (like today's `a5b08005`) are viewable in-app, not only via Supabase Table Editor. Lights up ExportFooter's "פרויקט" placeholder button. ~90 min.
+- **Skill v16 update** — add Rule #20 (redeploy without cache after env var changes); add "verification ≠ page load" to the "what good looks like" section.
 
 ## 2026-05-07 — Session 18 — SinC-ART Phase D: customer/project save flow — committed 548cb76
 
