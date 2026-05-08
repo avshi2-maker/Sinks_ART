@@ -9,14 +9,20 @@
  *   5. Display editable speaker bubbles + Hebrew analysis fields
  *   6. ExportFooter + ApiCostMeter integrated per Rule #11
  *   7. PHASE D: SaveCustomerModal -> saveCallFull -> success state
+ *   8. PHASE 16.5: post-save customer page navigation
+ *      - "👤 פתח עמוד לקוח" indigo button next to ✓ נשמר! success message
+ *      - ExportFooter "פרויקט" button wired via onProjectClick prop
+ *      Both open /customers/[customer_id] in a new tab so SinC review state
+ *      is preserved (user can do another save without re-uploading).
  *
  * Speaker rename model: a single `speakerMap` (originalLabel -> displayName) is
  * the only source of truth for speaker names. Editing one row in the
  * SpeakerNamePanel propagates to EVERY bubble with that original label, AND
  * to the exported transcript AND to the saved transcript body.
  *
- * Phase B/C - Audio pipeline (Session 17, 06/05/2026)
- * Phase D - Save flow (Session 18, 06/05/2026)
+ * Phase B/C  - Audio pipeline             (Session 17, 06/05/2026)
+ * Phase D    - Save flow                  (Session 18, 06/05/2026)
+ * Phase 16.5 - Customer page navigation   (Session 19, 07/05/2026)
  */
 
 'use client';
@@ -281,6 +287,18 @@ export default function CallProcessingFlow({ file, durationSec, onCancel }: Prop
     setSaveError('');
   }
 
+  // ── Phase 16.5: post-save customer page navigation ──
+  // Returns a click handler ONLY when a save has succeeded — before save the
+  // ExportFooter "פרויקט" button keeps its existing "יבוא בעדכון הבא" alert.
+  // Opens in a new tab so the SinC review state is preserved (user can keep
+  // working on the same call analysis without re-uploading the audio file).
+  function exportFooterProjectClick(): (() => void) | undefined {
+    if (saveState === 'saved' && saveResult) {
+      return () => window.open('/customers/' + saveResult.customer_id, '_blank');
+    }
+    return undefined;
+  }
+
   // ── Render ──
 
   const speakerOriginals = Object.keys(speakerMap);
@@ -403,7 +421,10 @@ export default function CallProcessingFlow({ file, durationSec, onCancel }: Prop
                 </div>
               )}
 
-              <ExportFooter snapshot={buildSnapshot()} />
+              <ExportFooter
+                snapshot={buildSnapshot()}
+                onProjectClick={exportFooterProjectClick()}
+              />
 
               {/* Phase D — Save action area */}
               <div className="flex gap-2 pt-2 items-center flex-wrap">
@@ -440,6 +461,15 @@ export default function CallProcessingFlow({ file, durationSec, onCancel }: Prop
                         {saveResult.project_was_new ? ' · פרויקט חדש נוצר' : ''}
                       </span>
                     </div>
+                    {/* Phase 16.5 — primary follow-through after save */}
+                    <a
+                      href={'/customers/' + saveResult.customer_id}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm hover:bg-indigo-700 no-underline"
+                    >
+                      <span>👤 פתח עמוד לקוח</span>
+                    </a>
                     <button
                       type="button"
                       onClick={onCancel}

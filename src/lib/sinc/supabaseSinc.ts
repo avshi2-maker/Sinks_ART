@@ -1,16 +1,20 @@
-﻿/**
+/**
  * src/lib/sinc/supabaseSinc.ts
  *
  * Typed Supabase queries for SinC-ART.
  *
- * Phase B — Data Layer (Session 17, 06/05/2026)
- * Phase D — Full save (Session 18, 06/05/2026)
+ * Phase B    — Data Layer (Session 17, 06/05/2026)
+ * Phase D    — Full save (Session 18, 06/05/2026)
  * Phase D fix 1 — schema columns corrected (06/05/2026):
  *   projects has description_he + notes (text), NOT notes_jsonb.
  * Phase D fix 2 — customers.source whitelist (07/05/2026):
  *   Allowed values are pinterest, whatsapp, instagram, website,
  *   referral, walk-in, phone, other. Using 'phone' for sinc-call
  *   created customers (literal semantic match — it IS a phone call).
+ * Phase 16.5 — saveCallFull return now surfaces customer_id so the
+ *   post-save UI can navigate to /customers/[customer_id].
+ *   Latent Phase D defect: payload.customer_id was used for the insert
+ *   but never echoed back to the caller. Fixed (Session 19, 07/05/2026).
  */
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
@@ -269,6 +273,7 @@ export async function saveCallFull(
   return {
     comm_id:           commId,
     media_analysis_id: mediaData.id as string,
+    customer_id:       payload.customer_id,   // Phase 16.5 — surfaced for /customers/[id] navigation
     project_id:        projectId,
     project_was_new:   projectWasNew,
   };

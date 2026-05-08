@@ -1,11 +1,14 @@
-﻿/**
+/**
  * src/lib/sinc/types.ts
  *
  * TypeScript types for SinC-ART (call intake system).
  *
- * Phase B — Data Layer (Session 17, 06/05/2026)
- * Phase D — Save flow extensions (Session 18, 06/05/2026)
+ * Phase B    — Data Layer (Session 17, 06/05/2026)
+ * Phase D    — Save flow extensions (Session 18, 06/05/2026)
  * Phase D fix — schema reality: projects has description_he + notes (text), NOT notes_jsonb (06/05/2026)
+ * Phase 16.5 — SincCallSaveResult now exposes customer_id so the post-save
+ *              UI (indigo "פתח עמוד לקוח" button + ExportFooter onProjectClick)
+ *              can navigate to /customers/[customer_id] (Session 19, 07/05/2026)
  */
 
 // ════════════════════════════════════════════════
@@ -162,6 +165,7 @@ export interface SincCallFullSavePayload {
 export interface SincCallSaveResult {
   comm_id:           string;
   media_analysis_id: string;
+  customer_id:       string;   // Phase 16.5 — surfaced for /customers/[id] navigation post-save
   project_id:        string;
   project_was_new:   boolean;
 }
