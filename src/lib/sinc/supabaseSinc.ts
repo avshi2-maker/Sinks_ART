@@ -1,4 +1,4 @@
-/**
+﻿/**
  * src/lib/sinc/supabaseSinc.ts
  *
  * Typed Supabase queries for SinC-ART.
@@ -122,7 +122,7 @@ export async function createCustomer(
   notes:  string | null,
 ): Promise<SincCustomerRow> {
   const sb = getSupabase();
-  const trimmedName  = (nameHe || '').trim();
+  const trimmedName  = (nameHe || '').trim().replace(/\s+/g, ' ');
   const trimmedPhone = (phone  || '').trim() || null;
   const trimmedNotes = (notes  || '').trim() || null;
   if (!trimmedName) throw new Error('שם לקוח חובה');
