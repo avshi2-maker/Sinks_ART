@@ -290,6 +290,297 @@ At-a-glance index of recent shipped work. Full per-item detail lives in the cate
 - `[ ]` (09/05/2026) **InstagramAnalyzer + UrlAnalyzer** — same pipeline pattern as YouTube. Instagram needs OAuth or scraping (TBD); URL is generic web-page summarization (Claude with web fetch). Each ~1 session.
 - `[ ]` (09/05/2026) **PdfAnalyzer + Mp4Analyzer (improvements)** — already partially in pipeline; needs Phase 15.5/Session 17 patterns alignment per Rule #11.
 
+
+## 🏎️ Phase 27 — Beni / Beni Pocket / Gadi Module Extraction (surfaced 09/05/2026)
+
+Avshi has three production single-file HTML apps with patterns that map directly onto marble-art-sinks's roadmap. Rather than rebuild these patterns from scratch in TypeScript, extract them once into shared marble components. The source apps stay unchanged in production. Future Phase 30+ may use these extracted modules as the basis for full Next.js rebuilds of the source apps — but that's deferred.
+
+**Source apps:**
+- **Beni Construction CRM** (index.html, ~10,499 lines) — Hebrew field management, GitHub Pages at `avshi2-maker.github.io/work-journal`. Supabase ref `vmcipofovheztbjmhwsl`.
+- **Beni Pocket** (index.html, ~2,102 lines) — mobile companion to above. Same Supabase backend.
+- **Gadi Lawyer CRM** (index.html, ~1,863 lines) — Hebrew law office management. Supabase ref `pslwvkymccbngtyvgagj`.
+
+### Sub-phase 27a — Quote Engine extraction (~2 sessions, blocks Phase 24)
+
+**Source:** Beni Construction CRM, POF (Price Offer/Quote) module at lines 5441-5806 + Quote/CO/PO system at lines 6806+
+**Target:** `src/components/shared/QuoteEngine/*` and `src/lib/shared/quoteFormats.ts` in marble-art-sinks
+
+**Extracts:**
+- Quote items table: description, unit, quantity, unit_cost, line_total, VAT toggle, grand total
+- Hebrew unit options: ס"ע, מ"ר, מ"ל, יח', טון, שעות, פאושלי, קג, מ"ק
+- Status tracking: draft → sent → approved → rejected (aligns with marble's 8-stage Hebrew project pipeline)
+- Print preview HTML window pattern
+- WhatsApp send (must use `api.whatsapp.com/send` per Rule #18)
+- Change Orders + Purchase Orders flow (post-approval modifications)
+
+**New marble Supabase tables:**
+- `quotes` — id, customer_id, project_id, title_he, status, vat_rate (default 0.18), total_subtotal, total_vat, total_grand, created_at, sent_at, approved_at
+- `quote_lines` — id, quote_id, line_number, description_he, unit, quantity, unit_cost_ils, vat_applies (bool), line_total
+- `change_orders` — id, quote_id, description_he, line_items jsonb, status, total_change
+
+### Sub-phase 27b — Token Approval Flow (~1 session, blocks Phase 23)
+
+**Source:** Beni Construction CRM, ANNEX_CONFIRM_URL pattern at lines 2782-3177 (uses external repo `avshi2-maker.github.io/site-pulse/annex-confirm.html`)
+**Target:** `src/lib/shared/approvalTokens.ts` and new `/approve/[token]/page.tsx` route in marble-art-sinks
+
+**Extracts:**
+- Token generation (UUID v4 + Supabase row)
+- Tokenized URL pattern: `sinks-art.vercel.app/approve/{token}?subject=...`
+- Customer-facing approval page (Hebrew, mobile-first, no auth required)
+- Approve/Reject/Request changes outcomes
+- Approval recorded back to source row (project, render, quote, etc.)
+
+**New marble Supabase table:**
+- `approval_tokens` — id, token (uuid), purpose (enum: 'render_approval', 'quote_approval', 'design_approval'), source_table, source_id, customer_id, status (enum: 'pending', 'approved', 'rejected', 'expired'), expires_at, approved_at, customer_signature_text, customer_ip, created_at
+
+**Use cases for marble:**
+- Phase 23: customer approves Nano Banana 3D render via WhatsApp link
+- Phase 24: customer approves quote via WhatsApp link → quote status auto-flips to 'approved'
+- Future: customer signs design brief, sketches, contracts via tokenized URL
+
+### Sub-phase 27c — Calculator Suite (~1 session, optional but valuable)
+
+**Source:** Beni Construction CRM, `calc*` and `rc*` functions at lines 6045-6080
+**Target:** `src/components/shared/Calculators/*` + new `/tools` route in marble-art-sinks
+
+**Marble-relevant calculators:**
+- `calcTile` — counting tiles around a sink installation (kitchen backsplash, bathroom floor)
+- `calcWeight` — marble piece shipping weight (international quotes)
+- `convert` — cm↔inch unit conversion (international customers)
+- Plus the 9-tab calculator UI pattern itself
+
+**NOT extracting:** concrete, roof rafter, column, slab calculators — construction-specific.
+
+### Sub-phase 27d — Lookup helpers + Lightbox (~1 session, deferrable)
+
+**Source:** Beni Construction CRM lookup selects + voice search pattern + gallery lightbox functions
+**Target:** various small files in `src/components/shared/`
+
+**Extracts:**
+- `Lightbox.tsx` — image/video viewer modal (used in galleries)
+- `VoiceSearchInput.tsx` — voice-dictation input pattern
+- Generic Hebrew lookup-table dropdown component
+
+### Sub-phase 27e — Mobile Field-Upload module (~2 sessions, high UX value)
+
+**Source:** Beni Pocket (entire app, ~2,102 lines)
+**Target:** `src/components/shared/FieldUpload/*` and new `/upload-mobile` route in marble-art-sinks
+
+**Extracts:**
+- Direct Cloudinary upload pattern (no auth required, uses unsigned preset)
+- 4-tab mobile bottom-nav UI: Home / Calls / Tasks / Daily
+- 5 big-action-button home screen (Call / Voice / Photo / Text / EOD) — adapt for marble: Sink Photo / Voice Note / Sketch / Customer Intake / Daily Log
+- Sync queue pattern (offline-first capture, batch upload when signal returns)
+- ElevenLabs transcription modal with speaker diarization (already partial in marble's `/sinc`, this version is more polished)
+- PDF dual-path upload (Cloudinary primary, Supabase Storage fallback)
+
+**New marble Supabase table:**
+- `asset_inbox` — id, cloudinary_url, file_name, file_type (photo/video/pdf/audio), project_id, customer_id, caption_he, status (pending/processed/archived), uploaded_by, uploaded_from (mobile/desktop), gps_lat (optional), gps_lng (optional), created_at, processed_at
+
+**New Cloudinary preset:**
+- `marble_field_mobile` — folder `marble-sinks/field`, unsigned, max file size enforced
+
+**Use cases for marble:**
+- Avshi at customer's home: snap kitchen photo → uploads to Cloudinary → appears in marble dashboard within seconds → linked to customer's project
+- Customer themselves (future): "send us your kitchen" → tokenized upload URL → photos go straight into the dashboard
+- Hand sketches: customer or Avshi draws on paper → photo → archived in customer's media library
+
+### Sub-phase 27f — Customer Intake Wizard (~2 sessions, high UX value, improves Phase 19)
+
+**Source:** Gadi Lawyer CRM (entire app, but specifically the 4-step `openIntakeWizard()` pattern at lines 1450-1714)
+**Target:** `src/components/shared/IntakeWizard/*` and new `/intake-wizard` route in marble-art-sinks
+
+**Extracts:**
+- 4-step wizard structure with progress dots
+- Step 1: customer basics (name, phone, email, address, source)
+- Step 2: duplicate-customer conflict check (auto-checks against existing by name/phone/email/Israeli ID)
+- Step 3: project context (NEW for marble — "what kind of project")
+- Step 4: confirmation summary
+- Israeli ID validation function (`validateIsraeliID`)
+- Lookup-driven dropdowns from Supabase
+- Demo mode (works without backend for offline testing)
+
+**New marble Supabase lookup tables (the "various elements" Avshi specifically asked about):**
+
+```sql
+-- 1. project_types
+INSERT INTO project_types (id, name_he, name_en, sort_order, is_active) VALUES
+  ('new_apartment',    'דירה חדשה',           'New apartment',          1, true),
+  ('renovation',       'שיפוץ',                'Renovation',             2, true),
+  ('new_kitchen',      'מטבח חדש',             'New kitchen',            3, true),
+  ('master_bath',      'אמבטיה ראשית',         'Master bathroom',        4, true),
+  ('guest_bath',       'אמבטיית אורחים',       'Guest bathroom',         5, true),
+  ('garden_basin',     'אגן גינה',             'Garden basin',           6, true),
+  ('outdoor_kitchen',  'מטבח חוץ',             'Outdoor kitchen',        7, true),
+  ('utility_sink',     'כיור שירות',           'Utility sink',           8, true),
+  ('art_piece',        'יצירת אמנות',          'Art piece (decorative)', 9, true),
+  ('commercial',       'מסחרי / מלון',         'Commercial / hotel',    10, true);
+
+-- 2. room_types
+INSERT INTO room_types (id, name_he, name_en, sort_order, is_active) VALUES
+  ('kitchen_main',     'מטבח ראשי',            'Main kitchen',           1, true),
+  ('kitchen_island',   'אי במטבח',             'Kitchen island',         2, true),
+  ('master_bath',      'חדר אמבטיה ראשי',      'Master bathroom',        3, true),
+  ('guest_bath',       'אמבטיית אורחים',       'Guest bathroom',         4, true),
+  ('powder_room',      'חדר שירותים',          'Powder room',            5, true),
+  ('utility_room',     'חדר שירות / כביסה',    'Utility / laundry',     6, true),
+  ('garden',           'גינה',                  'Garden',                 7, true),
+  ('balcony',          'מרפסת',                'Balcony',                8, true),
+  ('outdoor_kitchen',  'מטבח חוץ',             'Outdoor kitchen',        9, true),
+  ('commercial',       'שטח מסחרי',            'Commercial space',      10, true);
+
+-- 3. mount_types
+INSERT INTO mount_types (id, name_he, name_en, sort_order, is_active) VALUES
+  ('countertop',       'על השיש',              'Countertop / drop-in',   1, true),
+  ('built_in',         'מובנה',                'Built-in / undermount',  2, true),
+  ('wall_mount',       'תלוי קיר',             'Wall-mounted',           3, true),
+  ('pedestal',         'פדסטל',                'Pedestal',               4, true),
+  ('vessel',           'כיור-קערה (מעל)',      'Vessel (above counter)', 5, true),
+  ('integrated',       'משולב באבן',           'Integrated stone',       6, true);
+
+-- 4. style_preferences
+INSERT INTO style_preferences (id, name_he, name_en, sort_order, is_active) VALUES
+  ('modern',           'מודרני',               'Modern',                 1, true),
+  ('classical',        'קלאסי',                'Classical',              2, true),
+  ('rustic',           'כפרי',                 'Rustic',                 3, true),
+  ('artistic',         'אומנותי',              'Artistic / sculptural',  4, true),
+  ('minimalist',       'מינימליסטי',           'Minimalist',             5, true),
+  ('industrial',       'תעשייתי',              'Industrial',             6, true),
+  ('mediterranean',    'ים תיכוני',            'Mediterranean',          7, true);
+
+-- 5. budget_ranges
+INSERT INTO budget_ranges (id, name_he, name_en, ils_min, ils_max, sort_order, is_active) VALUES
+  ('low',              '₪3,000 - ₪5,000',     'NIS 3,000-5,000',     3000,  5000, 1, true),
+  ('mid_low',          '₪5,000 - ₪10,000',    'NIS 5,000-10,000',    5000, 10000, 2, true),
+  ('mid',              '₪10,000 - ₪20,000',   'NIS 10,000-20,000',  10000, 20000, 3, true),
+  ('mid_high',         '₪20,000 - ₪40,000',   'NIS 20,000-40,000',  20000, 40000, 4, true),
+  ('high',             '₪40,000+',             'NIS 40,000+',        40000,  NULL, 5, true),
+  ('open',             'פתוח / לא ידוע',      'Open / unknown',         0,  NULL, 6, true);
+
+-- 6. timeline_preferences
+INSERT INTO timeline_preferences (id, name_he, name_en, target_days, sort_order, is_active) VALUES
+  ('urgent',           'דחוף - עד חודש',       'Urgent (≤30 days)',     30, 1, true),
+  ('one_to_two',       '1-2 חודשים',           '1-2 months',            60, 2, true),
+  ('three_to_six',     '3-6 חודשים',           '3-6 months',           180, 3, true),
+  ('flexible',         'גמיש - ללא לחץ',      'Flexible / no rush',  NULL, 4, true),
+  ('planning',         'בשלב תכנון',           'Planning phase',      NULL, 5, true);
+```
+
+**New marble Supabase table:**
+- `customer_intake_responses` — id, customer_id, project_id (nullable for first-time), responded_at, project_type_id (FK), room_type_id (FK), mount_type_id (FK), style_preference_id (FK), budget_range_id (FK), timeline_preference_id (FK), room_dimensions_cm jsonb (length/width/height/etc.), notes_he text, source_id (FK to existing customers.source enum), created_at
+
+**Schema additions to existing `customers` table:**
+- `city text` (already informally used; formalize)
+- `address text`
+- `consent_marketing boolean default false`
+- `id_number text` (Israeli ID, validated, optional)
+
+**Wizard flow (marble-specific):**
+- Step 1: customer basics + Israeli ID validation + duplicate check (vs `customers` by phone, email, ID)
+- Step 2: conflict check result with override option for "different person, same name"
+- Step 3: project context dropdowns (project_type, room_type, mount_type, style_preference, budget_range, timeline_preference) + room dimensions inputs (length/width/depth in cm) + free-text notes
+- Step 4: confirmation summary + save → auto-creates customer + project + customer_intake_responses + initial customer_communications row of comm_type='note' summarizing intake
+
+**Use cases for marble:**
+- New phone call from Gal: open `/intake-wizard` → 4 steps → in 2 minutes the customer is in DB with full context, including "what they want" structured data that drives Phase 24 quote generation
+- Walk-in / showroom visit: same wizard, faster (some fields skip)
+- Customer-facing self-intake (future): tokenized link to wizard → customer fills it themselves before calling
+
+---
+
+## Phase 30 — Beni Construction CRM full rebuild (DEFERRED, 6+ months out)
+
+After marble matures and Phase 27 modules are battle-tested in production, consider full rebuild of Beni's main 10,499-line CRM as multi-file React/Next.js. Beni keeps using the working single-file HTML at `avshi2-maker.github.io/work-journal` in the meantime. Estimated effort: 15-25 sessions over 2-3 months. Trigger condition: marble fully shipped + Beni explicitly asks for new features that won't fit in the current monolith. **Do not start before that trigger.**
+
+---
+
+## 📣 Phase 35-37 — Marketing & Publicity (DEFERRED, 3-6 months out)
+
+**Captured 09/05/2026 (Session 21).** Avshi raised the question of paid publicity for the marble Ferrari. Capturing the thinking here so the strategy is ready when the product is ready. **DO NOT START any of these phases before marble core is fully shipped (Phases 17-24, 27a-f all done).** Running ads to a half-built product wastes money and forms bad first impressions that don't recover.
+
+### Phase 35 — Conversion infrastructure prerequisites (~3-4 sessions, ships BEFORE any ads)
+
+Before any paid traffic comes to the site, these must work flawlessly:
+
+- **Mobile landing page performance:** loads <2s on 4G, Lighthouse ≥90 on mobile, hero image WebP/AVIF
+- **WhatsApp deep-link button** on every gallery item: pre-fills "ראיתי את הכיור [name], אשמח להצעת מחיר" with the sink ID + a UTM source query param
+- **Lead capture form:** simple Hebrew form (name, phone, sink interested in) → writes to `customers` table with `source='paid_ad'` and `utm_source/medium/campaign` tracking
+- **Pixel tracking infrastructure:** Meta Pixel for Instagram/Facebook, GA4 for Google Ads, Pinterest Tag for Pinterest. All loaded via Google Tag Manager so non-developers can add/remove pixels later.
+- **A/B testing capability:** ability to serve two versions of a landing page to different traffic splits and measure conversion. Probably via Vercel's built-in branching deployment + cookie-based bucketing.
+- **Analytics dashboard tab inside `/dashboard`:** "where did this customer come from" — summary of leads by source/campaign/medium for the current week/month. Reads from a `lead_attribution` table.
+
+**New Supabase tables:**
+- `lead_attribution` — id, customer_id, utm_source, utm_medium, utm_campaign, utm_content, utm_term, landing_page_url, referrer_url, first_touch_at, conversion_at
+- `landing_page_variants` — id, slug, content_jsonb, traffic_percentage, created_at, archived_at
+
+### Phase 36 — Customer persona definition + creative production (~2 sessions, ships BEFORE first campaign)
+
+**Critical question to answer first** (this is a business decision, not a tech decision; Avshi resolves it before we build anything in this phase):
+> **Who is the marble Ferrari's primary customer?**
+
+Three plausible primary personas, each driving completely different campaign strategy:
+
+| Persona | Demographic | Channel mix | Visual style | Approx. budget tier |
+|---|---|---|---|---|
+| **Tel Aviv young couple renovating** | 30-45, dual income, design-conscious | Instagram + Pinterest heavy | Modern/minimalist, lifestyle photography | Mid (₪10K-20K per sink) |
+| **Caesarea / Herzliya luxury home** | 50-65, high net worth, builds custom homes | Houzz + designer partnerships + print | Classical/sculptural, architectural photography | High (₪40K+ per sink) |
+| **B2B commercial (boutique hotels, high-end restaurants)** | Buyer/property manager | LinkedIn + trade publications | Brand portfolio, project case studies | Volume (multiple units) |
+
+Each persona = different campaign creative, different copy tone, different ad spend allocation. **Picking is required.** A campaign that tries to address all three speaks to none.
+
+Output of this phase: 1-page customer persona doc + creative brief for the visual director.
+
+### Phase 37 — Campaign launch (~1-3 sessions per channel, deferred until 35+36 done)
+
+When 35 and 36 are complete, run paid campaigns. Recommended channel order:
+
+1. **Instagram + Facebook ads (Meta)** — best volume, most data. Start here.
+2. **Pinterest ads** — Israeli marble buyers heavily research on Pinterest. Top-of-funnel.
+3. **Google Search ads** on long-tail Hebrew terms ("כיור שיש בעבודת יד", "כיור שיש מעוצב", "[Tel Aviv neighborhood] חידוש מטבח") — low volume, high intent.
+4. **Houzz Israel** (only if Caesarea/luxury persona is primary) — premium positioning, smaller audience.
+5. **Architect / interior designer partnerships** — not paid ads but a referral program. Often beats paid traffic on quality.
+
+**Each channel = its own dashboard:**
+- Daily spend, impressions, clicks, leads, CPL (cost per lead), CAC (cost per actual sale)
+- Lead quality breakdown (which campaign produced sale-qualified leads vs noise)
+- Creative-level performance (which image / copy variant won)
+
+**Hard rules for any campaign:**
+- Start every campaign with a defined kill-switch budget (e.g., "kill if CPL > ₪200 after first ₪500 spent")
+- No campaign runs without UTM tracking
+- No campaign runs without a unique landing page (so we can measure)
+- Weekly review: pause underperformers, double down on winners
+
+### Phase 38 (parking, longer-term) — Owned media
+
+Eventually marble should also have:
+- Email newsletter (monthly): "new sinks this month" + craftsmanship process behind-the-scenes
+- Instagram organic content (in addition to paid): time-lapse of artist working, finished installations
+- Customer testimonial videos
+- Press kit for design magazines (downloadable hi-res, artist bios, project stories)
+
+These don't require ad spend but require content production time and discipline. Cheaper than ads long-term, slower to scale. Best run alongside paid channels, not instead of.
+
+---
+
+## Honest summary of the long-term plan
+
+The "AI Ferrari for sinks" gets built like an actual Ferrari: drivetrain first, then bodywork, then paint, then marketing. **Right now we're still building the drivetrain (Phase 17-24, plus Phase 27 extractions for shared tooling).** Marketing is real and worth planning, but it's the paint, not the engine.
+
+The roadmap order, with everything captured:
+
+1. Phase 17.5 / 18 / 19 — cockpit hardening (next 2-3 sessions)
+2. Phase 27a / 27b — extract Beni's quote engine + token approval (unblocks Phase 23-24)
+3. Phase 27f — extract Gadi's intake wizard (improves customer onboarding)
+4. Phase 21 / 22 / 23 / 24 — gallery + costs + render + quote (waiting on Avshi's data prep)
+5. Phase 27e — mobile field upload (high UX win, opportunistic)
+6. Phase 27c / 27d — calculators + helpers (opportunistic)
+7. Phase 30 — full Beni rebuild (deferred 6+ months)
+8. Phase 35 / 36 / 37 — conversion infrastructure → personas → ad campaigns (deferred 3-6 months, only after marble core is mature)
+9. Phase 38 — owned media / newsletter / press kit (longer-term)
+
+---
+
 ## Multi-module unification & navigation (roadmap from Session 19, expanded Session 20)
 
 **Background:** Two main modules now exist on production: `/sinc` (call audio analysis) and `/intake` (photo + MP4 analyzers). Both share infrastructure: same Vercel deploy, same Supabase database, same `customer_communications` + `media_analyses` tables, same ExportFooter, same ApiCostMeter, same `ReportSnapshot` type, same Cloudinary uploads, same Anthropic API key.
