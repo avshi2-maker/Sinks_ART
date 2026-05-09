@@ -1,4 +1,4 @@
-# Marble Art Sinks — Ideas Parking Lot
+﻿# Marble Art Sinks — Ideas Parking Lot
 
 A living document. Add ideas as they come up — no filtering, no judgement, no prioritization needed at the time of capture. Triage and prioritize later.
 
@@ -210,7 +210,7 @@ At-a-glance index of recent shipped work. Full per-item detail lives in the cate
 - Anthropic Claude: text reasoning, AI analysis, prompt generation. **Server-side via Next.js API routes** as of Session 17.
 - ElevenLabs: speech-to-text (Hebrew + others). Server-side as of Session 17.
 - Cloudinary: media storage + transformations + format conversion. Browser-direct upload via signed-URL pattern. **Anchored as the canonical media layer per Architectural Rule (Session 20).**
-- Supabase: database + auth + file storage. Anon-key reads; project ID `pslwvkymccbngtyvgagj`.
+- Supabase: database + auth + file storage. Anon-key reads; project ID `givcxgzhfoetujhrjgvc`.
 - Nano Banana / Gemini: AI image generation
 - yt-dlp: YouTube clip download (local CLI tool)
 - Google APIs: NOT used (except potentially Translate later)
@@ -281,6 +281,14 @@ At-a-glance index of recent shipped work. Full per-item detail lives in the cate
 - `[?]` (08/05/2026) **Rename `customer_communications.audio_url` → `media_url`.** Misleading column name (holds audio only by convention; photo/mp4 rows leave it null). One-time ALTER + UPDATE migration.
 - `[?]` (08/05/2026) **Backfill old null `duration_seconds`** rows. Two pre-fix rows: `9aa228ca...` and `d04fd7f4...`. One-line UPDATE from `media_analyses.ai_full_report->>'duration_sec'`.
 - `[?]` (08/05/2026) **Backfill whitespace in old customer names.** `UPDATE customers SET name_he = regexp_replace(trim(name_he), '\s+', ' ', 'g')`.
+
+
+### YouTube / link analyzers (surfaced 09/05/2026)
+
+- `[ ]` (09/05/2026) **YouTube link analyzer** — detection works at `/intake` link-paste tab (`הדבקת קישור`) and correctly identifies `יוטיוב`, but the placeholder save path runs anyway (cost $0.0168 spent) without producing any analysis. Real implementation should: (1) download video audio via yt-dlp server-side, (2) transcribe via ElevenLabs Scribe v1 (same pipeline as /sinc), (3) analyze transcript via Claude, (4) save to `media_analyses` with `media_type='youtube'`. UI follows `CallProcessingFlow.tsx` reference. Estimated effort: ~1 session.
+- `[ ]` (09/05/2026) **Leaky meter on placeholder analyzer save paths** — when a not-yet-built analyzer (currently youtube/instagram/url) hits its save path, the meter still records ~$0.0168. Should be $0 since no API call was made. Trace: likely a stub somewhere in the `/intake` save flow that runs the cost meter regardless of analyzer presence. **User-visible per Rule #20** but tied to the broader analyzer build, so deferred with explicit Avshi approval (deferral itself logged here per Rule #20).
+- `[ ]` (09/05/2026) **InstagramAnalyzer + UrlAnalyzer** — same pipeline pattern as YouTube. Instagram needs OAuth or scraping (TBD); URL is generic web-page summarization (Claude with web fetch). Each ~1 session.
+- `[ ]` (09/05/2026) **PdfAnalyzer + Mp4Analyzer (improvements)** — already partially in pipeline; needs Phase 15.5/Session 17 patterns alignment per Rule #11.
 
 ## Multi-module unification & navigation (roadmap from Session 19, expanded Session 20)
 
