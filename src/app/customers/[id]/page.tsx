@@ -1,4 +1,4 @@
-// src/app/customers/[id]/page.tsx
+﻿// src/app/customers/[id]/page.tsx
 // Phase 16 — Customer detail page.
 // Route: /customers/[id]   e.g. /customers/626efdd8-bacc-44fd-974d-7cfe5574736d
 // Server component (async).
@@ -30,10 +30,10 @@ export default async function CustomerPage({ params }: PageProps) {
       <div className="max-w-5xl mx-auto px-4 py-8">
         <nav className="mb-6 text-sm">
           <a
-            href="/"
+            href="/dashboard"
             className="text-stone-500 hover:text-stone-700 transition-colors"
           >
-            ← חזרה לעמוד הבית
+            ← חזרה ללוח הבקרה
           </a>
         </nav>
 
