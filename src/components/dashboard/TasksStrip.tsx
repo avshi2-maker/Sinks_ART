@@ -1,116 +1,82 @@
 ﻿/**
  * src/components/dashboard/TasksStrip.tsx
  *
- * Phase 17 placeholder — shows 4 hardcoded mock task rows.
- * Phase 17.5 will replace this with real data from a `tasks` table
- * + CRUD flow + integration with WhatsApp/email/call sources.
+ * Server component — reads real open tasks from Supabase, renders TaskRow
+ * components. Includes inline add-task form (client) and link to /tasks.
  *
- * Design from Mockup v2 (Session 20). Status circle + title + context +
- * due-date badge + source icon, all Hebrew RTL.
+ * Replaces the Phase 17 placeholder version that had hardcoded mock tasks.
  *
- * Phase 17 — /dashboard build, Path Y (Session 21, 08/05/2026)
+ * Phase 17.5 — Real tasks table + CRUD (Session 22, 10/05/2026)
  */
 
 import Link from 'next/link';
+import { createClient } from '@supabase/supabase-js';
+import { fetchTasks } from '@/lib/dashboard/fetchTasks';
+import TaskRow from './TaskRow';
+import AddTaskInlineForm from './AddTaskInlineForm';
 
-interface MockTask {
-  id:        string;
-  title:     string;
-  context:   string;
-  dueLabel:  string;
-  urgency:   'overdue' | 'today' | 'tomorrow' | 'future';
-  source:    'whatsapp' | 'phone' | 'email' | 'calendar';
+async function fetchCustomerOptions(): Promise<{ id: string; name_he: string }[]> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !key) return [];
+
+  const sb = createClient(url, key, { auth: { persistSession: false } });
+  const res = await sb
+    .from('customers')
+    .select('id, name_he')
+    .order('name_he', { ascending: true })
+    .limit(200);
+
+  if (res.error) return [];
+  return (res.data || []).map((c: { id: string; name_he: string }) => ({ id: c.id, name_he: c.name_he }));
 }
 
-// Hardcoded mock data — Phase 17.5 will replace with Supabase query
-const MOCK_TASKS: MockTask[] = [
-  {
-    id:       't1',
-    title:    'להגיב להודעת WhatsApp של גל',
-    context:  'Gal גל · ליד · נשלח אתמול 16:30',
-    dueLabel: 'באיחור',
-    urgency:  'overdue',
-    source:   'whatsapp',
-  },
-  {
-    id:       't2',
-    title:    'להתקשר לסיגל לוי על אישור הצעה',
-    context:  'סיגל לוי · הצעת מחיר נשלחה',
-    dueLabel: 'היום',
-    urgency:  'today',
-    source:   'phone',
-  },
-  {
-    id:       't3',
-    title:    'לשלוח חשבונית לדוד כהן',
-    context:  'דוד כהן · אושר · סכום $1,400',
-    dueLabel: 'מחר',
-    urgency:  'tomorrow',
-    source:   'email',
-  },
-  {
-    id:       't4',
-    title:    'פגישה אצל רוני · כיור עגול 60 ס״מ',
-    context:  'רוני סיני · הצעת מחיר נשלחה · רמת גן',
-    dueLabel: '12.5',
-    urgency:  'future',
-    source:   'calendar',
-  },
-];
+export default async function TasksStrip() {
+  let tasks: Awaited<ReturnType<typeof fetchTasks>> = [];
+  let fetchError: string | null = null;
 
-function urgencyColors(urgency: MockTask['urgency']) {
-  if (urgency === 'overdue')  return { ring: 'border-red-600',    badge: 'bg-red-50 text-red-800 border-red-200' };
-  if (urgency === 'today')    return { ring: 'border-amber-600',  badge: 'bg-amber-50 text-amber-800 border-amber-200' };
-  if (urgency === 'tomorrow') return { ring: 'border-blue-500',   badge: 'bg-blue-50 text-blue-800 border-blue-200' };
-  return                              { ring: 'border-gray-300',  badge: 'bg-gray-50 text-gray-700 border-gray-200' };
-}
+  try {
+    tasks = await fetchTasks(10);
+  } catch (e) {
+    fetchError = e instanceof Error ? e.message : String(e);
+  }
 
-function sourceEmoji(src: MockTask['source']) {
-  if (src === 'whatsapp') return '💬';
-  if (src === 'phone')    return '📞';
-  if (src === 'email')    return '📧';
-  return                         '📅';
-}
+  const customers = await fetchCustomerOptions();
 
-export default function TasksStrip() {
   return (
     <div className="mb-6" dir="rtl">
       <div className="flex items-baseline justify-between mb-2">
         <div className="text-sm font-medium text-gray-600">
-          📋 משימות פתוחות <span className="text-gray-400 font-normal">({MOCK_TASKS.length})</span>
+          📋 משימות פתוחות <span className="text-gray-400 font-normal">({tasks.length})</span>
         </div>
         <span className="text-xs text-gray-400">מסודר לפי דחיפות</span>
       </div>
 
       <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-        {MOCK_TASKS.map((task, idx) => {
-          const colors = urgencyColors(task.urgency);
-          return (
-            <div
-              key={task.id}
-              className={
-                'grid items-center gap-3 px-4 py-3 ' +
-                (idx > 0 ? 'border-t border-gray-100 ' : '')
-              }
-              style={{ gridTemplateColumns: '24px 1fr 80px 24px' }}
-            >
-              <div className={'w-4 h-4 rounded-full border-2 ' + colors.ring} aria-hidden="true"></div>
-              <div>
-                <div className="text-sm font-medium text-gray-900">{task.title}</div>
-                <div className="text-xs text-gray-500 mt-0.5">{task.context}</div>
-              </div>
-              <span className={'text-xs px-3 py-1 rounded-full text-center font-medium border ' + colors.badge}>
-                {task.dueLabel}
-              </span>
-              <span className="text-base text-gray-500" aria-hidden="true">{sourceEmoji(task.source)}</span>
-            </div>
-          );
-        })}
+        {fetchError && (
+          <div className="px-4 py-3 bg-red-50 text-xs text-red-700">
+            שגיאה בטעינת המשימות: {fetchError}
+          </div>
+        )}
+
+        {!fetchError && tasks.length === 0 && (
+          <div className="px-4 py-6 text-center text-sm text-gray-500">
+            אין משימות פתוחות — התחל עם "הוסף משימה" למטה
+          </div>
+        )}
+
+        {tasks.map((task) => (
+          <TaskRow key={task.id} task={task} />
+        ))}
+
+        <div className="px-3 py-2 border-t border-gray-100 bg-gray-50">
+          <AddTaskInlineForm customers={customers} />
+        </div>
       </div>
 
       <div className="flex items-center justify-between mt-2 px-1">
         <span className="text-xs text-gray-400 italic">
-          לחיצה על משימה תפתח בעתיד מיני-CRM (יומן · פגישות · נסיעות · zoom)
+          לחיצה על העיגול תסמן כבוצע · נתונים חיים מ-Supabase
         </span>
         <Link href="/tasks" className="text-xs text-blue-600 no-underline hover:underline">
           כל המשימות ←
