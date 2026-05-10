@@ -488,6 +488,68 @@ INSERT INTO timeline_preferences (id, name_he, name_en, target_days, sort_order,
 
 ---
 
+## 🔄 Phase 27f split — Internal Wizard + Public Commission Form (surfaced 10/05/2026)
+
+**Context:** Original Phase 27f scope was "internal customer intake wizard" — Avshi's tool during/after calls. After thinking it through, splitting Phase 27f into TWO complementary sub-phases makes more sense. Both share the same backend (6 lookup tables, customer_intake_responses table), but serve different audiences and timing.
+
+### Phase 27f.1 — Internal Intake Wizard (Avshi's tool)
+
+Original Phase 27f. No change. Located at `/intake-wizard` inside the (internal) route group. Avshi opens during/after a customer call, pre-fills with what's known from call transcripts, captures rich structured detail in 2-3 minutes. Auto-creates customer + project + customer_intake_responses row + initial customer_communications note.
+
+### Phase 27f.2 — Public Self-Service Commission Form (NEW)
+
+Public-facing version of the same wizard, located at `/commission` on the marketing site at `sinks-art.vercel.app/commission`. Customer fills it themselves BEFORE first contact with Avshi.
+
+**Why split:**
+- Different audience = different language register (customer-facing copy vs. Avshi's professional shorthand)
+- Different visual style (gallery-driven, image-rich vs. data-entry compact)
+- Different qualification routing (auto-tier the lead before Avshi sees it)
+- Different timing on Avshi's roadmap (27f.1 is mid-term, 27f.2 needs Phase 21 + 22 first)
+
+**Form structure (5-7 questions, Hebrew RTL throughout):**
+
+1. **Aesthetic vision** — visual selector with 3-4 sample images from gallery (Phase 21). Maps to `style_preferences` lookup. Categories: clean & minimalist / raw & organic / bold & artistic / classical-luxurious. Avshi to confirm exact categories based on his actual portfolio.
+2. **Color/shade preference** — dropdown from `style_preferences` extension or new `color_palettes` lookup. Triggers cost multipliers later.
+3. **Approximate dimensions** — bracket dropdown (Standard up to 120cm / Large 120-180cm / Massive 180cm+). Avoids precision pseudo-data; bracket is enough for routing.
+4. **Installation context** — `room_types` lookup (master bath / guest bath / kitchen / commercial / outdoor / etc.).
+5. **Mounting style** — `mount_types` lookup (floating / vanity / integrated / pedestal).
+6. **Budget bracket (the qualifier)** — `budget_ranges` lookup. Smart routing logic:
+   - High budget (₪20K+) → instant WhatsApp alert to Avshi as VIP lead
+   - Mid budget (₪10-20K) → standard new-lead queue, customer gets confirmation email + ETA
+   - Mid-low (₪6-10K) → standard queue, lower priority badge
+   - Low budget (under ₪6K) → captured but flagged "deprioritized"; customer gets thoughtful "we'll reach out when we have a piece matching your investment level" email (NOT auto-rejection — preserves brand and future relationship)
+7. **Timeline** — `timeline_preferences` lookup (urgent / 1-2 months / 3-6 months / flexible / planning phase).
+
+PLUS hidden capture: name, phone (required for WhatsApp), email (required for confirmation), address (optional), how-they-found-us source.
+
+**Smart outputs on submission:**
+- Insert into customers table (with consent_marketing checkbox state)
+- Insert into projects table with status='ליד' and budget bracket
+- Insert into customer_intake_responses with all 6 lookup IDs
+- Insert into customer_communications row of `comm_type='intake_form'` (NEW comm_type) with the WhatsApp brief text body
+- For high-priority brackets: send formatted Hebrew WhatsApp brief to Avshi via api.whatsapp.com/send (Rule #18)
+- For mid brackets: queue email confirmation to customer
+- For low budget: queue thoughtful email; flag in dashboard
+
+**Optional AI estimate generation** — gated on Phase 22 (cost components). When 22 ships, the form computes a draft cost estimate from the structured answers (size bracket × style multiplier + base labor). Avshi sees this in the WhatsApp brief and can approve/adjust before sending a real quote.
+
+**Hard prerequisites for Phase 27f.2 to ship:**
+- Phase 21 (gallery activation) — needed for the visual style selector to show real sinks
+- Phase 22 (cost components + samples) — needed for the AI estimate to be calibrated
+- Phase 27f.1 (internal wizard) — should ship first to prove the lookup tables and intake flow work end-to-end before exposing publicly
+
+**Effort estimate:** ~2-3 sessions for 27f.2 specifically, after prerequisites done. Likely a 2-3 month-out task.
+
+**Hard rule for 27f.2:** No auto-rejection emails ever. Brand integrity > calendar protection. Even budget-mismatched leads get treated with respect — they may return in two years with different budget, or refer high-value friends. Auto-rejection is a junior business move; thoughtful deferral is professional.
+
+**What we deliberately rejected from external suggestions:**
+- Auto-rejection email for low-budget leads (damages brand)
+- Pulling pricing brackets from generic templates (must come from Avshi's actual sales data via Phase 22)
+- English-language form (market is Israeli, must be Hebrew RTL)
+- Dropping media upload entirely (the existing /intake media-upload flow remains separate; both can coexist)
+
+---
+
 ## Phase 30 — Beni Construction CRM full rebuild (DEFERRED, 6+ months out)
 
 After marble matures and Phase 27 modules are battle-tested in production, consider full rebuild of Beni's main 10,499-line CRM as multi-file React/Next.js. Beni keeps using the working single-file HTML at `avshi2-maker.github.io/work-journal` in the meantime. Estimated effort: 15-25 sessions over 2-3 months. Trigger condition: marble fully shipped + Beni explicitly asks for new features that won't fit in the current monolith. **Do not start before that trigger.**
