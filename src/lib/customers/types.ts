@@ -1,4 +1,4 @@
-// src/lib/customers/types.ts
+﻿// src/lib/customers/types.ts
 // Phase 16 — Customer page data model.
 // Mirrors verified Supabase schema (diagnostic 07/05/2026).
 
@@ -57,8 +57,33 @@ export interface CommunicationRow {
   api_cost_usd: number | null;
   occurred_at: string;
   created_at: string;
+  // Phase 19 — optionally joined from media_analyses by fetchCustomerPage
+  media_analysis?: MediaAnalysisRow | null;
 }
 
+export interface MediaAnalysisRow {
+  id: string;
+  comm_id: string;
+  customer_id: string;
+  project_id: string | null;
+  media_type: string; // 'photo' | 'mp4' | 'sketch' | 'audio'
+  source_url: string | null;
+  cloudinary_url: string | null;
+  thumbnail_url: string | null;
+  source_filename: string | null;
+  extracted_dimensions: string | null;
+  extracted_stone_type: string | null;
+  extracted_shape: string | null;
+  design_intent_he: string | null;
+  reference_summary_he: string | null;
+  ai_full_report: Record<string, unknown> | null;
+  status: string; // 'pending' | 'analyzed' | 'approved' | 'rejected'
+  approved_by: string | null;
+  used_for_quote: boolean;
+  api_cost_usd: number | null;
+  created_at: string;
+  updated_at: string;
+}
 export interface CustomerPageData {
   customer: CustomerRow;
   projects: ProjectRow[];
