@@ -1,4 +1,4 @@
-// src/app/(internal)/customers/[id]/page.tsx
+﻿// src/app/(internal)/customers/[id]/page.tsx
 // Phase 16 — Customer detail page.
 // Phase 19 Stage B — Filter tabs on comms timeline (reads ?type= URL param).
 // Route: /customers/[id]   e.g. /customers/626efdd8-bacc-44fd-974d-7cfe5574736d
@@ -10,6 +10,7 @@ import { CustomerHeader } from '@/components/customers/CustomerHeader';
 import { ProjectsList } from '@/components/customers/ProjectsList';
 import { CommsTimeline } from '@/components/customers/CommsTimeline';
 import CommsFilterTabs, { CommFilterValue } from '@/components/customers/CommsFilterTabs';
+import AddNoteInlineForm from '@/components/customers/AddNoteInlineForm';
 
 // Always render fresh — Phase D writes happen anytime a /sinc save runs.
 export const dynamic = 'force-dynamic';
@@ -50,6 +51,7 @@ export default async function CustomerPage({ params, searchParams }: PageProps) 
         </nav>
         <CustomerHeader customer={data.customer} />
         <ProjectsList projects={data.projects} />
+        <AddNoteInlineForm customerId={data.customer.id} projects={data.projects.map(p => ({ id: p.id, title_he: p.title_he }))} />
         <CommsFilterTabs counts={counts} totalCount={data.comms.length} />
         <CommsTimeline comms={data.comms} filter={filter} />
         <footer className="text-center text-xs text-stone-400 mt-8">
