@@ -1,8 +1,9 @@
-// src/components/customers/CustomerHeader.tsx
+﻿// src/components/customers/CustomerHeader.tsx
 // Phase 16 — Customer top section (name, contact, source, status badge).
 // Server component (pure display, no interactivity).
 
 import type { CustomerRow } from '@/lib/customers/types';
+import CallBackButton from './CallBackButton';
 
 interface Props {
   customer: CustomerRow;
@@ -74,7 +75,8 @@ export function CustomerHeader({ customer }: Props) {
           ) : null}
         </div>
 
-        <div className="flex flex-col items-start md:items-end gap-2">
+        <div className="flex flex-col items-start md:items-end gap-3">
+          {customer.phone ? <CallBackButton phone={customer.phone} /> : null}
           {customer.is_active ? (
             <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
               פעיל
