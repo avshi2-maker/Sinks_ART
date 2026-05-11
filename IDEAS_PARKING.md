@@ -706,3 +706,63 @@ When each of these gets built, the binding rule is: media to Cloudinary, metadat
 -
 
 ---
+---
+
+## ✅ Phase 19 — SHIPPED in full (Sunday 10/05/2026 + Monday 11/05/2026)
+
+Both Stages of Phase 19 are now live in production.
+
+### Stage A — Render media inline (Sunday 10/05/2026, commit `d1b4936`)
+
+Photos and videos uploaded via `/intake` now render directly on the customer detail page next to their AI analysis. Months of uploads finally surfaced visually for the first time.
+
+**Architecture discovery (important for future-Claude reference):** the apparent "audio_url is misnamed for media" framing was wrong. There's a separate `media_analyses` table joined to `customer_communications` via `comm_id`. Photos/videos correctly never used `audio_url`; their `cloudinary_url` has always lived in `media_analyses` (21 columns including thumbnail, dimensions, stone type, shape, ai_full_report, status, approved_by, used_for_quote). The two-table architecture is correct — only the display layer needed JOINing. A proposed "rename audio_url to media_url" migration would have been destructive.
+
+### Stage B — Customer page interactivity (Monday 11/05/2026, 5 commits)
+
+| # | Commit | Feature |
+|---|---|---|
+| 1 | `b3e8d57` | `/customers` index page with searchable table (killed prod 404) |
+| 2 | `5a7ffa1` | CallBackButton with tel: link + desktop clipboard fallback |
+| 3 | `44244e7` | Filter tabs on comms timeline (URL-driven `?type=`) |
+| 4 | `c3fa7e4` | AddNoteInlineForm with Server Action + revalidatePath |
+| 5 | `ebeeba0` | ProjectStatusBadge with clickable dropdown + workflow date stamping |
+
+End-to-end customer workflow is now usable inline — no Supabase round-trips for routine operations.
+
+---
+
+## 🪵 Latent technical items (deferred, documented)
+
+These were discovered during Phase 19 work and should be revisited eventually. None are blocking.
+
+### Latent #1 — Call audio URL is duplicated across two tables
+Call audio files (mp3 from `/sinc`) get stored in BOTH `customer_communications.audio_url` AND `media_analyses.cloudinary_url`. Currently both are populated independently. Possible cleanup later: pick one as canonical, soft-deprecate the other. NOT urgent — works fine today, both URLs point to the same Cloudinary asset.
+
+### Latent #2 — Phase 17.5 cancelTask not wired to UI
+Server Action `cancelTask` is fully coded in `src/lib/dashboard/taskMutations.ts` but no UI element invokes it. Tasks can be created and completed; cancellation only possible via Supabase. ~15 min to wire a "ביטול" link onto each TaskRow.
+
+### Latent #3 — Next.js `'use server'` constraint discovered
+Server-action files can only export async functions; constants/types get silently stripped. Discovered during Phase 19 Step 5 build. Documented in SKILL.md Rule #22. No code changes needed — existing pattern (define constants in client consumer or separate non-server file) is correct going forward.
+
+---
+
+## 🎯 Next session — priority menu
+
+Pick based on energy at start of next session:
+
+**High-value, small scope (~30 min each):**
+- Phase 17.5 cancelTask UI wiring (closes a "deferred work" item)
+- Verify all of Phase 19 Stage B works on production (smoke test 5 features after Vercel deploy)
+
+**Medium scope (~75 min):**
+- Phase 27a Stage 2 — Quote Engine UI: server actions + QuoteEditor component + `/quotes` index + `/quotes/[id]` detail + print preview + WhatsApp send link. Schema is ready from Sunday's Stage 1.
+
+**Larger scope (~2-3 sessions):**
+- Phase 22 — Cost components + sample data (prerequisite for Phase 23 quote calc + Phase 27f.2 public form). High ROI because unblocks 2 downstream phases.
+- Phase 21 — Activate sinks gallery (prerequisite for Phase 27f.2 public form visual selector).
+
+**Background:**
+- Cleanup stale Vercel env vars (`NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET`, `SUPABASE_SERVICE_ROLE_KEY`)
+- ElevenLabs paid plan decision (overdue per SKILL.md)
+- SinC-ART model migration BEFORE June 15, 2026 (claude-sonnet-4-20250514 retirement)
