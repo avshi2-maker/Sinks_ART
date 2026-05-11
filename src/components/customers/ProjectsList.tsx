@@ -1,22 +1,15 @@
 // src/components/customers/ProjectsList.tsx
 // Phase 16 — Projects table for a customer.
-// Server component (pure display).
+// Phase 19 Stage B step 5 - Status badge is now interactive (ProjectStatusBadge).
+// Server component shell; only the status badge cell is a client component.
 
 import type { ProjectRow } from '@/lib/customers/types';
+import ProjectStatusBadge from './ProjectStatusBadge';
 
 interface Props {
-  projects: ProjectRow[];
+  projects:   ProjectRow[];
+  customerId: string;
 }
-
-const STATUS_COLORS: Record<string, string> = {
-  'ליד': 'bg-amber-100 text-amber-800',
-  'הצעה נשלחה': 'bg-blue-100 text-blue-800',
-  'מאושר': 'bg-indigo-100 text-indigo-800',
-  'בייצור': 'bg-purple-100 text-purple-800',
-  'נמסר': 'bg-teal-100 text-teal-800',
-  'הושלם': 'bg-green-100 text-green-800',
-  'בוטל': 'bg-red-100 text-red-800',
-};
 
 function formatDate(iso: string | null): string {
   if (!iso) return '—';
@@ -32,7 +25,7 @@ function formatIls(amount: number | null): string {
   }).format(amount);
 }
 
-export function ProjectsList({ projects }: Props) {
+export function ProjectsList({ projects, customerId }: Props) {
   if (projects.length === 0) {
     return (
       <section className="bg-white border border-stone-200 rounded-lg p-6 mb-6 shadow-sm">
@@ -60,43 +53,40 @@ export function ProjectsList({ projects }: Props) {
             </tr>
           </thead>
           <tbody>
-            {projects.map((p) => {
-              const statusClass = STATUS_COLORS[p.status] ?? 'bg-stone-100 text-stone-700';
-              return (
-                <tr
-                  key={p.id}
-                  className="border-b border-stone-100 hover:bg-stone-50 transition-colors"
-                >
-                  <td className="py-3 px-2">
-                    <div className="font-medium text-stone-900">{p.title_he}</div>
-                    {p.description_he ? (
-                      <div className="text-xs text-stone-500 mt-1 line-clamp-1">
-                        {p.description_he}
-                      </div>
-                    ) : null}
-                  </td>
-                  <td className="py-3 px-2">
-                    <span
-                      className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${statusClass}`}
-                    >
-                      {p.status}
-                    </span>
-                  </td>
-                  <td className="py-3 px-2 text-stone-700">
-                    {formatDate(p.inquiry_date)}
-                  </td>
-                  <td className="py-3 px-2 text-stone-700">
-                    {formatDate(p.quote_sent_date)}
-                  </td>
-                  <td className="py-3 px-2 text-stone-700">
-                    {formatDate(p.delivery_date)}
-                  </td>
-                  <td className="py-3 px-2 text-stone-900 font-medium">
-                    {formatIls(p.quoted_price_ils)}
-                  </td>
-                </tr>
-              );
-            })}
+            {projects.map((p) => (
+              <tr
+                key={p.id}
+                className="border-b border-stone-100 hover:bg-stone-50 transition-colors"
+              >
+                <td className="py-3 px-2">
+                  <div className="font-medium text-stone-900">{p.title_he}</div>
+                  {p.description_he ? (
+                    <div className="text-xs text-stone-500 mt-1 line-clamp-1">
+                      {p.description_he}
+                    </div>
+                  ) : null}
+                </td>
+                <td className="py-3 px-2">
+                  <ProjectStatusBadge
+                    projectId={p.id}
+                    customerId={customerId}
+                    currentStatus={p.status}
+                  />
+                </td>
+                <td className="py-3 px-2 text-stone-700">
+                  {formatDate(p.inquiry_date)}
+                </td>
+                <td className="py-3 px-2 text-stone-700">
+                  {formatDate(p.quote_sent_date)}
+                </td>
+                <td className="py-3 px-2 text-stone-700">
+                  {formatDate(p.delivery_date)}
+                </td>
+                <td className="py-3 px-2 text-stone-900 font-medium">
+                  {formatIls(p.quoted_price_ils)}
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>

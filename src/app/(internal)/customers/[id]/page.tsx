@@ -50,7 +50,7 @@ export default async function CustomerPage({ params, searchParams }: PageProps) 
           </a>
         </nav>
         <CustomerHeader customer={data.customer} />
-        <ProjectsList projects={data.projects} />
+        <ProjectsList projects={data.projects} customerId={data.customer.id} />
         <AddNoteInlineForm customerId={data.customer.id} projects={data.projects.map(p => ({ id: p.id, title_he: p.title_he }))} />
         <CommsFilterTabs counts={counts} totalCount={data.comms.length} />
         <CommsTimeline comms={data.comms} filter={filter} />
