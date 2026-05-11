@@ -9,8 +9,11 @@
 import { useState } from 'react';
 import type { CommunicationRow } from '@/lib/customers/types';
 
+import type { CommFilterValue } from './CommsFilterTabs';
+
 interface Props {
   comms: CommunicationRow[];
+  filter?: CommFilterValue;
 }
 
 const COMM_TYPE_LABEL_HE: Record<string, string> = {
@@ -49,8 +52,15 @@ function formatDuration(seconds: number | null): string | null {
   return `${m}:${s.toString().padStart(2, '0')} דקות`;
 }
 
-export function CommsTimeline({ comms }: Props) {
-  if (comms.length === 0) {
+export function CommsTimeline({ comms, filter }: Props) {
+  // Apply filter: photos and sketches both show under 'photo' tab
+  const filtered = !filter || filter === 'all'
+    ? comms
+    : filter === 'photo'
+      ? comms.filter(c => c.comm_type === 'photo' || c.comm_type === 'sketch')
+      : comms.filter(c => c.comm_type === filter);
+
+  if (filtered.length === 0) {
     return (
       <section className="bg-white border border-stone-200 rounded-lg p-6 mb-6 shadow-sm">
         <h2 className="text-lg font-bold text-stone-900 mb-2">תקשורת</h2>
@@ -62,10 +72,10 @@ export function CommsTimeline({ comms }: Props) {
   return (
     <section className="bg-white border border-stone-200 rounded-lg p-6 mb-6 shadow-sm">
       <h2 className="text-lg font-bold text-stone-900 mb-4">
-        תקשורת ({comms.length})
+        תקשורת ({filtered.length})
       </h2>
       <ol className="space-y-3">
-        {comms.map((c) => (
+        {filtered.map((c) => (
           <CommItem key={c.id} comm={c} />
         ))}
       </ol>

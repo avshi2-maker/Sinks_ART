@@ -1,5 +1,6 @@
-﻿// src/app/customers/[id]/page.tsx
+// src/app/(internal)/customers/[id]/page.tsx
 // Phase 16 — Customer detail page.
+// Phase 19 Stage B — Filter tabs on comms timeline (reads ?type= URL param).
 // Route: /customers/[id]   e.g. /customers/626efdd8-bacc-44fd-974d-7cfe5574736d
 // Server component (async).
 
@@ -8,6 +9,7 @@ import { fetchCustomerPage } from '@/lib/customers/fetchCustomerPage';
 import { CustomerHeader } from '@/components/customers/CustomerHeader';
 import { ProjectsList } from '@/components/customers/ProjectsList';
 import { CommsTimeline } from '@/components/customers/CommsTimeline';
+import CommsFilterTabs, { CommFilterValue } from '@/components/customers/CommsFilterTabs';
 
 // Always render fresh — Phase D writes happen anytime a /sinc save runs.
 export const dynamic = 'force-dynamic';
@@ -15,14 +17,24 @@ export const revalidate = 0;
 
 interface PageProps {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ type?: string }>;
 }
 
-export default async function CustomerPage({ params }: PageProps) {
+export default async function CustomerPage({ params, searchParams }: PageProps) {
   const { id } = await params;
-  const data = await fetchCustomerPage(id);
+  const sp = await searchParams;
+  const filter = (sp.type || 'all') as CommFilterValue;
 
+  const data = await fetchCustomerPage(id);
   if (!data) {
     notFound();
+  }
+
+  // Per-type counts for filter tab badges (photo+sketch merged under 'photo')
+  const counts: Partial<Record<CommFilterValue, number>> = {};
+  for (const c of data.comms) {
+    const key = (c.comm_type === 'sketch' ? 'photo' : c.comm_type) as CommFilterValue;
+    counts[key] = (counts[key] || 0) + 1;
   }
 
   return (
@@ -36,11 +48,10 @@ export default async function CustomerPage({ params }: PageProps) {
             ← חזרה ללוח הבקרה
           </a>
         </nav>
-
         <CustomerHeader customer={data.customer} />
         <ProjectsList projects={data.projects} />
-        <CommsTimeline comms={data.comms} />
-
+        <CommsFilterTabs counts={counts} totalCount={data.comms.length} />
+        <CommsTimeline comms={data.comms} filter={filter} />
         <footer className="text-center text-xs text-stone-400 mt-8">
           Customer ID: <code dir="ltr">{data.customer.id}</code>
         </footer>
