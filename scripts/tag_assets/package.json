@@ -1,0 +1,19 @@
+{
+  "name": "sink-media-tagger",
+  "version": "1.0.1",
+  "type": "module",
+  "private": true,
+  "description": "AI-powered asset tagger for sink_media. Sends images to Claude vision, uploads to Cloudinary, writes to Supabase. Auto-resizes images >4MB.",
+  "scripts": {
+    "tag": "node tag_assets.js",
+    "tag:dry": "node tag_assets.js --dry-run",
+    "tag:test": "node tag_assets.js --folder=../../../assets_intake/extracted --limit=3 --dry-run"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.40.0",
+    "@supabase/supabase-js": "^2.45.0",
+    "cloudinary": "^2.5.0",
+    "dotenv": "^16.4.5",
+    "sharp": "^0.33.5"
+  }
+}

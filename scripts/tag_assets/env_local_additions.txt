@@ -1,0 +1,4 @@
+# Add this ONE line to your existing C:\SinkS\Sinks_ART\.env.local
+# Get the key at https://console.anthropic.com → Settings → API Keys
+
+ANTHROPIC_API_KEY=sk-ant-api03-REPLACE_WITH_YOUR_KEY

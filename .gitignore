@@ -50,3 +50,7 @@ TEST_*.m4a
 SKILL.md
 marble-art-sinks/
 marble-art-sinks.zip
+
+scripts/tag_assets/node_modules/
+scripts/*/node_modules/
+
