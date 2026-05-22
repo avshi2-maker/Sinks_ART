@@ -11,6 +11,72 @@ A running log of development sessions. **Newest at the top.** Append, never rewr
 
 ---
 
+## 2026-05-22 — Session 28 cont. (Friday, post-break) — Full conversion funnel + gallery picker + intake UX
+
+### Goals
+- Star whatsapp_click as GA4 conversion (Google Ads prerequisite)
+- Add file upload (images/video/PDF) to public intake form
+- Add post-submit WhatsApp button (customer sends full lead in one tap)
+- Build full gallery selection system (browse → pick → form → WhatsApp)
+- Solve customer measurement-confusion with mount-type picker + size buckets
+- Various UX polish (clock, remove buttons, messaging)
+- Build (NOT launch) Google Ads campaign so it's ready to go
+
+### Done — all live in production
+- **GA4 whatsapp_click STARRED as Key Event (conversion).** Indexed overnight, one-click star. Once-per-session counting, ILS 5000 default value (set yesterday). lead_form_click NOT yet in list (nobody clicked the footer form link yet — star later).
+- **File upload on intake form** (commit d2c52b1). Cloudinary unsigned preset `marble_lead_uploads` → folder `marble-art/leads`. Images/video/PDF, max 5 files, 10MB each, optional. Verified: PDF + MP4 + PNG all landed in Cloudinary.
+- **Post-submit WhatsApp button** (commit e8c1138). Thank-you screen shows green WA button → opens WhatsApp pre-filled with all lead details + clickable file links → addressed to Avshi 972505231042. Verified with real WhatsApp message screenshot (name, phone, city, project, budget, notes, gallery picks by name+section, file links).
+- **Full gallery selection system** (commit c48256d, 5 files):
+  - NEW `src/context/SelectionContext.tsx` — React Context cart (toggle/remove/clear/isSelected/count)
+  - NEW `src/components/SelectionCart.tsx` — sticky bottom bar w/ pick thumbnails + "המשך לטופס" smooth-scroll button
+  - NEW `src/components/GalleryCard.tsx` — client card w/ "+" pick button
+  - MODIFIED `Gallery.tsx` — uses GalleryCard, passes pickable flags
+  - MODIFIED `LeadForm.tsx` — shows picks (thumbnails + names), includes in WhatsApp + Supabase notes
+  - MODIFIED `page.tsx` — wrapped in SelectionProvider + SelectionCart at end
+- **All 4 gallery sections pickable** (commit 04303c2) — sinks + sketches added to samples + concepts.
+- **Pick button visibility fix** (commit 77a0437) — "+" was invisible on white sketch backgrounds. Now solid white bg + shadow-lg + ring-1 ring-black/10 + bold. Visible on any background.
+- **Mount-type picker + size buckets + photo hint** (commit 57f9fb9) — solves customer measurement confusion:
+  - 5 mount types w/ inline SVG icons: wall-hung / on-cabinet / with-side-counters / corner / "not sure-decide together"
+  - 4 rough size buckets w/ relatable refs (narrow=guest toilet / standard / wide=double / not sure), NO scary exact numbers
+  - Photo scale hint ("צלמו עם טלפון או כרטיס אשראי לצידו")
+  - New fields folded into notes_he as structured text (NO DB migration). Included in WhatsApp message.
+- **Header clock + WhatsApp button removed** (commit a5d7044) — NEW `LiveClock.tsx` (Israeli date+time, updates every second, top-center). Removed sticky header WhatsApp pill. Updated form intro heading ("מלאו פרטי בקשה") + concepts gallery subtitle.
+- **Hero button removed + WhyUs #03 text** (commit df2f87c) — removed Hero CTA button ("מלאו פרטי בקשה בבקשה"). WhyUs #03 now reads "לפני שחותכים אבן יקרה, אפשרות להציג הדמייה הכוללת את הפרטים ששלחתם בטופס."
+
+### Decisions
+- **Mount "not sure" option is the most important one** — honest escape hatch for confused customers. Never force a guess.
+- **Size = buckets, not numbers.** A custom marble sink should never be priced on customer self-measurement. Exact measuring happens when Ales visits. Buckets remove anxiety + still give usable ballpark.
+- **Mount/size folded into notes_he** (no new DB columns) — fast, no migration, shows clearly in WhatsApp + saved notes.
+- **WhatsApp auto-notify to Avshi = NOT built.** Requires paid WhatsApp Business API + Meta verification (weeks). Customer-initiated WA button achieves 90% of value free. If customers fill form but skip WA button, add free Telegram/email notify later.
+- **Ad campaign POSTPONED to next weekend** — waiting on (a) Ales's new pics/data, (b) Google indexing time for the URL. Build campaign now, launch later.
+
+### Lessons learned
+- **GA4 Realtime (instant) ≠ Events list (6-24h indexing).** whatsapp_click appeared in Realtime immediately yesterday but only became starrable in Events list this morning.
+- **Pick button invisibility = white-on-white.** Any overlay control needs shadow + ring to survive light AND dark backgrounds.
+- **The same UI text can live in multiple components.** "תצוגה מקדימה ב-AI" was in WhyUs.tsx, not HowItWorks.tsx. Always grep for the exact string before editing — don't assume which file.
+- **Header was sticky, not floating.** The "floating WhatsApp button" was the sticky-header WA pill. Sticky positioning can look like floating.
+- **Turbopack JSX rule held all session** — every multi-element file shipped with single-line tags + const-extracted handlers. Zero Turbopack errors today (vs 3 yesterday). Memory rule #18 working.
+
+### Files shipped today
+- NEW: SelectionContext.tsx, SelectionCart.tsx, GalleryCard.tsx, LiveClock.tsx
+- MODIFIED: Gallery.tsx, LeadForm.tsx, page.tsx, Header.tsx, Hero.tsx, WhyUs.tsx
+
+### Open questions / blockers
+- **Google Ads campaign: BUILT (paused), not launched.** Ready to enable when Ales content + Google indexing are ready (next weekend).
+- **lead_form_click** still needs starring once it appears in GA4 (nobody clicked footer form link yet).
+- **Email forwarder** still broken (MX + CNAME) — Session 30 priority.
+
+### Next session (Session 30)
+1. Fix email forwarder MX + CNAME
+2. Star lead_form_click in GA4 once it appears
+3. ENABLE the Google Ads campaign (built today, just un-pause + confirm budget)
+4. Verify whatsapp_click conversions showing in GA4 Conversions column (24h after yesterday)
+5. Bigger builds (parked): free AI הדמיות hookup, lead-to-quote CRM pipeline
+6. FB + IG Business Pages, UTM tracker, cleanup stray Cloudinary uploads, add Trabelsi link, real logo swap
+
+
+---
+
 ## 2026-05-21 — Session 28 cont. (evening) — GA4 Conversion Event tracking installed
 
 ### Goals
@@ -198,3 +264,4 @@ While trying to verify a Google account for `avshi@marble-art.co.il`, discovered
 ---
 
 (... older session entries preserved below — see git history if file gets truncated ...)
+
