@@ -11,6 +11,111 @@ A running log of development sessions. **Newest at the top.** Append, never rewr
 
 ---
 
+## 2026-05-28 — Session 31 (Thursday) — ARVO logo rollout + copy revisions + Google Ads GO-LIVE + conversion tracking
+
+### Goals
+- Replace the weak ARVO logo across the site with a strong, crisp version
+- Finish the parked copy-revision batch (#2–#5)
+- Update the Google Ads campaign to the new brand + broader keywords
+- Launch the campaign (go-live) + set up conversion tracking so spend is measurable
+
+### Done — all live / saved
+**Branding — ARVO logo overhaul**
+- NEW `public/arvo-logo.svg` — bold gold "A" + ARVO wordmark + tagline on a dark charcoal plate (for LIGHT backgrounds). SVG (not PNG) → crisp at any size.
+- NEW `public/arvo-logo-gold.svg` — transparent, plate-free gold version for DARK backgrounds.
+- `Header.tsx` — old M-box/"Marble Art" replaced with clickable ARVO logo (→ home on every page). Switched from `next/image` to a plain `<img>` so the SVG renders WITHOUT enabling `dangerouslyAllowSVG`. Sized `h-16 md:h-20`. (Live + confirmed.)
+- `Footer.tsx` — old gold "M" box + "Marble Art Sinks" replaced with the gold ARVO logo; tagline refreshed to "כיורי שיש וגרניט פורצלן בעבודת יד"; copyright now "© 2026 ARVO".
+- Google Ads icon assets generated: `arvo-icon-1200.png` (1:1, ICON ONLY — no words — for Search business logo), plus `arvo-square-wordmark-1200.png` + `arvo-wide-wordmark-1200x300.png` (for future Display/PMax).
+
+**Site copy revisions (#2–#5)** — commit `7efb051..06ca2be` ("Site revisions: granite-porcelain copy, Ales+Ruslan credit, 5 WhyUs facts")
+- `Hero.tsx` — eyebrow → "כיורי גרניט פורצלן איטלקי, ספרדי יוקרתי בעבודת יד"; body line → "גרניט פורצלן בעובי 8 מ״מ".
+- `WhyUs.tsx` — header → "היתרונות שמייחדים אותנו" (no number, so future add/remove needs no edit). Grown 3 → 5 facts: 01 retitled "שיש איטלקי וגרניט פורצלן"; 02 now credits "אלס ורוסלן" (verbs pluralized); NEW 03 "ללא מגבלות אורך" (1.20–2.40 מ׳ ללא חיבורים / כל גודל עם חיבורים סמויים); NEW 04 "כיור תלוי — ללא שידה"; old AI-preview fact moved to 05. Grid → `sm:grid-cols-2 lg:grid-cols-3`.
+- `marble-sinks-for-designers/page.tsx` — "אלס" → "אלס ורוסלן" in all 3 spots (pillar 02, מי-אנחנו prose, step 4), verbs pluralized. Materials sentences left intact (already list both stones correctly).
+
+**Google Ads — LAUNCHED (account 859-073-3472)**
+- Campaign `LeadsSearch - WhatsApp Leads - Marble - 26052026-Search-1` — ENABLED (was paused). Status Eligible; ads in review.
+- Billing confirmed active: Mastercard ••7884 (exp 04/29), Primary. Budget stays ₪10/day.
+- Refreshed Responsive Search Ad (Ad group 1): 13 new Hebrew headlines + 4 descriptions (granite-porcelain, אלס ורוסלן, wall-hung, AI preview, designers). Removed old "שיש איטלקי מובחר / גימור אומנותי" lines.
+- Added keywords to Ad group 1: "אריחים מדוקקים" + variants, "כיור גרניט פורצלן" (+exact), "כיור פורצלן", "כיור פורצלן בהזמנה אישית", "גרניט פורצלן לאמבטיה", "כיור תלוי", "כיור אמבטיה ללא שידה", "כיור שיש ארוך", "כיור שיש למעצבים", "כיור למעצבי פנים", "כיור שיש לאדריכלים".
+- Uploaded `arvo-icon-1200.png` to Asset Library (Square 1:1, 32 KB).
+- **Conversion tracking SET UP:** imported GA4 `whatsapp_click` key event as a conversion → category **Contact**, **Primary**, source GA4 538530214. Active.
+- **Cleanup:** removed dead "Outbound click" conversion action (misconfigured — "Untitled tag / Manual event" never placed on site, 0 data). Campaign conversion goals switched from Account-default (Contacts + Outbound clicks) → **Campaign-specific: Contacts only**.
+- **Bidding changed:** Maximize conversions → **Maximize clicks** with **max CPC ₪4** (cold start, zero conversion history).
+
+### Decisions
+- **Logo: two variants.** Dark-plate SVG on light backgrounds (header); transparent gold SVG on dark backgrounds (footer). Delivered as SVG via plain `<img>` — NOT `next/image` (avoids needing `dangerouslyAllowSVG`).
+- **Materials: keep BOTH שיש + גרניט פורצלן everywhere.** Do NOT blanket-swap שיש→granite where Calacatta/Statuario/Saint Laurent appear — that would mislabel real marble. (Customers don't distinguish stone chemistry; brand keeps both.)
+- **Ads bidding = Maximize clicks (₪4 cap) for now.** Switch back to Maximize conversions (on Contacts) after ~15–30 `whatsapp_click` conversions accumulate (~2 weeks). Reason: Max conversions stalls with zero history.
+- **Skip "B - Luxury" ad group.** It was never actually created; at ₪10/day a single well-built ad group is enough. Revisit if budget grows.
+- **Visible brand = ARVO** (header, footer, copyright). Domain + SEO name `marble-art.co.il` unaffected. WhatsApp pre-filled message left as "מרבל ארט".
+- **Search business-logo asset must be ICON ONLY (no words)** — wordmark versions are for Display/PMax only.
+- Declined Google "share your phone number" (sales calls; push broad-match traps). "Ad scheduling" notice is informational: ₪10/day ≈ ₪304/mo (~30.4×), up to ~2× on a single day, self-averaging.
+
+### Open questions / blockers
+- **ARVO icon is in Asset Library but NOT yet ASSIGNED as Business logo.** Assign via Admin → Business information (or campaign → Assets → Business logo) so it shows on ads. Advertiser verification is DONE → display unlocked once assigned.
+- **Footer change push not confirmed in-session** — verify `Footer.tsx` + `arvo-logo-gold.svg` were committed/pushed ("Footer: replace Marble Art M-box with ARVO gold logo, refresh tagline").
+- Conversion data has 12–24h delay; needs real clicks + WhatsApp taps before any show. Optional self-test: click WA on live site, check tomorrow.
+- After ~2 weeks / ~15–30 conversions → switch bidding back to Maximize conversions on Contacts; consider budget ₪25–30/day once running clean.
+- Expect 1–2 weeks of performance fluctuation after the bidding/goal change (Google's own warning).
+- `lead_form_click` still not a GA4 key event (never fired). `whatsapp_click` is the live conversion.
+
+### Next session (Session 32) — MAIN BUILD: AI הדמיה prompt-builder (back office)
+- Unchanged from Session 30 plan: build Phase 1 of the lead → הדמיה pipeline in the back-office CRM (Sinks_ART). Customer-record screen takes intake (sketch + marble sample + dimensions + notes) → OUTPUTS a ready-to-paste Nano Banana prompt; manual download/approve/send by Avshi.
+- BRING: Sinks_ART Supabase schema + one example intake/customer record + references/ai_image_pipeline.md conventions.
+- Also: monitor live ads first few days — Search Terms report (add junk as negatives), watch for whatsapp_click conversions.
+
+---
+
+## 2026-05-27 — Session 30 (Tuesday) — Google Ads launch-ready + Designer SEO page + Video gallery
+
+### Goals
+- Research target market + build Google Ads keyword/targeting strategy
+- Build (NOT launch) the Search campaign on existing account 859-073-3472, paused
+- SEO audit of marble-art.co.il; act on highest-value gaps
+- Build a dedicated designer/architect landing page (top SEO + ad-landing value)
+- Add a video gallery (Cloudinary video, same dynamic pattern as images)
+- Remove the stale Vercel duplicate competing in Google
+
+### Done — all live / saved
+- **Market + keyword strategy.** Positioned product as niche luxury/bespoke (NOT commodity vanity). Competitors (eBath, Levi Bath, Sharon Ceramic, Agan, Zedka) own broad terms; we target long-tail high-intent. Two buyer types: affluent end-renovators + interior designers/architects (highest-value, under-served channel).
+- **Google Ads campaign BUILT + PAUSED** on account 859-073-3472 (₪0 spent, cannot serve):
+  - Search campaign, objective Leads, goal Outbound clicks, Conversions bidding, ₪10/day
+  - Israel + Hebrew; Search Partners / Display / AI Max all OFF; GA4 (538530214 / G-0VV9NZFRXP) linked
+  - Ad group "Ad group 1" (Artisan): phrase+exact keywords, 10 Hebrew headlines, 4 descriptions
+  - Ad group "B - Luxury": phrase+exact keywords, 10 headlines, 4 descriptions
+  - 9 campaign-level negative keywords (זול, מבצע, יד שנייה, מטבח, איקאה, IKEA, ניקוי, תיקון, כיור נירוסטה)
+  - LATER added trade-term keywords to Ad group 1: "אריחים מדוקקים", "כיור אריחים מדוקקים", "כיור גרניט פורצלן", "כיור פורצלן בהזמנה אישית" + exact variants. ("אריחים מדוקקים" confirmed by Avshi as the real commercial term designers/shops use.)
+- **Advertiser verification: DONE** — auto-completed as "אבשלום ספיר" (IL). EU political ads answered No. VAT/invoice (business profile) deferred — ask accountant; not a blocker, nothing spends while paused.
+- **NEW dedicated SEO page** `/marble-sinks-for-designers` (commit ~bdfa3a1). Own metadata targeting "כיורי שיש למעצבי פנים/לאדריכלים". Server-rendered, Hebrew RTL, hero + prose + 4 pillars + 4-step process + CTA + two "חזרה לעמוד הבית" links. Materials updated to three: שיש, גרניט פורצלן, אריחים מדוקקים.
+- **SEO finishers** (commit ~b7e96db): sitemap.ts now lists both URLs; ForDesigners.tsx homepage section got a prominent brass-bordered "מעצבים ואדריכלים?" invitation box (Option A, top of section) linking to the designer page. Pillar 03 updated to "תיעוד מלא לכל חומר" (3 materials).
+- **Video gallery** (commit ~43cf0be, 4 files): NEW `src/lib/cloudinaryVideo.ts` (video fetcher, mirrors image fetcher, /video/upload + so_0 poster), NEW `src/components/VideoGallery.tsx` (HTML5 players, click-to-play, dark band "הכיורים שלנו בווידאו"), wired into Gallery.tsx right after "כיורים שבנינו". First MP4 uploaded to Cloudinary `marble-art/videos`. Dynamic: add videos by uploading, no code change.
+- **Vercel duplicate removed:** deleted the stale `sinks-art` project (sinks-art.vercel.app — old "two artists" version, ~2 edge requests). Code stays safe in GitHub Sinks_ART repo. Live site (sinks-bathroom-design → marble-art.co.il) untouched.
+
+### Decisions
+- **Live marketing site repo = `sinks-bathroom-design`** (serves marble-art.co.il). Sinks_ART = docs/back-office repo. (Skill Rule #16's default cd is for the CRM; marketing-site work cd's to C:\SinkS\sinks-bathroom-design.)
+- **meta-keywords tag is ignored by Google** — don't chase it. Visible page copy + ad relevance + landing experience drive Quality Score.
+- **Bidding = Conversions** (not Maximize Clicks) since whatsapp_click is a real tracked conversion.
+- **Smart-mode escape documented:** "+ New campaign" forces the Smart wizard; escape via the ✕ top-left, "Skip" links, or "Set up an account only". Build the real campaign via left-menu Campaigns → + → New campaign → Skip business-info → real objective grid.
+- **NEVER click** "Apply all / Change to broad match", "Use Display Expansion", or confirm a Google Tag overwrite (protects GA4 tag G-0VV9NZFRXP).
+- **One keyword lives in one ad group** (no duplicating across groups).
+- **AI הדמיה pipeline (next build) confirmed: ONE shared Supabase** for public site + back office. Manual/Avshi-reviewed flow: app builds Nano Banana prompt → Avshi pastes in Nano Banana → downloads → approves (artist-approval gate intact) → sends with price offer. Price offer engine (xls labor + marble per-m² costs) is a SEPARATE later phase.
+
+### Open questions / blockers
+- VAT/invoice: individual vs business payments profile — ask accountant. Non-blocking.
+- NotebookLM has no public API; cannot programmatically bridge Claude-in-chat to a NotebookLM notebook. Reliable cross-session method stays: paste/attach STATUS.md + IDEAS_PARKING.md at session start.
+
+### Next session (Session 31) — MAIN BUILD: AI הדמיה prompt-builder (back office)
+1. Build Phase 1 of the lead → הדמיה pipeline in the back-office CRM (Sinks_ART): a customer-record screen that takes intake (sketch + marble sample + dimensions + notes) and OUTPUTS a ready-to-paste Nano Banana prompt, surfacing the sketch + sample images together. Manual download/approve/send by Avshi.
+2. BRING TO SESSION: the Sinks_ART Supabase schema + one example intake/customer record (so prompt-builder maps real fields) + existing Nano Banana prompt conventions (references/ai_image_pipeline.md).
+3. THEN later phases: price-offer engine (xls costs), auto-delivery options.
+
+### Also still open (from earlier sessions, lower priority)
+- Go-live: unpause Google Ads when Ales sends new pics + Google finishes indexing site. Consider ₪25–30/day once running clean.
+- Instagram presence (consult done: Instagram yes / Facebook secondary mirror). Build later.
+- Email forwarder MX fix (parked). lead_form_click GA4 star (when it appears). npm audit fix (NOT --force).
+
+---
+
 ## 2026-05-22 — Session 28 cont. (Friday, post-break) — Full conversion funnel + gallery picker + intake UX
 
 ### Goals
