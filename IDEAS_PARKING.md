@@ -766,3 +766,50 @@ Pick based on energy at start of next session:
 - Cleanup stale Vercel env vars (`NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET`, `SUPABASE_SERVICE_ROLE_KEY`)
 - ElevenLabs paid plan decision (overdue per SKILL.md)
 - SinC-ART model migration BEFORE June 15, 2026 (claude-sonnet-4-20250514 retirement)
+## 💡 BIG IDEA — Free AI הדמיות as Customer Hookup (captured 21/05/2026)
+
+**The hook:** When a customer fills the intake form on marble-art.co.il, the system automatically generates 1-2 free AI-rendered הדמיות (simulations) of their requested sink — delivered to them within minutes, no payment required. The customer sees "their" sink before they spend a shekel.
+
+**Why this is a sales weapon, not a feature:**
+- Competitors show stock photos and renders of OTHER customers' sinks
+- We show a render that visualizes THEIR description — their stone choice, their bathroom style, their sink shape
+- Emotional attachment forms BEFORE the sales conversation starts
+- Customer is now psychologically invested → much harder to ghost or comparison-shop
+- Differentiator no competitor can copy quickly (requires AI pipeline + intake form integration)
+
+**Cost analysis (back-of-envelope):**
+- Nano Banana / Gemini 2.5 Flash Image: ~$0.03-0.05 per image
+- 2 images per customer = ~$0.10 cost
+- For every 100 form submissions: $10 total in AI costs
+- ROI: if even 1 in 100 of those leads converts (at ₪5000 sink value), that's ₪5000 revenue on ₪35 cost (massively positive)
+
+**Required to ship (rough scope, not committed):**
+1. Expand intake form fields: marble color preference, sink shape (round/oval/rectangular/asymmetric), bathroom style (modern/classical/rustic/luxury), dimensions (rough size)
+2. Server-side prompt builder: takes form data → constructs a high-quality Nano Banana prompt (similar pattern to the marble sample swatch prompts that worked beautifully today)
+3. Server-side image generation route: calls Gemini API, saves result to Cloudinary `marble-art/customer-renders/[customer_id]/`
+4. Delivery mechanism: either (a) generate immediately + show on confirmation page, (b) async + WhatsApp/email customer when ready, or (c) hybrid — show placeholder + reveal when ready
+5. Quality control: every הדמיה stamped with "הדמיה" badge (same legal/trust framing as marble samples)
+6. Cap/rate-limiting: max 2 הדמיות per form submission; per-IP daily cap to prevent abuse
+
+**Open strategic questions (decide before building):**
+- Should Ales personally review every הדמיה before customer sees it? (Pro: brand quality control. Con: kills the "instant magic" effect that makes it powerful.)
+- Should we generate immediately or async? Instant = magic moment; async = better quality (more compute time, model retries).
+- Should we let the customer regenerate if they don't like it? (Pro: customer satisfaction. Con: cost creep, could spiral.)
+- Should the customer's bathroom photo (from Session 30's intake upload feature) feed INTO the prompt? Massive value if it works ("here's YOUR bathroom with this sink"), but huge privacy + technical complexity. Worth testing separately.
+- Is this V1 worth building before basic Google Ads campaign learnings come in? OR is it the post-first-campaign upgrade that turns "we get clicks" into "we close customers"?
+
+**Risk:**
+- Quality of AI render = brand impression. If Nano Banana produces a mediocre render and we email it to a customer, that's brand damage on day one.
+- Mitigation: pre-tested prompt templates (we proved today these work), Ales-approved style guidelines, automated retry on low-quality detection.
+
+**Strategic fit with North Star:**
+- Fits the "AI-controlled command center" vision — this is what the marble sink vertical's intake should look like
+- Pattern replicates to other verticals: flooring art could offer "AI render of your floor design" before quoting
+- Reinforces the "all media through Cloudinary" architectural rule
+
+**Recommended decision flow:**
+1. Don't build now (post-break) — Session 30+ has higher-priority items (email forwarder, GA4 conversion star, intake upload V2)
+2. After those land: build a minimal V1 — 1 הדמיה per submission, async with 5-min delivery target, Ales reviews via dashboard before customer notification
+3. Measure conversion lift over 30 days vs baseline (compare leads who got הדמיה vs leads who didn't)
+4. If conversion lift > 2x: invest in instant generation + 2 images + regenerate option
+5. If conversion lift < 1.5x: kill the feature, save the cost
