@@ -11,6 +11,92 @@ A running log of development sessions. **Newest at the top.** Append, never rewr
 
 ---
 
+## 2026-05-29 — Session 32 (Friday, morning) — Campaign Day-1 review + budget bump + B-Luxury keyword expansion + campaign negatives
+
+### Goals
+- Review live-campaign Day-1 performance
+- Raise daily budget now that the campaign is active
+- Expand B-Luxury keywords (luxury angle + granite porcelain + 2m / seamless)
+- Add proper negative-keyword coverage
+
+### Done
+**CORRECTION to Session 31:** **B-Luxury ad group DOES exist** and is active with 6 keywords already in it (`[כיור אמבטיה יוקרתי]`, `"כיור שיש יוקרתי"`, `"כיור שיש מעוצב"`, `"כיור אמבטיה אומנותי"`, `"כיור שיש לאמבטיה יוקרתית"`, `[כיור שיש מעוצב]`). Yesterday's note ("never created / skip B-Luxury") came from a filtered Ad-groups view and was wrong. BOTH ad groups (Artisan + Luxury) are now active.
+
+**Day-1 performance (May 28):** 1 impression, 0 clicks, ₪0.00 cost. Normal for launch day — ads in review part of day + niche Hebrew terms.
+
+**Budget:** raised **₪10/day → ₪25/day** (via Campaigns → Settings → Budget → Save).
+
+**New keywords added to B - Luxury** (luxury / villa / granite porcelain luxury / 2m / seamless angles):
+```
+"כיור אמבטיה מעוצב"
+"כיור שיש לבית פרטי"
+"כיור אמבטיה לוילה"
+[כיור שיש לוילה]
+"עיצוב חדר רחצה יוקרתי"
+"כיור אמבטיה בוטיק"
+"כיור שיש בעבודת יד יוקרתי"
+[כיור אמבטיה יוקרתי בעבודת יד]
+"כיור Calacatta"
+"כיור Statuario"
+"כיור גרניט פורצלן יוקרתי"
+"כיור גרניט פורצלן לוילה"
+"גרניט פורצלן יוקרתי לאמבטיה"
+[גרניט פורצלן איטלקי]
+[גרניט פורצלן ספרדי]
+"כיור שיש 2 מטר"
+"כיור אמבטיה ארוך 2 מטר"
+"כיור גדול לוילה"
+"כיור שיש ארוך לוילה"
+"משטח שיש ארוך"
+"כיור שיש ללא חיבורים"
+"כיור ללא חיבורים"
+"משטח שיש ללא חיבורים"
+[כיור שיש ללא חיבורים]
+```
+
+**Negative keywords added — campaign level** (broad match, blocks both ad groups):
+```
+ריצוף, ריצופים, חיפוי, אריחי רצפה, אריחי קיר, מרצפות   (granite porcelain = mostly flooring; biggest waste-spend risk)
+קוורץ, חרסינה, קיסר, קוריאן                              (wrong materials / Caesarstone / Corian / ceramic)
+שיפוץ, שיפוצים, קבלן, ליטוש, שחזור, אטימה                (services, not product buyers)
+DIY, יוטיוב, ויקיפדיה, איך, הדרכה, קורס, סרטון            (research / tutorial / educational)
+דרושים, משרה, משרות                                       (jobs)
+חינם, בחינם                                              (freebie hunters)
+```
+
+Saved direct to campaign (NOT to a shared list — single campaign, no benefit yet).
+
+**Confirmed Auto-apply settings = OFF.** Both "Maintain your ads" (0/7) and "Grow your business" (0/14). Stay zero forever.
+
+### Decisions
+- **Two ad groups stay** — different buyer intent → message-match → better CTR / Quality Score / lower CPC. (Yesterday's "skip B-Luxury" decision retracted.)
+- **New luxury keywords go to B-Luxury only** — no cross-ad-group duplicates, avoids internal Quality Score competition. Granite-porcelain plain term already in Ad group 1; only granite-porcelain + luxury modifiers go to B-Luxury.
+- **Negatives = broad match (default).** Did NOT negate: `מחיר`, `מעצב`, `אדריכל` (those are buyers/target audience), or any core terms (`כיור / שיש / גרניט / פורצלן`).
+- **Recommendations tab = Google's sales channel, not a friend.** NEVER click "Apply all" or "Auto-apply." Reject: broad-match switch, Search Partners / Display Expansion, "raise budget", switch to Max conversions while we have no data, auto-add keywords. Glance occasionally; treat as opinions, not instructions.
+
+### Open / blockers
+- **B-Luxury may not have its own ad** (needs check — Campaigns → B-Luxury → Ads). If empty or generic, all those luxury keywords have nothing to serve → need a luxury-themed RSA (different headlines emphasizing יוקרה / וילה / בוטיק, not the artisan / designer angle from Ad group 1).
+- **Watch Day 2–4 impressions.** Should grow to low tens/day. If still 0–1 after 4 days, keywords are too niche → broaden.
+- ARVO icon still in Asset Library — NOT yet ASSIGNED as Business logo (Admin → Business information). (Carry from Session 31.)
+- Footer push not confirmed in-session (Footer.tsx + arvo-logo-gold.svg). (Carry from Session 31.)
+- `lead_form_click` still not a GA4 key event. (Carry.)
+- After ~2 weeks / ~15–30 `whatsapp_click` conversions → switch bidding back to Maximize conversions on Contacts. (Carry.)
+
+### Monitoring routine (locked in)
+- **Daily, 30 sec:** Campaigns view, date = Last 7 days → glance Impr / Clicks / Cost.
+- **Every 2–3 days, 5 min:** Keywords → Search Terms tab → add junk as negatives, add good surprises as keywords.
+- **WhatsApp app on phone:** real lead channel for the WhatsApp button (Supabase only catches lead-form submissions).
+- **Don't tinker daily.** Don't change bids/budget mid-week. Let it gather data.
+
+### Next session (Session 33) — MAIN BUILD: AI הדמיה prompt-builder
+- Per Session 30/31 plan, NOW updated to output BOTH a static (Nano Banana) prompt AND a video (Veo) prompt — see `IDEAS_PARKING_hadmaya_video_28052026.md`.
+- BRING: Sinks_ART Supabase schema (`references/schema.sql` — note: this file doesn't yet exist in the repo; either create/locate it before Session 33, or paste schema directly from Supabase dashboard).
+- BRING: one example intake/customer record.
+- BRING: `references/ai_image_pipeline.md` if it exists (also not yet in the repo per today's check).
+- Also during the session: write the B-Luxury luxury RSA (if not done sooner) and check Search Terms report.
+
+---
+
 ## 2026-05-28 — Session 31 (Thursday) — ARVO logo rollout + copy revisions + Google Ads GO-LIVE + conversion tracking
 
 ### Goals
