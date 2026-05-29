@@ -95,6 +95,41 @@ Saved direct to campaign (NOT to a shared list — single campaign, no benefit y
 - BRING: `references/ai_image_pipeline.md` if it exists (also not yet in the repo per today's check).
 - Also during the session: write the B-Luxury luxury RSA (if not done sooner) and check Search Terms report.
 
+
+### Addendum (same morning, ~+1h) — B-Luxury ad CREATED 🎯
+
+**Resolved open item from earlier in session:** confirmed B-Luxury had NO ad (keywords sitting idle, nothing to serve). Created the missing luxury-themed Responsive Search Ad.
+
+**Done:**
+- B-Luxury RSA created with **luxury-flavored copy** (different from Ad group 1's artisan/designer angle): emphasizes יוקרה, וילה פרטית, בוטיק, Calacatta + Statuario by name, גרניט פורצלן ליוקרה, ייצור פרטי, דיסקרטיות.
+- Final URL: `https://www.marble-art.co.il/`
+- Display path: `כיורי-יוקרה / שיש-איטלקי` (luxury-flavored, not the default `כיורי-שיש / בעבודת-יד`)
+- Business name: `ARVO` (verified advertiser name = אבשלום ספיר — use that as fallback if ARVO gets rejected on review)
+- 15 headlines + 4 descriptions, all unpinned for max flexibility
+- Long headline: `כיורי שיש יוקרתיים בעבודת יד — Calacatta, Statuario וגרניט פורצלן מובחר. ייצור פרטי.`
+
+**Procedural gotcha (worth remembering for next ad):**
+- Google **prefilled the form** with 10 AI-suggested generic headlines (`פריט אמנות לחדר הרחצה`, `כיור אמבטיה מעוצב`, etc.) drawn from URL + previous high-performing ads.
+- These persisted as a SEPARATE saved ad (not overwritten) — so B-Luxury briefly had TWO ads: the old prefilled generic + the new ARVO luxury.
+- **Next time: click "Clear prefills"** (blue link inside the prefill info box) BEFORE pasting custom copy.
+
+**Final state — B-Luxury → Ads:**
+- Old prefilled generic ad → **Paused** (kept not deleted; reversible if the luxury ad ever gets disapproved).
+- New ARVO luxury ad → **Eligible** ✓
+- (Brief misstep: paused the wrong row first; reversed within a minute. Lesson: always read the headline text on the row before pausing, never trust row position alone.)
+
+### Updated Open Items (resolutions from this addendum)
+- ~~B-Luxury may not have its own ad~~ → **RESOLVED.** Luxury RSA live; old generic prefilled ad paused.
+- B-Luxury luxury ad showing **Ad strength: Pending** — Google still calculating; refresh in ~10 min to settle on a real rating. Re-check on Day 2 monitoring.
+
+### Campaign — fully built (final state, Friday morning)
+- **Campaign:** Eligible · ₪25/day · Maximize clicks (₪4 max CPC) · Campaign-specific goal: Contacts only
+- **Ad group 1 (Artisan):** Eligible · 1 RSA (ARVO artisan/designer copy from Session 31) · materials + designer + handcraft + 2m keywords
+- **B-Luxury:** Eligible · 1 RSA active (ARVO luxury copy) + 1 paused (prefilled generic, reversible fallback) · luxury + Calacatta/Statuario + granite-porcelain luxury + 2m + seamless keywords
+- **Negatives:** 28 campaign-level (today) + the launch set (זול, יד שנייה, מטבח, איקאה, ניקוי, תיקון, נירוסטה...)
+- **Conversion tracking:** `whatsapp_click` → Contact → Primary (GA4 538530214) · `Outbound clicks` removed
+- **Auto-apply:** 0/7 and 0/14 (stays zero forever)
+- **Billing:** Mastercard ••7884 (exp 04/29) · Primary · confirmed active
 ---
 
 ## 2026-05-28 — Session 31 (Thursday) — ARVO logo rollout + copy revisions + Google Ads GO-LIVE + conversion tracking
