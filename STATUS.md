@@ -103,6 +103,69 @@ Three iterations needed to land on the right product:
 - **BRING TO SESSION:** Sinks_ART Supabase schema (`references/schema.sql` — note: doesn't yet exist, either create or paste from Supabase dashboard); one example intake/customer record; the `references/` folder structure decision.
 - Also during session: confirm Veo v2 result on retest; apply Option A prose update once Ales OKs.
 
+
+### Addendum (Saturday late afternoon, ~+6h) — Kling test results + image-to-video pivot + next-session tool plan 🏊
+
+**Decision made:** Avshi subscribed to **Kling Standard tier (~₪20/month, ~$5)** — unlocks materially more daily generations vs Gemini Pro's 2-3/day cap. Locked in as the production video tool. Veo demoted to "if free credits available."
+
+**Today's Kling test — text-to-video FAILED**
+- Spent 40 credits on a Kling Video 3.0 text-to-video generation of CTS-T35.
+- Result: weird abstract polished-stone shape floating in empty space. NO triangle geometry, NO corner walls, NO basin, NO tap, NO slabs visible. Kling missed the brief almost entirely.
+- I initially misread the screenshot ("amazing!") and confused the still-image renders from Kling's image-gen tab (which DID look good) with the failed video. Caught on Avshi's second send. **My miss — should have looked closer before celebrating.**
+
+**Root cause analysis**
+- **Prompt was too long for Kling** (~150 words). Kling weights words evenly and gets diluted by long prompts. Veo handles 200+ words; Kling sweet spot is ~50-80 words.
+- **Negative content was buried at the end of the main prompt** ("AVOID:...") instead of in Kling's dedicated Negative Prompt field. Kling doesn't weight in-main-prompt negatives properly.
+- **Text-to-video has no shape anchor** — without a reference image, Kling has to invent the geometry from words, and "right triangle corner sink with hypotenuse front face" is unusual enough that it defaults to abstract sculpture.
+
+**Conclusion: image-to-video is mandatory for slab-built custom shapes.** Cannot skip the Nano Banana still step. The "chain still→video" rule we wrote into `ai_prompts_corner_sink.md` is non-negotiable for custom geometry — Kling and Veo BOTH fail text-to-video for this category.
+
+**Next session (Session 34) — REVISED PLAN: build the "Prompt Builder" tool**
+- Avshi proposed building a small standalone web utility:
+  - **Input:** drag-drop marble sample A image + marble sample B image + sketch image; a few text fields (sink model, shape notes, target setting)
+  - **Output:** copy-paste-ready Nano Banana prompt + copy-paste-ready Kling prompt, with the construction-rule block already injected; (stretch) download zip with renamed images + `prompts.txt`
+- **Architecture decision:** single-file `prompt-builder.html` (single-file HTML rule applies — it's a tool/prototype). Pure client-side, no server, drag-drop images stay local. Hostable at `marble-art.co.il/tools/prompt-builder.html` later if useful, or kept local.
+- **Strategic value:**
+  - Scales infinitely — every customer, every shape, every color pair
+  - Removes "did I phrase it right" risk per generation
+  - Builds asset library (images + prompts saved per customer ID — future integration)
+  - **Stepping stone to the Session 31-planned CRM prompt-builder** — same logic, simpler scope, no Supabase yet
+  - Feeds the planned Instagram pipeline (tons of clips for the ARVO Instagram account)
+
+**Workflow once the tool exists:**
+1. Open `prompt-builder.html` in browser
+2. Drop in sketch + sample A + sample B
+3. Fill model/shape/setting fields
+4. Click "Generate Prompts" → copy Nano Banana prompt
+5. Paste into Gemini → get the still
+6. Save still locally
+7. Copy Kling prompt from the tool
+8. In Kling: drop still into "Add start and end frames", paste Kling prompt → generate
+9. Download video, upload to Cloudinary `marble-art/videos` → auto-appears on site gallery
+
+**Session 34 task list (in order):**
+1. Build `prompt-builder.html` with drag-drop image inputs + form fields + dual-prompt output
+2. Test on CTS-T35 (sketch + 2 marble samples)
+3. Run through Nano Banana → still
+4. Feed still into Kling image-to-video → finished video
+5. Compare to today's failed text-to-video — validates the chain
+6. Iterate on prompt language (especially the seam/joint problem — see below)
+
+**Joint/seam render problem (caught from Kling stills)**
+- Kling renders slab joints as visible WHITE caulk/grout lines — looks like cheap tile grout, breaks the premium-artisan story.
+- Ales's real joints: marble-color-matched epoxy/stone adhesive, sub-millimeter wide, essentially invisible.
+- Fix language for prompts (add to construction rules):
+  - "joined at INVISIBLE seams using color-matched stone adhesive"
+  - "seams between slabs are hairline-thin (sub-millimeter), tinted to match surrounding veining — virtually invisible"
+  - "NO white grout, NO white sealant, NO white caulk between slabs"
+- AVOID list additions: `white grout, white sealant, white caulk, visible joints, tile grout, contrasting seams, gap lines, bright joint lines`
+- Fallback if still showing white seams: ask for "continuous-vein marble, slabs cut from the same block so veining flows uncut across seams" — describes the desired result instead of the construction process.
+- These language refinements to be baked into the prompt-builder tool's output.
+
+**Strategic context — Instagram pipeline**
+- Avshi planning to build ARVO's Instagram account (separate from his existing flooring-business Instagram).
+- Goal: lots of short marble-sink videos as content fuel.
+- Today's lessons (Kling > Veo, image-to-video required, prompt-builder tool needed) all feed this pipeline. Build is correctly scoped now.
 ---
 
 ## 2026-05-29 — Session 32 (Friday, morning) — Campaign Day-1 review + budget bump + B-Luxury keyword expansion + campaign negatives
