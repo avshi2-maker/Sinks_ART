@@ -11,6 +11,100 @@ A running log of development sessions. **Newest at the top.** Append, never rewr
 
 ---
 
+## 2026-05-30 — Session 33 (Saturday) — Site copy micro-fixes + CTS-T35 corner sink design + gallery limits raised
+
+### Goals
+- Polish 6 site copy items requested by Avshi (materials + thicknesses, depersonalize craftsman names, intake form tweaks)
+- Design a proper technical sketch + AI prompts for the compact corner-toilet sink Ales has been talking about
+- Investigate Cloudinary per-section image limits before hitting them
+
+### Done
+
+**6 site copy micro-fixes — commit `7eae41c..0b4f4a2`** ("Site copy: materials + thicknesses on Hero, WhyUs 01 broadened, depersonalize names...")
+- `Hero.tsx` body line: → "גרניט פורצלן, שיש ומדוקקים בעובי 8-12-18 מ״מ"
+- `WhyUs.tsx` fact 01 title broadened: "שיש איטלקי, גרניט פורצלן ואריחים מדוקקים" (thickness dropped from text — moved to Hero)
+- `WhyUs.tsx` fact 02 depersonalized: "אומני העיצוב, החיתוך והבנייה שלנו חותכים, מלטשים ומרכיבים..." (אלס ורוסלן removed)
+- `HowItWorks.tsx` (homepage תהליך): "אלס בונה" → "האומנים בונים"
+- `ForDesigners.tsx` (homepage promo pillar 02): "ואלס בונה" → "האומנים בונים"
+- `marble-sinks-for-designers/page.tsx` pillar 02 + step 4: "ואלס בונה" / "אלס חותך..." → "האומנים בונים"
+- `LeadForm.tsx`: width "wide" `~100-140` → `120-240` ס״מ; "לא בטוח/ה" desc `אמדוד יחד עם אלס` → `אמדוד עם נציג שלכם`; footer `אלס יחזור` → `נציג יחזור`
+- **Deliberately NOT changed:** the designer-page **prose paragraph** still names "אלס ורוסלן, אומני החיתוך והבנייה שלנו..." Ales is worried customers will challenge his sink-specific experience (3 years sinks vs 15-20 years stonework on luxury renovations). **Recommended Option A: strengthen credentials with "מעל 20 שנות ניסיון בעבודות אבן ושיש בבתים פרטיים ובוילות יוקרה" rather than remove names.** Avshi agrees, waiting for Ales conversation.
+
+**Technical lesson — the "wrong file" trap (caused real friction this morning)**
+- Two near-identical files exist with overlapping content: `ForDesigners.tsx` (homepage promo) and `marble-sinks-for-designers/page.tsx` (standalone designer page). I initially edited the standalone page when the user was viewing the homepage section. Dev server showed "no change" because Next.js only recompiles files imported by the rendered route.
+- **New Rule #25:** Before ANY text-replace edit, run `Select-String -Path ".\src\**\*.tsx" -Pattern "EXACT_HEBREW_PHRASE" -List` to confirm which file actually renders the visible text on the screen being tested. Saves multiple iterations.
+
+**Robust file-edit pattern locked in for the session**
+- PowerShell `[System.IO.File]::WriteAllText($path, $new, [System.Text.UTF8Encoding]::new($false))` is the reliable path for JSX/Hebrew edits. UTF-8 without BOM, no Turbopack JSX issues, no browser-download/Move-Item failures.
+- Surgical edit flow: `ReadAllText` → `-replace "old","new"` → `WriteAllText`. Doesn't touch any other content. Verified with `Select-String` showing match for new + zero matches for old.
+
+**CTS-T35 Right-Triangle Corner Sink — full design package (delivered)**
+Three iterations needed to land on the right product:
+1. **CTS-950 (abandoned)** — first attempt: 65×65 cm trapezoid corner sink (vanity-style). Wrong: too large, 5-sided trapezoid, not the toilet-room sink Avshi needed.
+2. **CTS-400 (abandoned)** — second attempt: 40×40 cm trapezoid, wall-mounted. Still wrong: trapezoid (5 sides), not a true triangle.
+3. **CTS-T35 (final)** — **35×35 cm RIGHT TRIANGLE**, wall-mounted, with wall-tap. THREE sides only: two 35 cm wall legs flush against the corner walls (hidden), one ~49.5 cm hypotenuse front face (the ONLY visible exterior slab). Smaller triangle basin inset (~26×26 legs), Ø32 mm drain at center, V-channel slope ~5% (~5 mm drop), shallow ~11 cm basin. Slab thickness 1.5 cm. Mounts ~85–90 cm above floor. No vanity, no support. Wall-mounted tap projects from back wall above basin.
+
+**Delivered files (Sinks_ART repo):**
+- `ctsT35_sketch.svg` — editable source (3-view: Plan / Section A–A / Isometric).
+- `ctsT35-sketch-sheet.png` — rendered 1600px PNG, intended for Cloudinary `marble-art/sketches/` upload.
+- `ai_prompts_corner_sink.md` — comprehensive reference doc: construction-rule TEMPLATES (placeholders for any future custom-shape sink) + CTS-T35 worked example with ready-to-paste Nano Banana + Veo prompts.
+
+**Key construction rules baked into every prompt** (override AI's bowl-bias):
+- FLAT polished stone slabs only — no curves, no carved bowls, no rounded edges
+- Joined at clean straight seams with hidden adhesive
+- THREE sides only (TRUE right triangle, not pentagon/trapezoid)
+- Two wall legs hidden against walls; ONE visible hypotenuse face
+- Wall-mounted (NO vanity, NO support beneath, NO faucet hole on sink)
+- Wall-mounted tap on the BACK WALL projecting horizontally over basin
+
+**Veo prompt anti-hallucination fix (lesson from failed test)**
+- Avshi tested v1 Veo prompt — it produced a sequence STARTING WITH a "white porcelain round small cheap sink" appearing first, then building marble pieces *around and above* it. AI hallucinated a placeholder starter object before the actual assembly.
+- **v2 prompt adds:**
+  - `OPENING FRAME — CRITICAL: the shot begins on an EMPTY toilet-room corner. NO existing sink, NO placeholder sink, NO porcelain sink, NO temporary fixture, NO basin, NO bowl of any kind in the opening frame.`
+  - `The very first objects to appear must be FLAT POLISHED STONE SLAB PANELS — never a pre-formed sink shape, never a round bowl, never anything ceramic or porcelain.`
+  - Consolidated `ABSOLUTE FORBIDS` block at the end naming the specific failure (porcelain, ceramic, bowl-shaped, round, oval, placeholder, starter, base, temporary sink).
+- **Also provided a safer FALLBACK prompt:** slow "reveal" instead of build sequence — camera pushes in on empty corner, finished sink fades in already-complete, then orbits. Less ambitious, much more reliable. Use after 2–3 failed build-sequence attempts.
+- v2 prompt + fallback saved in `ai_prompts_corner_sink.md`. **PENDING re-test by Avshi.**
+
+**Cloudinary per-section image limits — audited and raised**
+- Audit found per-section `maxItems` in `Gallery.tsx` + `VideoGallery.tsx`:
+
+| Section | File | Old limit | Cloudinary today | Headroom before fix |
+|---|---|---|---|---|
+| כיורים שבנינו | Gallery.tsx:12 | 12 | 11 | 🟡 1 |
+| אבני שיש לבחירה | Gallery.tsx:13 | 16 | 12 | 🟢 4 |
+| תצוגות מקדימות מותאמות אישית | Gallery.tsx:14 | 12 | 11 | 🟡 1 |
+| כל כיור מתחיל בסקיצה | Gallery.tsx:15 | 8 | 5 | 🟢 3 |
+| הכיורים שלנו בוידאו | VideoGallery.tsx:9 | 12 | 3 | 🟢 9 |
+
+- **Two sections (sinks, concepts) were ONE upload away from being capped.**
+- Decision: raise ALL FIVE to **50** for consistency + multi-year headroom. 50 well within Cloudinary Admin API's max of 500; payload stays small for fast page loads.
+- Surgical edits to two files via WriteAllText pattern. Verified all 5 calls show `, 50)`.
+- **NOT YET COMMITTED.** Verified on dev server; awaiting visual confirmation on localhost:3000 before separate commit (logically distinct from the corner-sink doc work).
+
+### Decisions
+- **Designer-page prose preferred fix = Option A** (strengthen credentials, keep names) — not Option B (remove names). Designers/architects pay for named, accountable craft; "our craftsmen" weakens the brand. Pending Ales OK.
+- **Naming convention:** "CTS-T##" prefix for triangle sinks (CTS-T35 today; CTS-T30 / CTS-T40 if other sizes get designed later). Distinguishes from the 5-sided trapezoid concepts that didn't pan out.
+- **Construction-rule block** in prompts: capitalized, repeated multiple times, plus a consolidated "ABSOLUTE FORBIDS" block at the end. Anti-hallucination guards are CRITICAL after the porcelain-placeholder failure.
+- **Gallery limits to 50, not unlimited:** Cloudinary supports 500 max per call, but 50 keeps payload small + is plenty for years of growth.
+- **One commit per logical change** — gallery-limits commit will be separate from corner-sink doc commit, matching Avshi's standing rule.
+
+### Open / blockers
+- **Designer-page prose** — Ales conversation pending. Apply Option A text if approved.
+- **Veo v2 prompt (anti-porcelain)** — pending re-test by Avshi. Fall back to "reveal" variant if it still fails after 2–3 tries.
+- **Gallery limits change** — pending commit + push (5 numbers verified, awaiting localhost visual check).
+- **Cleanup of abandoned CTS-950 / CTS-400 files** in Sinks_ART repo — commands provided, not yet run by Avshi.
+- **Sinks_ART repo missing `references/` folder** — convention from skill says `references/ai_image_pipeline.md` and `references/schema.sql` should exist; neither does. Will be needed before Session 34's prompt-builder build.
+- Carried from prior sessions: ARVO icon still not ASSIGNED as Business logo in Google Ads (sitting in Asset Library); `lead_form_click` still not GA4 key event; bidding switch from Maximize clicks → Maximize conversions pending ~15–30 `whatsapp_click` conversions.
+
+### Next session (Session 34) — AI הדמיה prompt-builder (back office)
+- Per Session 30/31/32 plan: build Phase 1 — back-office screen that takes intake data (sketch + marble sample + dimensions + notes) and outputs ready-to-paste prompts.
+- NOW updated scope: output BOTH a static (Nano Banana) prompt AND a video (Veo) prompt from same fields. For custom-shape sinks, prompt should pull the construction-rule block from `ai_prompts_corner_sink.md`.
+- **BRING TO SESSION:** Sinks_ART Supabase schema (`references/schema.sql` — note: doesn't yet exist, either create or paste from Supabase dashboard); one example intake/customer record; the `references/` folder structure decision.
+- Also during session: confirm Veo v2 result on retest; apply Option A prose update once Ales OKs.
+
+---
+
 ## 2026-05-29 — Session 32 (Friday, morning) — Campaign Day-1 review + budget bump + B-Luxury keyword expansion + campaign negatives
 
 ### Goals
