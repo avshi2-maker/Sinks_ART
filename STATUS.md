@@ -11,6 +11,71 @@ A running log of development sessions. **Newest at the top.** Append, never rewr
 
 ---
 
+## 2026-05-31 — Session 34 (Sunday) — Prompt Builder BUILT + deployed to Vercel + sketch-first analysis + shapes/mount/pitch/drain
+
+### Goals
+- Build the back-office Prompt Builder per `HANDOVER_session34` (standalone + per-customer routes)
+- Get past the previous chat's 100-message wall — deliver in validated batches, not one-file-at-a-time
+- Make the builder produce CORRECT prompts for real architect sketches (not only the CTS-T35 corner triangle)
+- Deploy Sinks_ART CRM to Vercel as project #2
+
+### Done
+
+**Prompt Builder shipped + LIVE at `sinks-art.vercel.app`**
+- 9 of 10 handover files built, validated (esbuild parse + logic smoke tests), delivered in batches via PowerShell `WriteAllText` (UTF-8 no BOM):
+  - `lib/promptTemplates.ts` — pure prompt functions (`buildNanoBananaPrompt`, `buildKlingPrompt`, `buildKlingNegativePrompt`, `mapAnalyzedShape`)
+  - `lib/promptBuilderActions.ts` — `'use server'`, saves to `media_analyses.ai_full_report.prompts` (+ `prompt_history`), service-role key
+  - `components/prompt-builder/` — `GeometryFields`, `MediaInputPanel`, `PromptOutputCard`, `PromptBuilderShell`
+  - routes: `/prompt-builder` (standalone) + `/customers/[id]/prompt-builder` (per-customer) — placed INSIDE the `(internal)` route group so they inherit TopNav
+  - `TopNav.tsx` — added 5th tab `הדמיה → /prompt-builder`
+- **File 10 NOT done** — the customer-page launcher button. Per-customer route works by URL; deferred.
+
+**Correction to skill structure:** the skill's Session-21 project tree was stale — the app DOES use an `(internal)` route group (confirmed via `Get-ChildItem page.tsx`). An initial "flat path" assumption was wrong and was caught before deploy. Routes now live under `src/app/(internal)/`.
+
+**Sketch-first analysis wired (the key upgrade Avshi asked for):**
+- Reuses the existing `/api/analyze-photo` (Claude vision). POST `{ imageUrl (HTTPS), mediaType:'sketch' }` → reads back `parsed.extracted_shape` / `extracted_dimensions`.
+- "🔍 מלא שדות מהסקיצה (AI)" button. Standalone: uploads the sketch to Cloudinary first (the route only accepts an HTTPS URL), then analyzes (~$0.02, real cost shown in `ApiCostMeter`). Per-customer: reuses the row's existing `/intake` analysis = free + instant.
+- Flow is analyze → user reviews/corrects → generate. Never silent.
+
+**Shapes + mount + pitch + drain (fixed the triangle-vs-sketch problem at the root):**
+- Shapes: added **Rectangle + Square** (was triangle/trapezoid/pentagon/custom only).
+- Mount toggle: **Countertop (integrated)** vs **Wall-mounted** — countertop is no longer forced into the corner-sink "hidden legs / no vanity" wording.
+- **DRAIN**: round / rectangular stainless linear. **PITCH**: middle / back / side. Both baked into the Nano Banana + Kling prompts — these are the core questions of a hand-built artistic sink (architect/customer driven).
+- `mapAnalyzedShape()` maps the Hebrew/free-text shape from intake onto the enum.
+
+**ApiCostMeter is now genuine:** the page had no API call before (forced $0 meter, awkward). Sketch analysis gives it a real cost. Uses `mode="single" status={ApiMeterReading}` (NOT a `readings` prop — caught by reading `ApiCostMeter.tsx`: it is a discriminated union single/pipeline; `ApiMeterReading` lives in `lib/sinc/types`).
+
+**Full pipeline validated end-to-end:**
+- sketch → Nano Banana still → excellent flat-slab marble sinks: BOTH the triangle corner sink AND a rectangular countertop sink with a stainless linear drain, sloped floor, invisible seams, wall tap, no porcelain.
+- still → Kling image-to-video → 8-second slow orbit + push-in INTO the basin that reveals the pitch + drain + slab edges. THIS is Kling's real use case.
+
+**Vercel deploy:** `Sinks_ART` imported as project `sinks-art`, all 10 env vars added via **Import .env**, build clean, Status **Ready**. Live at `sinks-art.vercel.app`. Pages verified live in production: `/prompt-builder`, `/dashboard`, `/sinc`, `/intake` (6 customers loaded), `/customers` (6 real customers).
+
+### Decisions
+- **AI video CANNOT do the sketch→sink BUILD sequence.** Confirmed again: text-to-video fails (Session 33), and image-to-video only animates camera moves on a FINISHED still — it cannot un-build into slabs; start+end frame just morphs/melts between images. **Build-story video must come from REAL Ales footage or a stills slideshow. Stop spending Kling credits chasing AI build sequences.**
+- **Kling's real job = beauty orbit + detail reveal** on a finished still (push-in into basin shows pitch/drain/seams). Validated, sellable.
+- **Marble samples MUST be uploaded to Gemini WITH the prompt** (3 images: sketch + sample A + sample B). The prompt only references them by number; it cannot send them. Default white Calacatta appears when no samples are given.
+- **Save target (per-customer) = the sketch's `media_analyses` row.** Prompts versioned in `ai_full_report.prompts` (+ `prompt_history`); no new tables.
+- **Server action uses `SUPABASE_SERVICE_ROLE_KEY`** for the UPDATE (anon RLS is INSERT-only on `media_analyses`).
+- **Default builder inputs:** shape=rectangle, mount=countertop (most architect cases). Corner-sink users switch to triangle + wall-mounted.
+
+### Open / blockers
+- **CRM has NO auth** — `sinks-art.vercel.app` is open to anyone with the link. Add real auth before sharing widely. (Security follow-up.)
+- **File 10** — customer-page "📷 פתח Prompt Builder" launcher not built (route works by URL).
+- Pre-existing `fiellds` typo in `PhotoAnalyzer.tsx` + `Mp4Analyzer.tsx` `buildSnapshot` (סוג אבן line): `Select-String` found 0 matches in the live repo → copy artifact only. If `/intake` ever throws there, fix to `fields`.
+- Vercel "4 Recommendations" / Production Checklist = upsells, ignored.
+- Carried: designer-page prose (Ales OK pending); ARVO icon not assigned as Business logo; `lead_form_click` not a GA4 key event; bidding switch pending conversions.
+
+### Next session (Session 35)
+1. **/intake Part 2** — extract pitch + drain FROM the sketch (vision prompt + intake review fields) so the prompt-builder auto-fills those too.
+2. **🆕 RFQ form → CRM lead pipeline** — public form submissions land in Supabase but do NOT flow into the CRM as workable leads. First step: a read-only `SELECT` to see the form's table + columns (Avshi runs, Claude writes), then design form row → `customers` + `projects` + `customer_communications` so new leads appear on `/dashboard` + `/customers`. Confirm where the WhatsApp deep-link message fits (customer-initiated vs auto-saved). Touches BOTH repos (`sinks-bathroom-design` form + `Sinks_ART` CRM, shared Supabase).
+3. **File 10** — customer-page launcher button.
+4. **Finished-still LIBRARY** for Kling start-frames (Cloudinary bank + picker). Its own session.
+5. **Ales build-footage shot-list (Hebrew)** — real fabrication clips = strongest free marketing content.
+6. **Security: add auth** to the CRM.
+
+---
+
 ## 2026-05-30 — Session 33 (Saturday) — Site copy micro-fixes + CTS-T35 corner sink design + gallery limits raised
 
 ### Goals
