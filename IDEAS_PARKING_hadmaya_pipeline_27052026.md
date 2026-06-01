@@ -52,3 +52,42 @@ Build rules reminder: lives in C:\SinkS\Sinks_ART (back office), multi-file TS/R
 - NotebookLM has **no public API**; there is no supported way to programmatically connect Claude (this chat) to a NotebookLM notebook, nor to have Claude read a private notebook via a shared link (auth-gated).
 - Third-party "notebooklm-py"-style repos are unofficial browser-automation/reverse-engineered tools — fragile, may break on Google changes, possible ToS/account risk. Not recommended as project infrastructure.
 - RELIABLE cross-session method stays: keep STATUS.md + IDEAS_PARKING.md as single source of truth in the repo; paste/attach them at the start of each new chat. NotebookLM remains useful as Avshi's own Q&A tool over these same docs — just not as a Claude bridge.
+
+
+---
+
+## UPDATE 01/06/2026 (Session 34 follow-on) — INSTAGRAM BUSINESS ACCOUNT LAUNCHED + POSTING SCHEDULE
+
+### What was set up
+- New Instagram business account **@marble_art_sinks** created as a SEPARATE account from the flooring account (artfloorconcrete). Public-facing: fully independent (no visible link between them). Created via "Add account" on the phone (email-only, phone skipped to avoid duplicate-account flags since the mobile is already primary on the flooring account).
+- Login gotcha solved: the new account's **email resolves to the flooring account**, so desktop login must use the **username `marble_art_sinks`**, not the email. (Reset password by username if needed.)
+- Switched to **Professional/Business** account. Profile name `Marble Art | כיורי שיש אמנותיים`; Hebrew bio (handmade marble/granite-porcelain sinks, custom design, AI הדמיה before production, link to marble-art.co.il).
+
+### Audience + positioning (decided)
+- Target = **both architects/designers (B2B) AND high-end homeowners**. Same photos serve both; captions do the targeting (every caption names אדריכלים ומעצבים + speaks to private clients).
+- **Differentiator = AI הדמיה before fabrication** ("see it before we cut stone"). No competitor offers this.
+- **Content mix rule: ~2 real Ales builds : 1 AI teaser per week.** Real work carries trust (critical for architects); AI renders are the supporting hook, NEVER presented as real.
+
+### HONESTY RULE (non-negotiable, brand-critical)
+- Real Ales builds → posted truthfully as real handwork (name Ales, "עבודת יד אמיתית").
+- AI renders/animations → ALWAYS labeled `🔹 הדמיה ממוחשבת (AI) להמחשה בלבד`, framed as a teaser/invitation ("bring us your idea/sketch → we create a הדמיה → Ales builds it real"). Architects will spot fake fabrication instantly; mislabeling AI as real would destroy credibility with the exact target audience.
+- The AI "build sequence" animation (sketch → pieces assemble → finished sink) is a stylized teaser only — NOT real fabrication. Real build-story footage must come from filming Ales (still the strongest future asset).
+
+### Launch grid (7 posts, 01/06/2026)
+Real grey sink photo · Calacatta הדמיה (AI) · close-up detail video · sketch-to-sink animation (AI) · real Ales grey sink · full stone bathroom by Ales · dark architectural sink by Ales. Plus 3 AI concept teasers queued (pebble/aggregate, pentagon corner, grey countertop).
+
+### POSTING SCHEDULE (sustainable — locked)
+- **3 posts/week: Sunday · Tuesday · Thursday.**
+- **Best time: evening ~20:00 Israel time** (architect/designer audience; morning 8–9 also works). Pick one slot, stay consistent.
+- Mix each week ~2 real : 1 AI.
+- **Content engine habits:** (1) photograph EVERY Ales sink before it leaves the workshop (phone, natural light, few angles); (2) every customer prompt-builder session yields a render = a free labeled-AI teaser post.
+- **Tool tip:** use Meta Business Suite (free, desktop) to SCHEDULE all 3 weekly posts in one batch sitting — makes it hands-off.
+
+### PAID PROMOTION — decision: NOT YET
+- Meta paid promotion works at the **individual post/Reel level** (Boost button) or via Ads Manager — you promote specific posts, not "the whole site."
+- **Hold off** until: (a) profile looks established (~15–20 posts, some followers), and (b) Google Ads (₪25/day, just fixed 01/06) has produced data. Don't run two paid channels before the first has results, and don't pay to send traffic to a near-empty profile.
+- When ready: start with ONE small boosted post (~₪20–30 total, not per day) targeting interior designers/architects in Israel; scale only if it brings profile visits/DMs.
+
+### Cross-link to existing pipeline (above)
+- Instagram DMs ("שלחו לנו סקיצה") feed the SAME lead flow as the RFQ form → should land in the CRM lead pipeline (Session 35 task: RFQ/lead → customers + projects + communications). Instagram is just another top-of-funnel source into the same prompt-builder → הדמיה → quote flow already scoped above.
+
