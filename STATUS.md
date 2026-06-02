@@ -11,6 +11,39 @@ A running log of development sessions. **Newest at the top.** Append, never rewr
 
 ---
 
+## 2026-06-02 — Infra Session — Supabase cost cleanup (GadiW + Beni archived) + TCM → SRC rebuild decision
+
+### Goals
+- Stop paying ~$10/mo Micro compute on idle Supabase projects without losing them
+- Pull a COMPLETE offline backup (DB + storage) of each to PC + Google Drive before parking
+- Decide TCM's future
+
+### Done — billing diagnosis
+- Pro org "Avshi Sapir -Projects 2025-2026" projected ~$55/mo = $25 Pro + ~$10/mo Micro compute x 4 active projects - $10 Pro compute credit.
+- Billing is PER-ORG, not per-project. Sinks_Art must stay Pro (live + uses image transformations). Each extra ACTIVE project ~= $10/mo.
+
+### Done — GadiW archived (pslwvkymccbngtyvgagj)
+- Transferred to free "Avshi Sapir" org (Settings>General>Transfer, <500MB), then Paused. Off the bill.
+- Backup to PC + Drive: bucket `gadi-documents` + `gadiw_database_02062026.sql` (237 KB).
+- Resumable from dashboard until 31 Aug 2026.
+
+### Done — Beni/work-journal archived (vmcipofovheztbjmhwsl)
+- Same transfer -> pause. Off the bill. Resumable until 31 Aug 2026.
+- Backup to PC + Drive: buckets signatures (17), purchase-orders, photos (19), app-assets (+ inbox 15, annexes 20, drawings, pdfs); `videos` empty/skipped. `beni_database_02062026.sql` (17.3 MB).
+
+### Decisions
+- **TCM (tcm-assistant, iqfglrwjemogoycbzltt) NOT paused** — it is a real startup. Stays active (~$10/mo accepted). Migrating from the ~10k-line single-file HTML to a proper Next.js `src` build, slowly across several sessions. Target: Google Play app + monthly subscription tier + maintenance fee.
+- Net monthly saving so far ~$20 (GadiW + Beni parked). Pro org now runs Sinks_Art + tcm-assistant active.
+- 90-day rule: paused free projects are resumable for 90 days, then not restorable from dashboard but data still downloadable. Offline backups = the real long-term insurance. Calendar note: **31 Aug 2026** = 1-click-restore deadline for GadiW + Beni.
+
+### Supabase archive procedure (proven — see SKILL.md Rule #28 for full steps)
+- Transfer to free org -> back up BEFORE pausing (storage via `ss:///` three-slash cp; DB via PostgreSQL 17 `pg_dump` over the **Direct** connection, NOT the pooler) -> copy to Drive -> pause.
+- Biggest time-sink: the SHARED pooler caches the old DB password for minutes after a reset (~5 failed retries). Fix = use the Direct connection `db.REF.supabase.co` which bypasses the pooler.
+
+### Next session
+- Begin the TCM Next.js `src` rebuild — slow, plan-first. First step: stand up the new repo skeleton + a TCM SKILL.md/STATUS.md, and inventory the two existing subsystems so nothing is lost.
+
+---
 ## 2026-06-01 — Session 34 (Sun–Mon) — Prompt Builder + Vercel deploy + auth + subdomain + Google Ads fix + Instagram launch + Add-ons feature
 
 ### Goals
