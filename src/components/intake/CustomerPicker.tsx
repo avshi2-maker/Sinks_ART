@@ -1,15 +1,9 @@
-/**
+﻿/**
  * CustomerPicker.tsx
  *
  * Dropdown of active customers with their current project status as a badge.
- * Reports the selected customer + their active project up to the parent
- * via the onSelect callback.
- *
- * Reuses the data shape from SinC-ART v11's loadCustomersIntoSelect, but as
- * a proper React component with TypeScript types.
- *
- * Phase 15 — Multi-Format Media Intake
- * Created: 04/05/2026
+ * Phase 15 — Multi-Format Media Intake (04/05/2026)
+ * Phase 22 — also hides archived customers (archived_at null).
  */
 
 'use client';
@@ -24,9 +18,7 @@ import {
 } from '@/lib/supabase';
 
 interface Props {
-  /** Called whenever the user picks a customer (or null when cleared). */
   onSelect: (selection: CustomerWithProject | null) => void;
-  /** Optional pre-selected customer id on mount. */
   initialCustomerId?: string;
 }
 
@@ -38,7 +30,6 @@ export default function CustomerPicker({ onSelect, initialCustomerId }: Props) {
   const [rows, setRows] = useState<CustomerWithProject[]>([]);
   const [selectedId, setSelectedId] = useState<string>(initialCustomerId || '');
 
-  // Load customers + their most recent active project on mount
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -49,6 +40,7 @@ export default function CustomerPicker({ onSelect, initialCustomerId }: Props) {
         .from('customers')
         .select('id, name_he, phone, email, source, is_active')
         .eq('is_active', true)
+        .is('archived_at', null)
         .order('name_he', { ascending: true });
 
       const projectsPromise = supabase
@@ -74,11 +66,10 @@ export default function CustomerPicker({ onSelect, initialCustomerId }: Props) {
       const customers = (custRes.data || []) as Customer[];
       const projects = (projRes.data || []) as Project[];
 
-      // Build customer_id → most recent active project map
       const activeByCustomer = new Map<string, Project>();
       for (const p of projects) {
         if (CLOSED_STATUSES.includes(p.status)) continue;
-        if (activeByCustomer.has(p.customer_id)) continue; // we sorted desc — first wins
+        if (activeByCustomer.has(p.customer_id)) continue;
         activeByCustomer.set(p.customer_id, p);
       }
 
@@ -96,7 +87,6 @@ export default function CustomerPicker({ onSelect, initialCustomerId }: Props) {
     };
   }, []);
 
-  // When the selection changes (or rows finish loading with an initial id), notify parent
   useEffect(() => {
     if (loadState !== 'ready') return;
     if (!selectedId) {
