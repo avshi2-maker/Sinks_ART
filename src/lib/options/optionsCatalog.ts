@@ -1,7 +1,7 @@
 ﻿'use server';
 
 // src/lib/options/optionsCatalog.ts
-// Phase 28 — options catalog (price book): fetch all + save one row.
+// Phase 28 — options catalog (price book): fetch all + active + save one row.
 
 import { createClient } from '@supabase/supabase-js';
 import { revalidatePath } from 'next/cache';
@@ -32,6 +32,11 @@ export async function fetchOptions(): Promise<OptionRow[]> {
     return [];
   }
   return (res.data || []) as OptionRow[];
+}
+
+export async function fetchActiveOptions(): Promise<OptionRow[]> {
+  const all = await fetchOptions();
+  return all.filter((o) => o.active);
 }
 
 export interface SaveOptionInput {

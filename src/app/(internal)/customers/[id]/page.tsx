@@ -10,6 +10,7 @@ import { CommsTimeline } from '@/components/customers/CommsTimeline';
 import CommsFilterTabs, { CommFilterValue } from '@/components/customers/CommsFilterTabs';
 import AddNoteInlineForm from '@/components/customers/AddNoteInlineForm';
 import QuickQuotePanel from '@/components/quotes/QuickQuotePanel';
+import { fetchActiveOptions } from '@/lib/options/optionsCatalog';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 interface PageProps {
@@ -21,6 +22,7 @@ export default async function CustomerPage({ params, searchParams }: PageProps) 
   const sp = await searchParams;
   const filter = (sp.type || 'all') as CommFilterValue;
   const data = await fetchCustomerPage(id);
+  const catalogOptions = await fetchActiveOptions();
   if (!data) {
     notFound();
   }
@@ -39,7 +41,7 @@ export default async function CustomerPage({ params, searchParams }: PageProps) 
         </nav>
         <CustomerHeader customer={data.customer} />
         <ProjectsList projects={data.projects} customerId={data.customer.id} />
-        <QuickQuotePanel customerId={data.customer.id} customerName={data.customer.name_he} customerPhone={data.customer.phone} projects={data.projects.map(p => ({ id: p.id, title_he: p.title_he }))} />
+        <QuickQuotePanel customerId={data.customer.id} customerName={data.customer.name_he} customerPhone={data.customer.phone} projects={data.projects.map(p => ({ id: p.id, title_he: p.title_he }))} catalogOptions={catalogOptions} />
         <AddNoteInlineForm customerId={data.customer.id} projects={data.projects.map(p => ({ id: p.id, title_he: p.title_he }))} />
         <CommsFilterTabs counts={counts} totalCount={data.comms.length} />
         <CommsTimeline comms={data.comms} filter={filter} />
