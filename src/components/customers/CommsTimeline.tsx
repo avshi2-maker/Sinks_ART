@@ -26,6 +26,8 @@ const COMM_TYPE_LABEL_HE: Record<string, string> = {
   mp4:      'סרטון',
   sketch:   'שרטוט',
   other:    'אחר',
+  note_customer: 'תכתובת עם הלקוח',
+  note_ales:     'תכתובת עם אלס',
 };
 
 const COMM_TYPE_COLOR: Record<string, string> = {
@@ -36,6 +38,8 @@ const COMM_TYPE_COLOR: Record<string, string> = {
   photo:    'bg-pink-100 text-pink-800',
   mp4:      'bg-purple-100 text-purple-800',
   sketch:   'bg-teal-100 text-teal-800',
+  note_customer: 'bg-green-100 text-green-800',
+  note_ales:     'bg-amber-100 text-amber-800',
 };
 
 function formatDateTime(iso: string): string {

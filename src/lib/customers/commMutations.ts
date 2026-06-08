@@ -1,8 +1,8 @@
-'use server';
+﻿'use server';
 
 // src/lib/customers/commMutations.ts
-// Phase 19 Stage B step 4 - Server Actions for customer_communications mutations.
-// First mutation: createNoteComm (used by the inline AddNoteInlineForm).
+// Phase 19 Stage B step 4 — createNoteComm (AddNoteInlineForm).
+// Phase 22 — optional `party` tags the note: customer / ales / general.
 
 import { createClient } from '@supabase/supabase-js';
 import { revalidatePath } from 'next/cache';
@@ -14,16 +14,25 @@ function getServerSupabase() {
   return createClient(url, key, { auth: { persistSession: false } });
 }
 
+export type NoteParty = 'customer' | 'ales' | 'general';
+
 export interface CreateNoteInput {
   customerId:  string;
-  projectId?:  string | null;  // optional — note can be customer-level or project-scoped
-  text:        string;          // the note body (Hebrew)
+  projectId?:  string | null;
+  text:        string;
+  party?:      NoteParty;
 }
 
 export interface MutationResult {
   ok:    boolean;
   error: string | null;
   id?:   string;
+}
+
+function partyToComm(party?: NoteParty): { comm_type: string; subject: string } {
+  if (party === 'customer') return { comm_type: 'note_customer', subject: 'תכתובת עם הלקוח' };
+  if (party === 'ales')     return { comm_type: 'note_ales',     subject: 'תכתובת עם אלס' };
+  return { comm_type: 'other', subject: 'הערה' };
 }
 
 export async function createNoteComm(input: CreateNoteInput): Promise<MutationResult> {
@@ -35,6 +44,7 @@ export async function createNoteComm(input: CreateNoteInput): Promise<MutationRe
     return { ok: false, error: 'customerId missing' };
   }
 
+  const { comm_type, subject } = partyToComm(input.party);
   const sb = getServerSupabase();
   const now = new Date().toISOString();
 
@@ -43,8 +53,8 @@ export async function createNoteComm(input: CreateNoteInput): Promise<MutationRe
     .insert({
       customer_id:  input.customerId,
       project_id:   input.projectId || null,
-      comm_type:    'other',     // marble's existing enum — notes ride as 'other' with subject='הערה'
-      subject:      'הערה',
+      comm_type,
+      subject,
       body:         text,
       occurred_at:  now,
     })
@@ -55,7 +65,6 @@ export async function createNoteComm(input: CreateNoteInput): Promise<MutationRe
     return { ok: false, error: res.error.message };
   }
 
-  // Revalidate the customer detail page so the new note appears immediately
   revalidatePath('/customers/' + input.customerId);
   return { ok: true, error: null, id: res.data.id };
 }

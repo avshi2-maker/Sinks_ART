@@ -1,18 +1,16 @@
-'use client';
+﻿'use client';
 
 // src/components/customers/AddNoteInlineForm.tsx
-// Phase 19 Stage B step 4 - Inline expand form for adding a note to a customer.
-// Click "+ הוסף הערה" → form expands → type Hebrew → save → server action runs
-// → revalidatePath refreshes the customer page so the note appears in the timeline.
+// Phase 19 Stage B step 4 — inline note form.
+// Phase 22 — adds a "עם מי" party picker (customer / ales / general).
 
 import { useState, useTransition } from 'react';
-import { createNoteComm } from '@/lib/customers/commMutations';
+import { createNoteComm, NoteParty } from '@/lib/customers/commMutations';
 
 interface ProjectOption {
   id:       string;
   title_he: string;
 }
-
 interface Props {
   customerId: string;
   projects:   ProjectOption[];
@@ -22,12 +20,14 @@ export default function AddNoteInlineForm({ customerId, projects }: Props) {
   const [open, setOpen]             = useState(false);
   const [text, setText]             = useState('');
   const [projectId, setProjectId]   = useState<string>('');
+  const [party, setParty]           = useState<NoteParty>('general');
   const [errorMsg, setErrorMsg]     = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function reset() {
     setText('');
     setProjectId('');
+    setParty('general');
     setErrorMsg(null);
   }
 
@@ -42,6 +42,7 @@ export default function AddNoteInlineForm({ customerId, projects }: Props) {
         customerId,
         projectId: projectId || null,
         text:      text.trim(),
+        party,
       });
       if (!res.ok) {
         setErrorMsg(res.error || 'שגיאה בשמירה');
@@ -59,17 +60,22 @@ export default function AddNoteInlineForm({ customerId, projects }: Props) {
         onClick={() => setOpen(true)}
         className="w-full text-sm text-blue-600 hover:bg-blue-50 py-2 mb-4 rounded-md border border-dashed border-stone-300 hover:border-blue-300 transition-colors"
       >
-        + הוסף הערה
+        + הוסף תכתובת / הערה
       </button>
     );
   }
 
   return (
     <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 space-y-2">
+      <div className="flex gap-2">
+        <button type="button" onClick={() => setParty('customer')} disabled={isPending} className={party === 'customer' ? 'text-sm px-3 py-1.5 rounded-md bg-green-600 text-white' : 'text-sm px-3 py-1.5 rounded-md bg-white border border-stone-300 text-stone-700'}>💬 לקוח</button>
+        <button type="button" onClick={() => setParty('ales')} disabled={isPending} className={party === 'ales' ? 'text-sm px-3 py-1.5 rounded-md bg-amber-600 text-white' : 'text-sm px-3 py-1.5 rounded-md bg-white border border-stone-300 text-stone-700'}>🔨 אלס</button>
+        <button type="button" onClick={() => setParty('general')} disabled={isPending} className={party === 'general' ? 'text-sm px-3 py-1.5 rounded-md bg-stone-600 text-white' : 'text-sm px-3 py-1.5 rounded-md bg-white border border-stone-300 text-stone-700'}>הערה כללית</button>
+      </div>
       <textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
-        placeholder="תוכן ההערה..."
+        placeholder="תוכן התכתובת / ההערה..."
         rows={3}
         className="w-full px-3 py-2 text-sm border border-stone-300 rounded-md focus:outline-none focus:border-blue-400 bg-white resize-y"
         dir="rtl"
