@@ -29,6 +29,11 @@ const COMM_TYPE_LABEL_HE: Record<string, string> = {
   other:    'אחר',
   note_customer: 'תכתובת עם הלקוח',
   note_ales:     'תכתובת עם אלס',
+  bucket_price:     '💰 מחיר',
+  bucket_spec:      '📐 טכני',
+  bucket_options:   '🎨 אפשרויות',
+  bucket_logistics: '📅 לוגיסטיקה',
+  bucket_general:   '💬 כללי',
 };
 
 const COMM_TYPE_COLOR: Record<string, string> = {
@@ -41,6 +46,11 @@ const COMM_TYPE_COLOR: Record<string, string> = {
   sketch:   'bg-teal-100 text-teal-800',
   note_customer: 'bg-green-100 text-green-800',
   note_ales:     'bg-amber-100 text-amber-800',
+  bucket_price:     'bg-emerald-100 text-emerald-800',
+  bucket_spec:      'bg-sky-100 text-sky-800',
+  bucket_options:   'bg-pink-100 text-pink-800',
+  bucket_logistics: 'bg-indigo-100 text-indigo-800',
+  bucket_general:   'bg-stone-100 text-stone-700',
 };
 
 function formatDateTime(iso: string): string {

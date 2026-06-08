@@ -9,6 +9,7 @@ import { ProjectsList } from '@/components/customers/ProjectsList';
 import { CommsTimeline } from '@/components/customers/CommsTimeline';
 import CommsFilterTabs, { CommFilterValue } from '@/components/customers/CommsFilterTabs';
 import AddNoteInlineForm from '@/components/customers/AddNoteInlineForm';
+import CorrespondenceSorter from '@/components/sorter/CorrespondenceSorter';
 import QuickQuotePanel from '@/components/quotes/QuickQuotePanel';
 import { fetchActiveOptions } from '@/lib/options/optionsCatalog';
 export const dynamic = 'force-dynamic';
@@ -42,6 +43,7 @@ export default async function CustomerPage({ params, searchParams }: PageProps) 
         <CustomerHeader customer={data.customer} />
         <ProjectsList projects={data.projects} customerId={data.customer.id} />
         <QuickQuotePanel customerId={data.customer.id} customerName={data.customer.name_he} customerPhone={data.customer.phone} projects={data.projects.map(p => ({ id: p.id, title_he: p.title_he }))} catalogOptions={catalogOptions} />
+        <CorrespondenceSorter customerId={data.customer.id} projects={data.projects.map(p => ({ id: p.id, title_he: p.title_he }))} />
         <AddNoteInlineForm customerId={data.customer.id} projects={data.projects.map(p => ({ id: p.id, title_he: p.title_he }))} />
         <CommsFilterTabs counts={counts} totalCount={data.comms.length} />
         <CommsTimeline comms={data.comms} filter={filter} />
