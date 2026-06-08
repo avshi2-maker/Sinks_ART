@@ -7,6 +7,7 @@
 'use client';
 
 import { useState } from 'react';
+import { deleteComm } from '@/lib/customers/deleteComm';
 import type { CommunicationRow } from '@/lib/customers/types';
 
 import type { CommFilterValue } from './CommsFilterTabs';
@@ -89,6 +90,13 @@ export function CommsTimeline({ comms, filter }: Props) {
 
 function CommItem({ comm }: { comm: CommunicationRow }) {
   const [expanded, setExpanded] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  async function handleDelete() {
+    if (!window.confirm('למחוק רשומה זו? הפעולה אינה הפיכה.')) return;
+    setDeleting(true);
+    const res = await deleteComm(comm.id, comm.customer_id);
+    if (!res.ok) { setDeleting(false); window.alert('מחיקה נכשלה: ' + (res.error || '')); }
+  }
   const typeLabel = COMM_TYPE_LABEL_HE[comm.comm_type] ?? comm.comm_type;
   const typeClass = COMM_TYPE_COLOR[comm.comm_type] ?? 'bg-stone-100 text-stone-700';
   const duration = formatDuration(comm.duration_seconds);
@@ -118,6 +126,7 @@ function CommItem({ comm }: { comm: CommunicationRow }) {
             <span className="text-xs text-stone-500" dir="ltr">· {media.source_filename}</span>
           ) : null}
         </div>
+        <button type="button" onClick={handleDelete} disabled={deleting} title="מחק" className="text-stone-300 hover:text-red-600 disabled:opacity-40 text-sm shrink-0">{deleting ? "…" : "🗑️"}</button>
         <code className="text-[10px] text-stone-400" dir="ltr">
           {comm.id.slice(0, 8)}
         </code>

@@ -2,9 +2,11 @@
 
 // src/components/customers/AddNoteInlineForm.tsx
 // Phase 19 Stage B step 4 — inline note form.
-// Phase 22 — adds a "עם מי" party picker (customer / ales / general).
+// Phase 22 — party picker (customer / ales / general).
+// Phase 22b — multi-batch WhatsApp capture: "paste another message" inserts a
+//             dated timestamp header so one note holds a whole conversation.
 
-import { useState, useTransition } from 'react';
+import { useState, useRef, useTransition } from 'react';
 import { createNoteComm, NoteParty } from '@/lib/customers/commMutations';
 
 interface ProjectOption {
@@ -16,6 +18,13 @@ interface Props {
   projects:   ProjectOption[];
 }
 
+function stamp(): string {
+  const d = new Date();
+  const date = d.toLocaleDateString('he-IL');
+  const time = d.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+  return '\uD83D\uDCC5 ' + date + ' ' + time + '\n';
+}
+
 export default function AddNoteInlineForm({ customerId, projects }: Props) {
   const [open, setOpen]             = useState(false);
   const [text, setText]             = useState('');
@@ -23,12 +32,25 @@ export default function AddNoteInlineForm({ customerId, projects }: Props) {
   const [party, setParty]           = useState<NoteParty>('general');
   const [errorMsg, setErrorMsg]     = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const taRef = useRef<HTMLTextAreaElement>(null);
 
   function reset() {
     setText('');
     setProjectId('');
     setParty('general');
     setErrorMsg(null);
+  }
+
+  function openForm() {
+    setText(stamp());
+    setOpen(true);
+  }
+
+  function addBatch() {
+    const sep = text.endsWith('\n') || text === '' ? '' : '\n\n';
+    const next = text + sep + (text === '' ? '' : '\n') + stamp();
+    setText(next);
+    setTimeout(() => { taRef.current?.focus(); const len = next.length; taRef.current?.setSelectionRange(len, len); }, 0);
   }
 
   function handleSubmit() {
@@ -57,7 +79,7 @@ export default function AddNoteInlineForm({ customerId, projects }: Props) {
     return (
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={openForm}
         className="w-full text-sm text-blue-600 hover:bg-blue-50 py-2 mb-4 rounded-md border border-dashed border-stone-300 hover:border-blue-300 transition-colors"
       >
         + הוסף תכתובת / הערה
@@ -73,15 +95,19 @@ export default function AddNoteInlineForm({ customerId, projects }: Props) {
         <button type="button" onClick={() => setParty('general')} disabled={isPending} className={party === 'general' ? 'text-sm px-3 py-1.5 rounded-md bg-stone-600 text-white' : 'text-sm px-3 py-1.5 rounded-md bg-white border border-stone-300 text-stone-700'}>הערה כללית</button>
       </div>
       <textarea
+        ref={taRef}
         value={text}
         onChange={(e) => setText(e.target.value)}
-        placeholder="תוכן התכתובת / ההערה..."
-        rows={3}
-        className="w-full px-3 py-2 text-sm border border-stone-300 rounded-md focus:outline-none focus:border-blue-400 bg-white resize-y"
+        placeholder="הדבק כאן הודעות וואטסאפ..."
+        rows={6}
+        className="w-full px-3 py-2 text-sm border border-stone-300 rounded-md focus:outline-none focus:border-blue-400 bg-white resize-y whitespace-pre-wrap"
         dir="rtl"
         autoFocus
         disabled={isPending}
       />
+      <button type="button" onClick={addBatch} disabled={isPending} className="text-sm px-3 py-1.5 rounded-md bg-white border border-stone-300 text-stone-700 hover:bg-stone-50">
+        🕐 הדבק עוד הודעה (חותמת זמן)
+      </button>
       {projects.length > 0 && (
         <select
           value={projectId}
