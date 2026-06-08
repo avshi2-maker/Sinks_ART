@@ -1,4 +1,4 @@
-import Link from 'next/link';
+﻿import Link from 'next/link';
 import TopNavLink from './TopNavLink';
 import { fetchMonthCost } from '@/lib/shared/fetchMonthCost';
 
@@ -8,6 +8,7 @@ const NAV_ITEMS = [
   { href: '/intake',         label: 'מדיה',   icon: '📸' },
   { href: '/customers',      label: 'לקוחות', icon: '👥' },
   { href: '/prompt-builder', label: 'הדמיה',  icon: '🖼️' },
+  { href: '/options',        label: 'מחירון', icon: '📖' },
 ];
 
 export default async function TopNav() {
