@@ -14,6 +14,7 @@ import CorrespondenceSorter from '@/components/sorter/CorrespondenceSorter';
 import DraftOfferBuilder from '@/components/sorter/DraftOfferBuilder';
 import QuickQuotePanel from '@/components/quotes/QuickQuotePanel';
 import { fetchActiveOptions } from '@/lib/options/optionsCatalog';
+import { fetchSites } from '@/lib/sites/sitesData';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 interface PageProps {
@@ -26,6 +27,7 @@ export default async function CustomerPage({ params, searchParams }: PageProps) 
   const filter = (sp.type || 'all') as CommFilterValue;
   const data = await fetchCustomerPage(id);
   const catalogOptions = await fetchActiveOptions();
+  const sites = await fetchSites();
   if (!data) {
     notFound();
   }
@@ -43,7 +45,7 @@ export default async function CustomerPage({ params, searchParams }: PageProps) 
           </a>
         </nav>
         <EditableCustomerHeader customer={data.customer} />
-        <ProjectsList projects={data.projects} customerId={data.customer.id} />
+        <ProjectsList projects={data.projects} customerId={data.customer.id} sites={sites.map(s => ({ id: s.id, name_he: s.name_he }))} />
         <QuickQuotePanel customerId={data.customer.id} customerName={data.customer.name_he} customerPhone={data.customer.phone} projects={data.projects.map(p => ({ id: p.id, title_he: p.title_he }))} catalogOptions={catalogOptions} />
         <CorrespondenceSorter customerId={data.customer.id} projects={data.projects.map(p => ({ id: p.id, title_he: p.title_he }))} />
         <DraftOfferBuilder customerId={data.customer.id} customerName={data.customer.name_he} projects={data.projects.map(p => ({ id: p.id, title_he: p.title_he }))} />

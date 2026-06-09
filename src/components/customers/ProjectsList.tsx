@@ -8,6 +8,7 @@ import AddProjectForm from './AddProjectForm';
 interface Props {
   projects:   ProjectRow[];
   customerId: string;
+  sites?:     { id: string; name_he: string }[];
 }
 function formatDate(iso: string | null): string {
   if (!iso) return '—';
@@ -21,14 +22,14 @@ function formatIls(amount: number | null): string {
     maximumFractionDigits: 0,
   }).format(amount);
 }
-export function ProjectsList({ projects, customerId }: Props) {
+export function ProjectsList({ projects, customerId, sites = [] }: Props) {
   return (
     <section className="bg-white border border-stone-200 rounded-lg p-6 mb-6 shadow-sm">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-bold text-stone-900">
           פרויקטים ({projects.length})
         </h2>
-        <AddProjectForm customerId={customerId} />
+        <AddProjectForm customerId={customerId} sites={sites} />
       </div>
       {projects.length === 0 ? (
         <p className="text-sm text-stone-500">אין פרויקטים ללקוח זה. הוסף פרויקט בעזרת הכפתור למעלה.</p>

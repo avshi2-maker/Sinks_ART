@@ -62,6 +62,10 @@ export interface CreateProjectInput {
   customerId: string;
   titleHe: string;
   status?: string;
+  stoneTypeHe?: string;
+  dimensions?: string;
+  descriptionHe?: string;
+  siteId?: string | null;
 }
 export interface ProjectMutationResult {
   ok: boolean;
@@ -84,6 +88,10 @@ export async function createProject(input: CreateProjectInput): Promise<ProjectM
       customer_id: input.customerId,
       title_he: title,
       status,
+      stone_type_he: input.stoneTypeHe?.trim() || null,
+      dimensions: input.dimensions?.trim() || null,
+      description_he: input.descriptionHe?.trim() || null,
+      site_id: input.siteId || null,
       inquiry_date: nowIso.slice(0, 10),
       created_at: nowIso,
       updated_at: nowIso,
