@@ -5,6 +5,7 @@
 import { notFound } from 'next/navigation';
 import { fetchCustomerPage } from '@/lib/customers/fetchCustomerPage';
 import { CustomerHeader } from '@/components/customers/CustomerHeader';
+import EditableCustomerHeader from '@/components/customers/EditableCustomerHeader';
 import { ProjectsList } from '@/components/customers/ProjectsList';
 import { CommsTimeline } from '@/components/customers/CommsTimeline';
 import CommsFilterTabs, { CommFilterValue } from '@/components/customers/CommsFilterTabs';
@@ -41,7 +42,7 @@ export default async function CustomerPage({ params, searchParams }: PageProps) 
             ← חזרה ללוח הבקרה
           </a>
         </nav>
-        <CustomerHeader customer={data.customer} />
+        <EditableCustomerHeader customer={data.customer} />
         <ProjectsList projects={data.projects} customerId={data.customer.id} />
         <QuickQuotePanel customerId={data.customer.id} customerName={data.customer.name_he} customerPhone={data.customer.phone} projects={data.projects.map(p => ({ id: p.id, title_he: p.title_he }))} catalogOptions={catalogOptions} />
         <CorrespondenceSorter customerId={data.customer.id} projects={data.projects.map(p => ({ id: p.id, title_he: p.title_he }))} />

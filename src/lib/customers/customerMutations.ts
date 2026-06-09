@@ -73,3 +73,35 @@ export async function archiveCustomer(id: string): Promise<MutationResult> {
   revalidatePath('/customers');
   return { ok: true };
 }
+
+export interface UpdateCustomerInput {
+  id: string;
+  name_he: string;
+  phone?: string;
+  city?: string;
+  email?: string;
+  profession?: string;
+  notes?: string;
+}
+
+export async function updateCustomer(input: UpdateCustomerInput): Promise<MutationResult> {
+  if (!input.id) return { ok: false, error: 'missing id' };
+  const name = (input.name_he || '').trim().replace(/\s+/g, ' ');
+  if (!name) return { ok: false, error: 'חובה להזין שם לקוח' };
+  const sb = getServerSupabase();
+  const res = await sb
+    .from('customers')
+    .update({
+      name_he: name,
+      phone: input.phone?.trim() || null,
+      city: input.city?.trim() || null,
+      email: input.email?.trim() || null,
+      profession: input.profession?.trim() || null,
+      notes: input.notes?.trim() || null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', input.id);
+  if (res.error) return { ok: false, error: res.error.message };
+  revalidatePath('/customers/' + input.id);
+  return { ok: true, id: input.id };
+}
