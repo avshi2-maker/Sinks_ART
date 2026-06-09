@@ -85,3 +85,34 @@ STILL ON THE PLAN (order 2>4>3>1):
 
 STANDING RULES now active: delete on every list line; every intake gets view/edit/delete report.
 TODO: reconcile project status vocabulary (updateProjectStatus vs createProject lists differ).
+
+---
+## SESSION REPORT 09/06/2026 (afternoon) — CUSTOMER 360 COMPLETE
+SHIPPED THIS SESSION (all committed + deployed):
+- Unified ContactForm + IL phone validation (green-on-valid) + profession column
+- Customer create + EDIT (editable header); site-contacts create + edit + delete
+- Richer project form (stone/dimensions/description + SITE LINK) — proven roll-up under hotel
+- Media board: attach/detach media_analyses assets to projects (proven: "ales sink 0706.ogg")
+- CALLS FIX: saveCallFull now writes transcript to customer_communications.transcript column
+  (was only saving ai_analysis + audio; transcript was lost). New calls now persist full text.
+
+CUSTOMER-360 STATUS = essentially COMPLETE. Clicking a customer shows:
+  GREEN (done): details (view/edit/delete), projects (+site link), quotes (build/edit/send),
+    correspondence (log + AI sorter), CALLS (audio + transcript + AI analysis), MEDIA (attach to project)
+  GRAY (nice-to-have, not built): unified activity log/history timeline
+
+NEXT SESSION — pick one:
+  A. BACKFILL: 14 old calls have transcript=null but text survives in
+     media_analyses.ai_full_report.raw_transcript_text (jsonb). One SQL UPDATE to copy it across.
+  B. PLAN ITEM 4: Public intake -> CRM lead flow (RFQ form + Instagram DMs -> customers/projects)
+  C. PLAN ITEM 3: AI הדמיה prompt-builder (uses media assets)
+  D. PLAN ITEM 1 (last): ROI dashboard
+
+KEY FACTS LEARNED:
+  - customer_communications cols: transcript, ai_analysis(jsonb), body, subject, audio_url, duration_seconds, project_id
+  - SinC save path = src/lib/sinc/supabaseSinc.ts (saveCallFull). media_analyses gets parallel row.
+  - media_analyses already has project_id (attach = set it). .ogg/.mp3 thumbnails show broken (audio, expected).
+  - SinC "link to customer/project" button: shows "next update" alert but DOES save + offers פתח עמוד לקוח.
+
+STANDING RULES active: delete on every list line; every intake gets view/edit/delete report.
+TODO: reconcile project status vocab (updateProjectStatus vs createProject lists differ).
