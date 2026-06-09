@@ -1,6 +1,7 @@
 ﻿import Link from 'next/link';
 import TopNavLink from './TopNavLink';
 import { fetchMonthCost } from '@/lib/shared/fetchMonthCost';
+import ExitButton from './ExitButton';
 
 const NAV_ITEMS = [
   { href: '/dashboard',      label: 'דשבורד', icon: '🏠' },
@@ -35,6 +36,7 @@ export default async function TopNav() {
           <span className="text-xs text-indigo-700">{cost.monthLabel || 'החודש'}</span>
           <span className="text-sm font-medium text-indigo-900">{formattedCost}</span>
         </div>
+        <ExitButton />
       </div>
     </nav>
   );

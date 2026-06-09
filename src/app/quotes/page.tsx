@@ -4,6 +4,7 @@
 import Link from 'next/link';
 import { fetchQuotes } from '@/lib/quotes/fetchQuotes';
 import { QUOTE_STATUS_LABELS_HE, QUOTE_STATUS_COLORS, QuoteStatus } from '@/lib/quotes/types';
+import DeleteQuoteButton from '@/components/quotes/DeleteQuoteButton';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -58,6 +59,7 @@ export default async function QuotesPage({ searchParams }: { searchParams: Promi
                 <th className="py-2 px-3 font-medium">סכום</th>
                 <th className="py-2 px-3 font-medium">סטטוס</th>
                 <th className="py-2 px-3 font-medium">תאריך</th>
+                <th className="py-2 px-3 font-medium w-8"></th>
               </tr>
             </thead>
             <tbody>
@@ -74,6 +76,7 @@ export default async function QuotesPage({ searchParams }: { searchParams: Promi
                     </span>
                   </td>
                   <td className="py-3 px-3 text-stone-600 text-xs">{fmtDate(q.created_at)}</td>
+                  <td className="py-3 px-3 text-center"><DeleteQuoteButton quoteId={q.id} quoteNumber={q.quote_number} /></td>
                 </tr>
               ))}
             </tbody>

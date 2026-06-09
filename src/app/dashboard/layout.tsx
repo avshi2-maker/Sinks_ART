@@ -11,6 +11,7 @@
 
 import type { ReactNode } from 'react';
 import TopNav from '@/components/shared/TopNav';
+import LiveClock from '@/components/shared/LiveClock';
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   // Format today's date as Israeli short
@@ -32,6 +33,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             </div>
           </div>
           <div className="text-left">
+            <div className="mb-0.5"><LiveClock /></div>
             <div className="text-sm font-medium text-gray-900">{dateStr} · יום {dayName}</div>
             <div className="text-xs text-gray-500 mt-0.5">עודכן: עכשיו</div>
           </div>
