@@ -9,6 +9,7 @@ export interface CustomerRow {
   phone: string | null;
   email: string | null;
   city: string | null;
+  profession: string | null;
   address: string | null;
   source: string | null;
   source_details: string | null;

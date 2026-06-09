@@ -55,3 +55,10 @@ all pages — quotes, sites, customers, contacts, tasks, etc. Every list row the
 user sees should be deletable. Use the established pattern: a small client
 DeleteButton component + a server action that removes the row (and children if
 any) + anon DELETE policy confirmed before building.
+
+---
+## STANDING RULE (added 09/06/2026) — INTAKE ⇒ REPORT
+Every intake form MUST ship with a matching report: a list/report screen that
+lets the user VIEW, EDIT, and DELETE each record. Never build a form whose data
+can only be entered but not reviewed/edited/removed. Pairs with the delete-on-
+every-line rule. Applies to: contacts, projects, sites, visits, quotes, etc.

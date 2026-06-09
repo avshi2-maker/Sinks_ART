@@ -55,6 +55,12 @@ export function CustomerHeader({ customer }: Props) {
                 <span className="text-stone-900">{customer.city}</span>
               </div>
             ) : null}
+            {customer.profession ? (
+              <div>
+                <span className="font-medium text-stone-600">מקצוע: </span>
+                <span className="text-stone-900">{customer.profession}</span>
+              </div>
+            ) : null}
             {sourceLabel ? (
               <div>
                 <span className="font-medium text-stone-600">מקור: </span>

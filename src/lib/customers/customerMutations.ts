@@ -22,6 +22,8 @@ export interface CreateCustomerInput {
   city?: string;
   email?: string;
   source?: string;
+  profession?: string;
+  notes?: string;
 }
 
 export interface MutationResult {
@@ -44,6 +46,8 @@ export async function createCustomer(input: CreateCustomerInput): Promise<Mutati
       phone: input.phone?.trim() || null,
       city: input.city?.trim() || null,
       email: input.email?.trim() || null,
+      profession: input.profession?.trim() || null,
+      notes: input.notes?.trim() || null,
       source,
       is_active: true,
     })
