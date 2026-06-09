@@ -130,3 +130,37 @@ verification/app review — not worth it for solo). Realistic flow:
 Reuses: leads table, LeadsInbox, convertLead, Claude API. ~1 session to build.
 NOTE: leads.budget_tier has CHECK (tier_1_8k_15k etc) — IG free-text budget must
   map to a tier OR store in notes_he instead. Same for project_type CHECK.
+
+---
+## SESSION REPORT 09/06/2026 (evening) — LEADS PIPELINE + הדמיה FERRARI
+SHIPPED (all committed + deployed):
+- Backfilled 16 old call transcripts (jsonb -> transcript column). All calls complete.
+- LEADS INBOX (/leads): reads website leads table (shared Supabase), one-click convert
+  -> customer+project, archive, red badge on nav showing unconverted count.
+  FIXED: convertLead wrote status='converted' which violated leads_status_check
+  (allowed: new/contacted/qualified/quoted/won/lost/spam) -> now uses 'won'. Was failing
+  silently + creating duplicate customers. Added leads_anon_select + leads_anon_update RLS.
+- DEMO-TRIALS LIBRARY (/demos): demo_trials table, gallery, upload image+mp4 to Cloudinary
+  Demo-Trials folder (added optional folder param to uploadToCloudinary), edit/delete/
+  download/whatsapp-to-Ales per card, video poster-frame + play overlay.
+- INSTAGRAM HERO MODE (prompt-builder): מדויק/אינסטגרם toggle + 5 mood presets
+  (golden/dark-spa/gallery/penthouse/organic). heroRenderStyle() swaps render-style+setting
+  for cinematic drama. CONSTRUCTION RULES stay sacred in both modes (geometry never changes).
+- SAVE-AS-DEMO BRIDGE: prompt-builder "💾 שמור כהדמיה" saves prompt+settings into gallery.
+
+KEY FACTS:
+  - prompt-builder does NOT call Gemini. It only BUILDS the prompt text. User copies prompt
+    -> pastes into Nano Banana (Gemini Pro) manually. 4-month proven workflow. "Nano/banana"
+    in code = labels only, no API call exists.
+  - leads table: full_name/phone/email/city_he/project_type/budget_tier(CHECK)/
+    preferred_marble_family/notes_he/utm_*/converted_to_customer_id/converted_to_project_id
+  - demo_trials: title_he/cloudinary_url/nano_banana_prompt/kling_prompt/inputs_jsonb/
+    marble_family/customer_id(optional). is_video detected from /video/upload/ in URL.
+
+PARKED / OPEN:
+  - Final link: upload Nano render ONTO an existing prompt-only demo (currently add new demo).
+  - Instagram->CRM paste flow (design approved, not built — see earlier parked note).
+  - ROI dashboard (LAST plan item, not started).
+  - Prompt template polish beyond hero mode (optional).
+
+STANDING RULES active: delete on every list line; every intake gets view/edit/delete report.
