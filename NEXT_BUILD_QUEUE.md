@@ -47,3 +47,11 @@ STILL PARKED (big builds):
 - ROI dashboard (win rate, margin, avg markup, ₪ in pipeline)
 
 Prices to fill: /options items still mostly ₪0 — get Ales''s numbers in.
+
+---
+## STANDING RULE (added 09/06/2026)
+ALWAYS add a delete option (🗑️ with confirm) to every report/list line across
+all pages — quotes, sites, customers, contacts, tasks, etc. Every list row the
+user sees should be deletable. Use the established pattern: a small client
+DeleteButton component + a server action that removes the row (and children if
+any) + anon DELETE policy confirmed before building.

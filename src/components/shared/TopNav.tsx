@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { href: '/prompt-builder', label: 'הדמיה',  icon: '🖼️' },
   { href: '/options',        label: 'מחירון', icon: '📖' },
   { href: '/quotes',         label: 'הצעות',  icon: '🧾' },
+  { href: '/sites',          label: 'אתרים',  icon: '🏨' },
 ];
 
 export default async function TopNav() {
