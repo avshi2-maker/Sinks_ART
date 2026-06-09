@@ -1,4 +1,4 @@
-// src/components/prompt-builder/PromptBuilderShell.tsx
+﻿// src/components/prompt-builder/PromptBuilderShell.tsx
 'use client';
 
 import { useMemo, useState } from 'react';
@@ -38,6 +38,8 @@ const DEFAULT_INPUTS: PromptBuilderInputs = {
   faucetType: 'wall-tap',
   pitch: 'middle',
   drain: 'round',
+  renderMode: 'accurate',
+  mood: 'golden',
 };
 
 export default function PromptBuilderShell({ mode, customerId, mediaAnalyses }: PromptBuilderShellProps) {
@@ -168,6 +170,21 @@ export default function PromptBuilderShell({ mode, customerId, mediaAnalyses }: 
           {mode === 'per-customer' ? 'מצב לקוח — טען מדיה קיימת ושמור פרומפטים אל הניתוח' : 'מצב עצמאי — לייצור תוכן מהיר ל-Instagram'}
         </p>
       </header>
+
+      <div className="mb-6 rounded-xl border border-slate-200 bg-white p-4">
+        <div className="mb-3 flex items-center gap-2">
+          <button type="button" onClick={() => setInputs((p) => ({ ...p, renderMode: 'accurate' }))} className={inputs.renderMode !== 'instagram' ? 'rounded-lg bg-slate-800 px-4 py-2 text-sm font-semibold text-white' : 'rounded-lg bg-slate-100 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200'}>📐 מדויק</button>
+          <button type="button" onClick={() => setInputs((p) => ({ ...p, renderMode: 'instagram' }))} className={inputs.renderMode === 'instagram' ? 'rounded-lg bg-gradient-to-r from-pink-500 to-orange-500 px-4 py-2 text-sm font-semibold text-white' : 'rounded-lg bg-slate-100 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200'}>🔥 אינסטגרם</button>
+          <span className="mr-2 text-xs text-slate-400">{inputs.renderMode === 'instagram' ? 'מצב הירו — דרמטי, עוצר גלילה' : 'מצב מדויק — נאמן לסקיצה'}</span>
+        </div>
+        {inputs.renderMode === 'instagram' ? (
+          <div className="flex flex-wrap gap-2">
+            {([['golden','☀️ שעת זהב'],['dark-spa','🌙 ספא כהה'],['gallery','💎 גלריה לבנה'],['penthouse','🏙️ פנטהאוז'],['organic','🌿 אורגני']] as [string,string][]).map(([key,label]) => (
+              <button key={key} type="button" onClick={() => setInputs((p) => ({ ...p, mood: key as typeof p.mood }))} className={inputs.mood === key ? 'rounded-full bg-orange-100 px-3 py-1.5 text-sm font-medium text-orange-800 ring-2 ring-orange-400' : 'rounded-full bg-slate-100 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-200'}>{label}</button>
+            ))}
+          </div>
+        ) : null}
+      </div>
 
       <div className="mb-6">
         <ApiCostMeter mode="single" status={meter} />

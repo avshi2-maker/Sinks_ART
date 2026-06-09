@@ -1,4 +1,4 @@
-// src/lib/promptTemplates.ts
+﻿// src/lib/promptTemplates.ts
 // Pure prompt-builder functions. NO React, NO Supabase, NO side effects.
 // All validated construction-rule language (Sessions 32-33) is baked in here.
 // Session 34: rectangle/square shapes + countertop/wall mount + pitch + drain.
@@ -8,6 +8,8 @@ export type FaucetType = 'wall-tap' | 'on-sink' | 'none';
 export type MountType = 'wall-mounted' | 'countertop';
 export type PitchType = 'middle' | 'back' | 'side';
 export type DrainType = 'round' | 'linear';
+export type RenderMode = 'accurate' | 'instagram';
+export type MoodType = 'golden' | 'dark-spa' | 'gallery' | 'penthouse' | 'organic';
 
 export interface PromptBuilderInputs {
   modelName: string;
@@ -18,6 +20,8 @@ export interface PromptBuilderInputs {
   faucetType: FaucetType;
   pitch: PitchType;
   drain: DrainType;
+  renderMode?: RenderMode;
+  mood?: MoodType;
 }
 
 function shapePhrase(shape: SinkShape): string {
@@ -97,10 +101,64 @@ function constructionRules(inputs: PromptBuilderInputs): string {
   ].join('\n');
 }
 
+interface MoodPreset { setting: string; light: string; extras: string; }
+
+function moodPreset(mood: MoodType): MoodPreset {
+  switch (mood) {
+    case 'dark-spa':
+      return {
+        setting: 'a moody luxury spa with dark micro-cement walls and warm shadow',
+        light: 'a single dramatic shaft of warm light rakes across the polished stone so the veining glows like liquid; deep shadows fall away into near-black',
+        extras: 'a thin ribbon of steam drifts past, one lit candle bokeh in the far background, a single white orchid stem',
+      };
+    case 'gallery':
+      return {
+        setting: 'a bright minimalist art-gallery bathroom, pure white plaster walls',
+        light: 'clean even museum lighting, crisp soft shadows, the stone is the only subject',
+        extras: 'absolute minimalism, nothing else in frame, a sense of expensive calm',
+      };
+    case 'penthouse':
+      return {
+        setting: 'a glass-walled penthouse bathroom at dusk, city skyline glittering behind',
+        light: 'cool blue hour ambience mixed with warm interior glow, reflections of city lights on the polished marble',
+        extras: 'floor-to-ceiling window, infinity view, ultra-luxury real-estate feel',
+      };
+    case 'organic':
+      return {
+        setting: 'a serene biophilic bathroom, travertine and living greenery, soft linen textures',
+        light: 'dappled natural sunlight filtering through leaves, warm and inviting',
+        extras: 'trailing plants, a smooth pebble, raw natural materials, wabi-sabi luxury',
+      };
+    case 'golden':
+    default:
+      return {
+        setting: 'a high-end designer bathroom with a warm sunset glow',
+        light: 'golden-hour sunlight streams in low from the side, a warm beam catching the marble veining and throwing long elegant highlights along the polished edge',
+        extras: 'a faint sheet of water glides over the honed rim, subtle warm reflections, a luxurious quiet moment',
+      };
+  }
+}
+
+function heroRenderStyle(mood: MoodType): string {
+  const m = moodPreset(mood);
+  return [
+    'RENDER STYLE — INSTAGRAM HERO (editorial, scroll-stopping):',
+    '- Dramatic low three-quarter hero angle, 35mm lens, shallow depth of field, the sink commanding the frame.',
+    '- SETTING: ' + m.setting + '.',
+    '- LIGHTING: ' + m.light + '.',
+    '- ATMOSPHERE: ' + m.extras + '.',
+    '- The polished marble shows faint mirror reflections, subtle translucency at thin edges, veining flowing like flowing ink — looks impossibly expensive and hand-finished.',
+    '- Editorial magazine quality: shot for Architectural Digest / Kinfolk, award-winning interior photography, ultra-detailed, razor-sharp focus, 8K, rich tonal depth.',
+    '- Composition leaves clean negative space (room for an Instagram caption).',
+  ].join('\n');
+}
+
 export function buildNanoBananaPrompt(inputs: PromptBuilderInputs): string {
   const model = inputs.modelName.trim() || 'custom marble sink';
   const dims = inputs.dimensions.trim() || 'as drawn in the sketch';
-  const setting = inputs.setting.trim() || 'a clean modern bathroom';
+  const isInsta = inputs.renderMode === 'instagram';
+  const mood = inputs.mood || 'golden';
+  const setting = inputs.setting.trim() || (isInsta ? moodPreset(mood).setting : 'a clean modern bathroom');
 
   return [
     'You are given three reference images:',
@@ -113,10 +171,12 @@ export function buildNanoBananaPrompt(inputs: PromptBuilderInputs): string {
     '',
     constructionRules(inputs),
     '',
-    'RENDER STYLE:',
-    '- Photorealistic, premium artisan finish, soft natural daylight, gentle reflections on polished stone.',
-    '- Veining flows naturally across each slab; the stone looks expensive and hand-finished.',
-    '- Clean composition, the sink is the clear subject, neutral uncluttered background.',
+    isInsta ? heroRenderStyle(mood) : [
+      'RENDER STYLE:',
+      '- Photorealistic, premium artisan finish, soft natural daylight, gentle reflections on polished stone.',
+      '- Veining flows naturally across each slab; the stone looks expensive and hand-finished.',
+      '- Clean composition, the sink is the clear subject, neutral uncluttered background.',
+    ].join('\n'),
     '',
     'ABSOLUTE FORBIDS: white porcelain, ceramic, round or oval sink, bowl shape, carved or curved basin, ' +
       'rounded edges, pedestal, white grout, white caulk, contrasting seams, ' +
