@@ -1,6 +1,7 @@
 ﻿import Link from 'next/link';
 import TopNavLink from './TopNavLink';
 import { fetchMonthCost } from '@/lib/shared/fetchMonthCost';
+import { countNewLeads } from '@/lib/leads/leadsData';
 import ExitButton from './ExitButton';
 
 const NAV_ITEMS = [
@@ -18,6 +19,8 @@ const NAV_ITEMS = [
 export default async function TopNav() {
   let cost = { totalUsd: 0, monthLabel: '' };
   try { cost = await fetchMonthCost(); } catch (e) { console.error('[TopNav] fetchMonthCost failed:', e); }
+  let newLeads = 0;
+  try { newLeads = await countNewLeads(); } catch (e) { console.error('[TopNav] countNewLeads failed:', e); }
   const formattedCost = '$' + cost.totalUsd.toFixed(2);
   return (
     <nav dir="rtl" className="sticky top-0 z-40 bg-white border-b border-gray-200 px-4 py-2">
@@ -29,7 +32,7 @@ export default async function TopNav() {
           </Link>
           <div className="flex gap-1">
             {NAV_ITEMS.map((item) => (
-              <TopNavLink key={item.href} href={item.href} label={item.label} icon={item.icon} />
+              <TopNavLink key={item.href} href={item.href} label={item.label} icon={item.icon} badge={item.href === '/leads' ? newLeads : undefined} />
             ))}
           </div>
         </div>

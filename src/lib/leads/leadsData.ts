@@ -99,8 +99,8 @@ export async function convertLead(leadId: string): Promise<ConvertResult> {
   const projectId = projRes.data.id as string;
 
   // 3) stamp the lead
-  await sb.from('leads').update({
-    status: 'converted',
+  const stampRes = await sb.from('leads').update({
+    status: 'won',
     converted_to_customer_id: customerId,
     converted_to_project_id: projectId,
     updated_at: nowIso,
@@ -117,4 +117,16 @@ export async function archiveLead(leadId: string): Promise<ConvertResult> {
   if (res.error) return { ok: false, error: res.error.message };
   revalidatePath('/leads');
   return { ok: true };
+}
+
+// Count of new (unconverted, unarchived) leads — for the nav badge.
+export async function countNewLeads(): Promise<number> {
+  const sb = getServerSupabase();
+  const res = await sb
+    .from('leads')
+    .select('id', { count: 'exact', head: true })
+    .eq('is_archived', false)
+    .is('converted_to_customer_id', null);
+  if (res.error) { console.error('[countNewLeads]', res.error.message); return 0; }
+  return res.count || 0;
 }
