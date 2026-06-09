@@ -218,6 +218,7 @@ export async function saveCallFull(
       ai_analysis:  payload.ai_analysis,
       audio_url:    payload.audio_url,
       api_cost_usd: payload.api_cost_usd,
+      transcript:   payload.raw_transcript_text || null,
       duration_seconds: Number.isFinite(payload.duration_sec) ? Math.round(payload.duration_sec) : null,
     })
     .select('id')
