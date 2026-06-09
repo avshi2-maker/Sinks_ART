@@ -29,13 +29,14 @@ export interface CloudinaryUploadResult {
   duration?:     number;
 }
 
-export async function uploadToCloudinary(file: File): Promise<CloudinaryUploadResult> {
+export async function uploadToCloudinary(file: File, folder?: string): Promise<CloudinaryUploadResult> {
   if (!CLOUD_NAME)    throw new Error('NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME is not set in .env.local');
   if (!PRESET_INTAKE) throw new Error('NEXT_PUBLIC_CLOUDINARY_PRESET_INTAKE is not set in .env.local');
 
   const form = new FormData();
   form.append('file', file);
   form.append('upload_preset', PRESET_INTAKE);
+  if (folder) form.append('folder', folder);
 
   const endpoint = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`;
 
