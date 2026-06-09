@@ -62,3 +62,26 @@ Every intake form MUST ship with a matching report: a list/report screen that
 lets the user VIEW, EDIT, and DELETE each record. Never build a form whose data
 can only be entered but not reviewed/edited/removed. Pairs with the delete-on-
 every-line rule. Applies to: contacts, projects, sites, visits, quotes, etc.
+
+---
+## SESSION END 09/06/2026 — where we are
+SHIPPED (all committed + deployed):
+- Site model: sites/contacts/tasks/visits tables + list + detail page (roll-up, stats)
+- Unified ContactForm + IL phone validation (green-on-valid) + profession column
+- Customer: create + EDIT (editable header) via shared form
+- Site-contacts: create + edit + delete via shared form
+- Richer project form: stone/dimensions/description + SITE LINK (proven: project rolls up under hotel)
+
+NEXT SESSION — FERRARI FINAL PIECE: media-attach
+  - media_analyses already has project_id column (no schema change)
+  - build: list a customer's media assets (sketches/photos) + attach/detach to a project (set project_id)
+  - pairs with AI הדמיה builder (plan item 3)
+
+STILL ON THE PLAN (order 2>4>3>1):
+  2. ✅ Site model (DONE) + intake forms (DONE) — media-attach is the last sub-piece
+  4. Public intake → CRM lead flow (RFQ + Instagram DMs → customers/projects)
+  3. AI הדמיה prompt-builder (uses media assets)
+  1. ROI dashboard (last)
+
+STANDING RULES now active: delete on every list line; every intake gets view/edit/delete report.
+TODO: reconcile project status vocabulary (updateProjectStatus vs createProject lists differ).
