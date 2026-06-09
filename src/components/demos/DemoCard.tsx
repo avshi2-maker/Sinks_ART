@@ -6,9 +6,11 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { updateDemo, deleteDemo, DemoTrial } from '@/lib/demos/demosData';
+import { getVideoFrameUrl } from '@/lib/intake/cloudinary';
 
 export default function DemoCard({ demo }: { demo: DemoTrial }) {
   const router = useRouter();
+  const isVideo = !!demo.cloudinary_url && demo.cloudinary_url.includes('/video/upload/');
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(demo.title_he || '');
   const [marble, setMarble] = useState(demo.marble_family || '');
@@ -41,9 +43,16 @@ export default function DemoCard({ demo }: { demo: DemoTrial }) {
   return (
     <div className="bg-white border border-stone-200 rounded-lg overflow-hidden shadow-sm" dir="rtl">
       {demo.cloudinary_url ? (
-        <a href={demo.cloudinary_url} target="_blank" rel="noopener noreferrer">
-          <img src={demo.thumbnail_url || demo.cloudinary_url} alt={demo.title_he || 'הדמיה'} className="w-full h-44 object-cover" />
-        </a>
+        isVideo ? (
+          <a href={demo.cloudinary_url} target="_blank" rel="noopener noreferrer" className="relative block">
+            <img src={getVideoFrameUrl(demo.cloudinary_url, 1)} alt={demo.title_he || 'הדמיה'} className="w-full h-44 object-cover" />
+            <span className="absolute inset-0 flex items-center justify-center text-white text-4xl drop-shadow-lg">▶</span>
+          </a>
+        ) : (
+          <a href={demo.cloudinary_url} target="_blank" rel="noopener noreferrer">
+            <img src={demo.thumbnail_url || demo.cloudinary_url} alt={demo.title_he || 'הדמיה'} className="w-full h-44 object-cover" />
+          </a>
+        )
       ) : (
         <div className="w-full h-44 bg-stone-100 flex items-center justify-center text-stone-400 text-sm">אין תמונה</div>
       )}
