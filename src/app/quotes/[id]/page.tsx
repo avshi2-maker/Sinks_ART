@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { fetchQuote } from '@/lib/quotes/fetchQuotes';
 import { QUOTE_STATUS_LABELS_HE, QUOTE_STATUS_COLORS, QuoteStatus } from '@/lib/quotes/types';
-import QuoteView from '@/components/quotes/QuoteView';
+import QuoteDetail from '@/components/quotes/QuoteDetail';
+import { fetchActiveOptions } from '@/lib/options/optionsCatalog';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -17,6 +18,7 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
   const { id } = await params;
   const quote = await fetchQuote(id);
   if (!quote) notFound();
+  const catalogOptions = await fetchActiveOptions();
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-6" dir="rtl">
@@ -38,7 +40,7 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
         )}
       </div>
 
-      <QuoteView quote={quote} />
+      <QuoteDetail quote={quote} catalogOptions={catalogOptions} />
     </div>
   );
 }
