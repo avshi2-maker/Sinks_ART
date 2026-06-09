@@ -116,3 +116,17 @@ KEY FACTS LEARNED:
 
 STANDING RULES active: delete on every list line; every intake gets view/edit/delete report.
 TODO: reconcile project status vocab (updateProjectStatus vs createProject lists differ).
+
+---
+## PARKED 09/06/2026 — Instagram -> CRM paste flow (design approved, not built)
+Pattern: same as WhatsApp sorter + SinC. NOT automatic (Meta API needs business
+verification/app review — not worth it for solo). Realistic flow:
+  1. Paste IG DM conversation into a textarea
+  2. Claude (claude-sonnet-4-6, existing API pattern) extracts: name, phone, city,
+     project_type, budget, style, notes_he
+  3. Pre-filled editable review card -> "צור ליד ב-CRM" inserts into leads table
+     with source='instagram' (note: leads_source has no check constraint? verify)
+  4. Flows through existing /leads inbox + convert->customer+project
+Reuses: leads table, LeadsInbox, convertLead, Claude API. ~1 session to build.
+NOTE: leads.budget_tier has CHECK (tier_1_8k_15k etc) — IG free-text budget must
+  map to a tier OR store in notes_he instead. Same for project_type CHECK.
