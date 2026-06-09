@@ -101,3 +101,17 @@ export async function detachProjectFromSite(projectId: string, siteId: string): 
   revalidateSite(siteId);
   return { ok: true };
 }
+
+export async function updateSiteContact(input: { id: string; siteId: string; name_he: string; role_he?: string; phone?: string; email?: string }): Promise<MutResult> {
+  if (!input.id || !input.name_he?.trim()) return { ok: false, error: 'שם איש קשר חובה' };
+  const sb = getServerSupabase();
+  const res = await sb.from('site_contacts').update({
+    name_he: input.name_he.trim(),
+    role_he: input.role_he?.trim() || null,
+    phone: input.phone?.trim() || null,
+    email: input.email?.trim() || null,
+  }).eq('id', input.id);
+  if (res.error) return { ok: false, error: res.error.message };
+  revalidateSite(input.siteId);
+  return { ok: true };
+}
