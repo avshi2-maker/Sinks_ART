@@ -15,6 +15,7 @@ import {
 } from '@/lib/promptTemplates';
 import type { PromptBuilderInputs } from '@/lib/promptTemplates';
 import { savePromptsToAnalysis } from '@/lib/promptBuilderActions';
+import { saveDemo } from '@/lib/demos/demosData';
 import { uploadToCloudinary, isCloudinaryConfigured } from '@/lib/intake/cloudinary';
 import ApiCostMeter from '@/components/shared/ApiCostMeter';
 import ExportFooter from '@/components/shared/ExportFooter';
@@ -128,6 +129,26 @@ export default function PromptBuilderShell({ mode, customerId, mediaAnalyses }: 
     }
   }
 
+  const [savingDemo, setSavingDemo] = useState(false);
+  const [demoSavedId, setDemoSavedId] = useState<string | null>(null);
+
+  const onSaveAsDemo = async () => {
+    setSavingDemo(true);
+    setDemoSavedId(null);
+    const moodLabel = inputs.renderMode === 'instagram' ? (' · ' + (inputs.mood || 'golden')) : '';
+    const res = await saveDemo({
+      title_he: (inputs.modelName.trim() || 'הדמיה') + moodLabel,
+      nano_banana_prompt: nanoBananaPrompt,
+      kling_prompt: klingPrompt,
+      marble_family: inputs.setting.trim() || undefined,
+      inputs_jsonb: inputs as unknown as Record<string, unknown>,
+      customer_id: customerId || null,
+    });
+    setSavingDemo(false);
+    if (res.ok && res.id) setDemoSavedId(res.id);
+    else window.alert('שמירה נכשלה: ' + (res.error || ''));
+  };
+
   const onSave = async () => {
     if (!sketchAnalysisId) return;
     setSaving(true);
@@ -210,6 +231,15 @@ export default function PromptBuilderShell({ mode, customerId, mediaAnalyses }: 
         <section>
           <PromptOutputCard nanoBananaPrompt={nanoBananaPrompt} klingPrompt={klingPrompt} klingNegativePrompt={klingNegativePrompt} mode={mode} canSave={canSave} saving={saving} savedVersion={savedVersion} onSave={onSave} />
           {saveError ? <p className="mt-2 text-sm text-rose-600">{saveError}</p> : null}
+          <div className="mt-4 rounded-xl border border-pink-200 bg-pink-50 p-3">
+            <div className="mb-2 text-sm font-semibold text-slate-800">💾 שמור כהדמיה לגלריה</div>
+            <p className="mb-2 text-xs text-slate-500">שומר את הפרומפט והגדרות בגלריית ההדמיות. אחר כך תוכל להעלות את הרינדר מ-Nano Banana אל אותה הדמיה.</p>
+            {demoSavedId ? (
+              <a href="/demos" className="inline-block rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700">✓ נשמר — פתח גלריה ←</a>
+            ) : (
+              <button type="button" onClick={onSaveAsDemo} disabled={savingDemo} className="rounded-md bg-gradient-to-r from-pink-500 to-orange-500 px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50">{savingDemo ? 'שומר…' : '💾 שמור כהדמיה'}</button>
+            )}
+          </div>
         </section>
       </div>
 
