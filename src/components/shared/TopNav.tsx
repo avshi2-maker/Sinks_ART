@@ -8,6 +8,7 @@ const NAV_ITEMS = [
   { href: '/sinc',           label: 'שיחות',  icon: '🎙️' },
   { href: '/intake',         label: 'מדיה',   icon: '📸' },
   { href: '/customers',      label: 'לקוחות', icon: '👥' },
+  { href: '/leads',          label: 'פניות',  icon: '📥' },
   { href: '/prompt-builder', label: 'הדמיה',  icon: '🖼️' },
   { href: '/options',        label: 'מחירון', icon: '📖' },
   { href: '/quotes',         label: 'הצעות',  icon: '🧾' },
