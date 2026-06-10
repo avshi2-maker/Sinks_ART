@@ -12,7 +12,7 @@ function getServerSupabase() {
   return createClient(url, key, { auth: { persistSession: false } });
 }
 
-export interface StatusBucket { status: string; count: number; }
+export interface StatusBucket { status: string; count: number; value: number; }
 export interface RoiMetrics {
   customers: number;
   projects: number;
@@ -33,22 +33,25 @@ export async function fetchRoiMetrics(): Promise<RoiMetrics> {
 
   const [custRes, projRes, leadRes, quoteRes] = await Promise.all([
     sb.from('customers').select('id', { count: 'exact', head: true }).eq('is_active', true),
-    sb.from('projects').select('status'),
+    sb.from('projects').select('status, quoted_price_ils'),
     sb.from('leads').select('id, converted_to_customer_id, is_archived'),
     sb.from('quotes').select('status, total_grand, total_cost, total_margin'),
   ]);
 
-  const projects = (projRes.data || []) as { status: string | null }[];
+  const projects = (projRes.data || []) as { status: string | null; quoted_price_ils: number | null }[];
   const leads = (leadRes.data || []) as { converted_to_customer_id: string | null; is_archived: boolean | null }[];
   const quotes = (quoteRes.data || []) as { status: string | null; total_grand: number | null; total_cost: number | null; total_margin: number | null }[];
 
   // pipeline buckets
-  const pipeMap = new Map<string, number>();
+  const pipeMap = new Map<string, { count: number; value: number }>();
   for (const p of projects) {
     const s = p.status || 'ללא סטטוס';
-    pipeMap.set(s, (pipeMap.get(s) || 0) + 1);
+    const cur = pipeMap.get(s) || { count: 0, value: 0 };
+    cur.count += 1;
+    cur.value += Number(p.quoted_price_ils) || 0;
+    pipeMap.set(s, cur);
   }
-  const pipeline: StatusBucket[] = Array.from(pipeMap.entries()).map(([status, count]) => ({ status, count })).sort((a, b) => b.count - a.count);
+  const pipeline: StatusBucket[] = Array.from(pipeMap.entries()).map(([status, v]) => ({ status, count: v.count, value: v.value })).sort((a, b) => b.count - a.count);
 
   // leads
   const activeLeads = leads.filter((l) => !l.is_archived);

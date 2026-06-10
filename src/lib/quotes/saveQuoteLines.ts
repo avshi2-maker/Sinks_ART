@@ -92,6 +92,13 @@ export async function saveQuoteLines(input: SaveQuoteLinesInput): Promise<SaveQu
   }).eq('id', input.quoteId);
   if (updRes.error) return { ok: false, error: 'עדכון סכומים נכשל: ' + updRes.error.message };
 
+  // 4) stamp the linked project's quoted_price_ils with this quote's grand total (for ROI pipeline ₪)
+  const qRes = await sb.from('quotes').select('project_id').eq('id', input.quoteId).maybeSingle();
+  const projectId = qRes.data?.project_id as string | undefined;
+  if (projectId) {
+    await sb.from('projects').update({ quoted_price_ils: grand, updated_at: now }).eq('id', projectId);
+  }
+
   revalidatePath('/quotes/' + input.quoteId);
   if (input.customerId) revalidatePath('/customers/' + input.customerId);
   return { ok: true, totalGrand: grand };

@@ -63,7 +63,7 @@ export default function ExportFooter({ snapshot, onProjectClick }: Props) {
     if (onProjectClick) {
       onProjectClick();
     } else {
-      alert('דף לקוח/פרויקט יבוא בעדכון הבא. בינתיים אפשר לראות את הרשומה ב-Supabase.');
+      alert('שמור קודם את הרשומה כדי לפתוח את עמוד הלקוח.');
     }
   }
 

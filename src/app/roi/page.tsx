@@ -50,7 +50,7 @@ export default async function RoiPage() {
             {m.pipeline.map((p) => (
               <div key={p.status}>
                 <div className="flex justify-between text-xs text-stone-600 mb-0.5">
-                  <span>{p.status}</span><span>{p.count}</span>
+                  <span>{p.status}</span><span>{p.count}{p.value > 0 ? ' · ' + ils(p.value) : ''}</span>
                 </div>
                 <div className="h-2.5 bg-stone-100 rounded-full overflow-hidden">
                   <div className="h-full bg-blue-500 rounded-full" style={{ width: (p.count / maxPipe * 100) + '%' }} />
