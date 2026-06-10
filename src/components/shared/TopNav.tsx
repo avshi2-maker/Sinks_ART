@@ -15,6 +15,7 @@ const NAV_ITEMS = [
   { href: '/options',        label: 'מחירון', icon: '📖' },
   { href: '/quotes',         label: 'הצעות',  icon: '🧾' },
   { href: '/sites',          label: 'אתרים',  icon: '🏨' },
+  { href: '/roi',            label: 'ROI',    icon: '📊' },
 ];
 
 export default async function TopNav() {
