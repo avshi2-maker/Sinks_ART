@@ -156,3 +156,23 @@ export async function createInstagramLead(input: InstaLeadInput): Promise<Conver
   revalidatePath('/leads');
   return { ok: true, customerId: undefined };
 }
+
+// Phase 43 — create a lead from any pasted source (instagram | whatsapp | other).
+export async function createPastedLead(input: InstaLeadInput & { source?: string }): Promise<ConvertResult> {
+  const sb = getServerSupabase();
+  const noteParts = [input.style_he ? ('סגנון: ' + input.style_he) : null, input.notes_he || null].filter(Boolean);
+  const src = input.source || 'instagram';
+  const namePrefix = src === 'whatsapp' ? 'פנייה מוואטסאפ' : src === 'call' ? 'פנייה משיחה' : 'פנייה מאינסטגרם';
+  const res = await sb.from('leads').insert({
+    full_name: input.full_name?.trim() || namePrefix,
+    phone: input.phone?.trim() || null,
+    city_he: input.city_he?.trim() || null,
+    notes_he: noteParts.join(' · ') || null,
+    status: 'new',
+    utm_source: src,
+    is_archived: false,
+  }).select('id').single();
+  if (res.error || !res.data) return { ok: false, error: res.error?.message || 'no row' };
+  revalidatePath('/leads');
+  return { ok: true };
+}
