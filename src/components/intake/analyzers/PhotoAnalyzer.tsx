@@ -18,6 +18,7 @@ import { useState } from 'react';
 import {
   uploadToCloudinary,
   isCloudinaryConfigured,
+  getPdfPreviewUrl,
 } from '@/lib/intake/cloudinary';
 import ExportFooter from '@/components/shared/ExportFooter';
 import type { ReportSnapshot } from '@/lib/shared/exportFormats';
@@ -111,14 +112,16 @@ export default function PhotoAnalyzer({
       return;
     }
 
-    setImageUrl(uploaded.url);
+    const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+    const analysisUrl = isPdf ? getPdfPreviewUrl(uploaded.url) : uploaded.url;
+    setImageUrl(analysisUrl);
 
     setStage('analyzing');
     try {
       const res = await fetch('/api/analyze-photo', {
         method:  'POST',
         headers: { 'content-type': 'application/json' },
-        body:    JSON.stringify({ imageUrl: uploaded.url, mediaType }),
+        body:    JSON.stringify({ imageUrl: analysisUrl, mediaType }),
       });
       const data = await res.json();
       if (!res.ok || !data.success) {

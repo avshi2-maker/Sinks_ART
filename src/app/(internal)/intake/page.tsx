@@ -102,7 +102,7 @@ export default function IntakePage() {
     media &&
     media.mode === 'file' &&
     media.file &&
-    (media.mediaType === 'photo' || media.mediaType === 'sketch');
+    (media.mediaType === 'photo' || media.mediaType === 'sketch' || media.mediaType === 'pdf');
 
   const showMp4Analyzer =
     media &&
