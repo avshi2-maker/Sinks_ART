@@ -190,3 +190,10 @@ STILL OPEN / PARKED:
   - Prompt template polish beyond hero mode (optional).
 
 ALL MAIN PLAN ITEMS NOW DONE: Customer-360, leads pipeline, Demo-Trials, הדמיה Ferrari, ROI.
+
+---
+## DECISION 10/06/2026 — middleware->proxy rename DEFERRED
+src/middleware.ts is the CRM password gate (crm_auth cookie). Next.js 16 shows a
+deprecation warning suggesting rename to proxy.ts. DELIBERATELY NOT DONE: renaming
+an auth gate for a cosmetic warning is high-risk/low-reward (wrong signature = lockout
+or open CRM). middleware.ts works fine in 16.2.4. Revisit only if/when Next.js hard-removes it.

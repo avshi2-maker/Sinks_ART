@@ -4,6 +4,7 @@
 import Link from 'next/link';
 import { fetchLeads } from '@/lib/leads/leadsData';
 import LeadsInbox from '@/components/leads/LeadsInbox';
+import InstagramDmIntake from '@/components/leads/InstagramDmIntake';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -24,6 +25,7 @@ export default async function LeadsPage() {
         </div>
         <Link href="/dashboard" className="text-sm text-blue-600 no-underline hover:underline">← חזרה ללוח הבקרה</Link>
       </div>
+      <InstagramDmIntake />
       <LeadsInbox leads={leads} />
     </div>
   );

@@ -130,3 +130,29 @@ export async function countNewLeads(): Promise<number> {
   if (res.error) { console.error('[countNewLeads]', res.error.message); return 0; }
   return res.count || 0;
 }
+
+// Phase 42 — create a lead from an Instagram DM (source=instagram). Free text -> notes_he;
+// constrained columns left null (project_type/budget_tier have CHECKs) to avoid violations.
+export interface InstaLeadInput {
+  full_name?: string;
+  phone?: string;
+  city_he?: string;
+  style_he?: string;
+  notes_he?: string;
+}
+export async function createInstagramLead(input: InstaLeadInput): Promise<ConvertResult> {
+  const sb = getServerSupabase();
+  const noteParts = [input.style_he ? ('סגנון: ' + input.style_he) : null, input.notes_he || null].filter(Boolean);
+  const res = await sb.from('leads').insert({
+    full_name: input.full_name?.trim() || 'פנייה מאינסטגרם',
+    phone: input.phone?.trim() || null,
+    city_he: input.city_he?.trim() || null,
+    notes_he: noteParts.join(' · ') || null,
+    status: 'new',
+    utm_source: 'instagram',
+    is_archived: false,
+  }).select('id').single();
+  if (res.error || !res.data) return { ok: false, error: res.error?.message || 'no row' };
+  revalidatePath('/leads');
+  return { ok: true, customerId: undefined };
+}
