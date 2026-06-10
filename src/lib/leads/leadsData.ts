@@ -176,3 +176,45 @@ export async function createPastedLead(input: InstaLeadInput & { source?: string
   revalidatePath('/leads');
   return { ok: true };
 }
+
+// Phase 44 — lightweight customer list for the lead-link picker.
+export interface CustomerLite { id: string; name_he: string; phone: string | null; }
+export async function fetchCustomersLite(): Promise<CustomerLite[]> {
+  const sb = getServerSupabase();
+  const res = await sb.from('customers').select('id, name_he, phone').is('archived_at', null).order('name_he', { ascending: true });
+  if (res.error) { console.error('[fetchCustomersLite]', res.error.message); return []; }
+  return (res.data || []) as CustomerLite[];
+}
+
+// Phase 44 — link a lead to an EXISTING customer (no new customer created).
+// Stamps the lead as converted + logs the lead's content as a note on the customer's timeline.
+export async function linkLeadToExisting(leadId: string, customerId: string): Promise<ConvertResult> {
+  if (!leadId || !customerId) return { ok: false, error: 'missing ids' };
+  const sb = getServerSupabase();
+
+  const leadRes = await sb.from('leads').select('*').eq('id', leadId).single();
+  if (leadRes.error || !leadRes.data) return { ok: false, error: 'הליד לא נמצא' };
+  const lead = leadRes.data as LeadRow;
+  if (lead.converted_to_customer_id) return { ok: false, error: 'הליד כבר מקושר ללקוח' };
+
+  // log the inquiry as a note on the existing customer's timeline
+  const noteBody = [lead.project_type, lead.budget_tier, lead.notes_he].filter(Boolean).join(' · ') || 'פנייה חדשה';
+  await sb.from('customer_communications').insert({
+    customer_id: customerId,
+    comm_type: 'note',
+    subject: 'פנייה חדשה (' + (lead.utm_source || 'lead') + ')',
+    body: noteBody,
+    occurred_at: new Date().toISOString(),
+  });
+
+  // stamp the lead as linked (won) without creating a new customer
+  const stamp = await sb.from('leads').update({
+    status: 'won',
+    converted_to_customer_id: customerId,
+    updated_at: new Date().toISOString(),
+  }).eq('id', leadId);
+  if (stamp.error) return { ok: false, error: 'סימון הליד נכשל: ' + stamp.error.message };
+
+  revalidatePath('/leads');
+  return { ok: true, customerId };
+}

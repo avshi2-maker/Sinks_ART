@@ -221,3 +221,13 @@ STILL OPEN / PARKED:
   - Old InstagramDmIntake.tsx unused on disk (superseded by PastedLeadIntake) — can delete.
   - intake video path: photo-analyzer chokes on video (separate from SinC, still a gap).
   - URL/PDF analysis in intake "coming soon" (honest notice, not built).
+
+---
+## #4 SCOPE REFINED 10/06/2026 — intake "analyze anything"
+Customer sends various references: Pinterest/Instagram inspiration LINKS, PDF spec
+sheets/quotes, and SCREEN CAPTURES (screenshots). Intake should analyze all:
+  - Screenshots/images: already works via photo-analyzer (these ARE images) — verify.
+  - URLs (Pinterest/IG/web): fetch the page image(s) -> analyze. Needs URL->image extraction.
+  - PDF: extract page-1 image (getPdfPreviewUrl exists in cloudinary.ts!) -> analyze as image.
+  Strategy: convert everything to an image URL, then reuse existing photo-analyzer.
+  getPdfPreviewUrl + getVideoFrameUrl already do Cloudinary transforms — lean on those.

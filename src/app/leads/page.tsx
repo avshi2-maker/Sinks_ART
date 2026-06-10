@@ -2,7 +2,7 @@
 // Phase 37 — Leads Inbox page.
 
 import Link from 'next/link';
-import { fetchLeads } from '@/lib/leads/leadsData';
+import { fetchLeads, fetchCustomersLite } from '@/lib/leads/leadsData';
 import LeadsInbox from '@/components/leads/LeadsInbox';
 import PastedLeadIntake from '@/components/leads/PastedLeadIntake';
 
@@ -11,6 +11,7 @@ export const revalidate = 0;
 
 export default async function LeadsPage() {
   const leads = await fetchLeads();
+  const customers = await fetchCustomersLite();
   const newCount = leads.filter((l) => !l.converted_to_customer_id).length;
 
   return (
@@ -26,7 +27,7 @@ export default async function LeadsPage() {
         <Link href="/dashboard" className="text-sm text-blue-600 no-underline hover:underline">← חזרה ללוח הבקרה</Link>
       </div>
       <PastedLeadIntake />
-      <LeadsInbox leads={leads} />
+      <LeadsInbox leads={leads} customers={customers} />
     </div>
   );
 }

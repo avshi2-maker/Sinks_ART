@@ -6,11 +6,12 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { convertLead, archiveLead, LeadRow } from '@/lib/leads/leadsData';
+import { convertLead, archiveLead, linkLeadToExisting, LeadRow, CustomerLite } from '@/lib/leads/leadsData';
 
 function fmtDate(iso: string) { return new Date(iso).toLocaleDateString('he-IL'); }
 
-export default function LeadsInbox({ leads }: { leads: LeadRow[] }) {
+export default function LeadsInbox({ leads, customers }: { leads: LeadRow[]; customers: CustomerLite[] }) {
+  const [linkingId, setLinkingId] = useState<string | null>(null);
   const router = useRouter();
   const [busyId, setBusyId] = useState<string | null>(null);
 
@@ -20,6 +21,17 @@ export default function LeadsInbox({ leads }: { leads: LeadRow[] }) {
     const res = await convertLead(id);
     setBusyId(null);
     if (!res.ok) { window.alert('המרה נכשלה: ' + (res.error || '')); return; }
+    router.refresh();
+    if (res.customerId) router.push('/customers/' + res.customerId);
+  }
+
+  async function linkExisting(leadId: string, customerId: string) {
+    if (!customerId) return;
+    setBusyId(leadId);
+    const res = await linkLeadToExisting(leadId, customerId);
+    setBusyId(null);
+    setLinkingId(null);
+    if (!res.ok) { window.alert('קישור נכשל: ' + (res.error || '')); return; }
     router.refresh();
     if (res.customerId) router.push('/customers/' + res.customerId);
   }
@@ -64,7 +76,17 @@ export default function LeadsInbox({ leads }: { leads: LeadRow[] }) {
                 {converted ? (
                   <Link href={'/customers/' + l.converted_to_customer_id} className="text-xs text-blue-600 hover:underline">פתח לקוח →</Link>
                 ) : (
-                  <button onClick={() => convert(l.id)} disabled={busyId === l.id} className="text-sm px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50">{busyId === l.id ? 'ממיר...' : 'המר ללקוח'}</button>
+                  <>
+                  <button onClick={() => convert(l.id)} disabled={busyId === l.id} className="text-sm px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50">{busyId === l.id ? 'ממיר...' : 'המר ללקוח חדש'}</button>
+                  {linkingId === l.id ? (
+                    <select autoFocus defaultValue="" onChange={(e) => linkExisting(l.id, e.target.value)} disabled={busyId === l.id} className="text-xs px-2 py-1.5 border border-stone-300 rounded-md bg-white max-w-[160px]" dir="rtl">
+                      <option value="">— בחר לקוח קיים —</option>
+                      {customers.map((cu) => (<option key={cu.id} value={cu.id}>{cu.name_he}{cu.phone ? ' · ' + cu.phone : ''}</option>))}
+                    </select>
+                  ) : (
+                    <button onClick={() => setLinkingId(l.id)} disabled={busyId === l.id} className="text-xs px-3 py-1.5 border border-blue-300 text-blue-700 rounded-md hover:bg-blue-50 disabled:opacity-50">קשר לקיים</button>
+                  )}
+                  </>
                 )}
                 <button onClick={() => archive(l.id)} disabled={busyId === l.id} title="ארכב" className="text-stone-300 hover:text-red-600 text-sm">🗑️</button>
               </div>
