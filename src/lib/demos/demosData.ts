@@ -94,3 +94,18 @@ export async function deleteDemo(id: string): Promise<DemoResult> {
   revalidatePath('/demos');
   return { ok: true };
 }
+
+// Attach/replace the render image on an existing demo (after generating in Nano Banana).
+export async function setDemoImage(id: string, cloudinaryUrl: string, publicId?: string): Promise<DemoResult> {
+  if (!id || !cloudinaryUrl) return { ok: false, error: 'missing id or url' };
+  const sb = getServerSupabase();
+  const res = await sb.from('demo_trials').update({
+    cloudinary_url: cloudinaryUrl,
+    cloudinary_public_id: publicId || null,
+    thumbnail_url: cloudinaryUrl,
+    updated_at: new Date().toISOString(),
+  }).eq('id', id);
+  if (res.error) return { ok: false, error: res.error.message };
+  revalidatePath('/demos');
+  return { ok: true, id };
+}

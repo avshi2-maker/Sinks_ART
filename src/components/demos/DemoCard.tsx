@@ -5,7 +5,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { updateDemo, deleteDemo, DemoTrial } from '@/lib/demos/demosData';
+import { updateDemo, deleteDemo, setDemoImage, DemoTrial } from '@/lib/demos/demosData';
+import { uploadToCloudinary, isCloudinaryConfigured } from '@/lib/intake/cloudinary';
 import { getVideoFrameUrl } from '@/lib/intake/cloudinary';
 
 export default function DemoCard({ demo }: { demo: DemoTrial }) {
@@ -32,6 +33,21 @@ export default function DemoCard({ demo }: { demo: DemoTrial }) {
     if (!res.ok) { window.alert('מחיקה נכשלה: ' + (res.error || '')); return; }
     router.refresh();
   }
+  async function uploadRender(file: File) {
+    if (!isCloudinaryConfigured()) { window.alert('Cloudinary לא מוגדר'); return; }
+    setBusy(true);
+    try {
+      const up = await uploadToCloudinary(file, 'Demo-Trials');
+      const res = await setDemoImage(demo.id, up.url, up.publicId);
+      setBusy(false);
+      if (!res.ok) { window.alert('העלאה נכשלה: ' + (res.error || '')); return; }
+      router.refresh();
+    } catch (e) {
+      setBusy(false);
+      window.alert('העלאה נכשלה: ' + (e instanceof Error ? e.message : String(e)));
+    }
+  }
+
   function copyPrompt() {
     if (demo.nano_banana_prompt) { navigator.clipboard.writeText(demo.nano_banana_prompt); window.alert('הפרומפט הועתק'); }
   }
@@ -54,7 +70,11 @@ export default function DemoCard({ demo }: { demo: DemoTrial }) {
           </a>
         )
       ) : (
-        <div className="w-full h-44 bg-stone-100 flex items-center justify-center text-stone-400 text-sm">אין תמונה</div>
+        <label className="w-full h-44 bg-stone-50 border-b border-dashed border-stone-300 flex flex-col items-center justify-center text-stone-400 text-sm cursor-pointer hover:bg-blue-50 hover:text-blue-500">
+          <span className="text-2xl">⬆️</span>
+          <span>{busy ? 'מעלה…' : 'העלה רינדר'}</span>
+          <input type="file" accept="image/*,video/mp4" className="hidden" disabled={busy} onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadRender(f); }} />
+        </label>
       )}
       <div className="p-3 space-y-2">
         {editing ? (

@@ -168,6 +168,7 @@ export default function PromptBuilderShell({ mode, customerId, mediaAnalyses }: 
   };
 
   const onProjectClick = () => {
+    if (!customerId) { router.push('/demos'); return; }
     if (customerId) router.push(`/customers/${customerId}`);
   };
 
@@ -244,7 +245,7 @@ export default function PromptBuilderShell({ mode, customerId, mediaAnalyses }: 
       </div>
 
       <div className="mt-8">
-        <ExportFooter snapshot={snapshot} onProjectClick={mode === 'per-customer' ? onProjectClick : undefined} />
+        <ExportFooter snapshot={snapshot} onProjectClick={onProjectClick} />
       </div>
     </div>
   );
