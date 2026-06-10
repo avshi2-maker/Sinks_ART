@@ -60,6 +60,7 @@ export default function PastedLeadIntake() {
         <div className="flex gap-1 mr-auto">
           <button onClick={() => setSource('instagram')} className={source === 'instagram' ? 'text-xs px-3 py-1 rounded-full bg-pink-100 text-pink-700 font-semibold' : 'text-xs px-3 py-1 rounded-full bg-stone-100 text-stone-500'}>📸 אינסטגרם</button>
           <button onClick={() => setSource('whatsapp')} className={source === 'whatsapp' ? 'text-xs px-3 py-1 rounded-full bg-green-100 text-green-700 font-semibold' : 'text-xs px-3 py-1 rounded-full bg-stone-100 text-stone-500'}>💬 וואטסאפ</button>
+          <button onClick={() => router.push('/sinc')} className="text-xs px-3 py-1 rounded-full bg-stone-100 text-stone-500 hover:bg-indigo-100 hover:text-indigo-700" title="שיחות מוקלטות מטופלות בלשונית שיחות">📞 שיחה ←</button>
         </div>
       </div>
       <textarea value={dm} onChange={(e) => setDm(e.target.value)} placeholder="הדבק כאן את השיחה (שם, טלפון, מה רוצים, תקציב, עיר)..." rows={4} className="w-full px-2 py-1.5 text-sm border border-stone-300 rounded-md resize-y" dir="rtl" />
