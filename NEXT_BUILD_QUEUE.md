@@ -197,3 +197,27 @@ src/middleware.ts is the CRM password gate (crm_auth cookie). Next.js 16 shows a
 deprecation warning suggesting rename to proxy.ts. DELIBERATELY NOT DONE: renaming
 an auth gate for a cosmetic warning is high-risk/low-reward (wrong signature = lockout
 or open CRM). middleware.ts works fine in 16.2.4. Revisit only if/when Next.js hard-removes it.
+
+---
+## SESSION REPORT 10/06/2026 (midday) — UNIFIED LEAD CAPTURE (all sources)
+SHIPPED (committed + deployed):
+- Instagram DM -> lead (analyze-dm API + Claude extract + review/save, source=instagram)
+- Unified PastedLeadIntake box: 📸 Instagram / 💬 WhatsApp toggle (createPastedLead w/ source)
+- 📞 שיחה toggle -> links to /sinc (no duplication of audio pipeline)
+- Call -> lead: 📥 צור ליד button in SinC review (createLeadFromCall, source=call)
+- SinC picker now accepts video (.mp4/.mov/.m4v) — transcribes audio track. PROVEN with real mp4.
+- leads.phone -> NULLABLE (calls/DMs often have no phone; website form still collects it)
+- Cleanup: ExportFooter fallback msg clearer; middleware->proxy DEFERRED (auth gate, too risky)
+- Pipeline ₪: quote save stamps project.quoted_price_ils -> ROI shows ₪ per status (+backfilled)
+
+ALL 4 LEAD SOURCES NOW UNIFIED into /leads inbox -> convert -> customer+project:
+  1. Website RFQ form (direct to leads table)
+  2. Instagram DM (paste -> AI)
+  3. WhatsApp (paste -> AI)
+  4. Mobile calls (SinC: upload audio/video -> transcribe -> analyze -> צור ליד)
+
+STILL OPEN / PARKED:
+  - Link lead to EXISTING customer (repeat client) — convert always makes NEW customer.
+  - Old InstagramDmIntake.tsx unused on disk (superseded by PastedLeadIntake) — can delete.
+  - intake video path: photo-analyzer chokes on video (separate from SinC, still a gap).
+  - URL/PDF analysis in intake "coming soon" (honest notice, not built).
