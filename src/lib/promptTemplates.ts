@@ -211,6 +211,49 @@ export function buildKlingNegativePrompt(): string {
 }
 
 // Map the Hebrew/free-text shape from /intake analysis onto our enum.
+// Higgsfield — image-to-video. Built from research best-practice:
+// ONE slow camera move (slow = luxury), tight scene, explicit geometry/material preservation.
+export interface HiggsfieldPrompt { cameraMove: string; scenePrompt: string; preserve: string; }
+
+function higgsfieldCameraMove(mood: MoodType): string {
+  switch (mood) {
+    case 'dark-spa':  return 'Slow dolly-in (push-in)';
+    case 'gallery':   return 'Slow orbit (left to right, ~15°)';
+    case 'penthouse': return 'Slow crane-down toward the basin';
+    case 'organic':   return 'Gentle parallax push-in';
+    case 'golden':
+    default:          return 'Slow dolly orbit, low angle';
+  }
+}
+
+export function buildHiggsfieldPrompt(inputs: PromptBuilderInputs): string {
+  const model = inputs.modelName.trim() || 'marble sink';
+  const mood = inputs.mood || 'golden';
+  const m = moodPreset(mood);
+  const move = higgsfieldCameraMove(mood);
+
+  const scene = [
+    'Cinematic product hero shot of a ' + model + ', a flat-slab polished marble sink, in ' + m.setting + '.',
+    m.light + '.',
+    m.extras + '.',
+    'Editorial luxury feel, shallow depth of field, premium and quiet.',
+  ].join(' ');
+
+  const preserve = 'Keep the sink exactly as in the uploaded image — same flat-slab geometry, straight edges, marble veining and colour. Do not reshape into a bowl or add curves. Subtle motion only.';
+
+  return [
+    'CAMERA MOVE (select this preset in Higgsfield): ' + move,
+    '',
+    'SCENE PROMPT (paste this):',
+    scene,
+    '',
+    'PRESERVE (append to prompt):',
+    preserve,
+    '',
+    'SETTINGS: 9:16 portrait · 5–8 seconds · one move only · enable prompt-enhance then review.',
+  ].join('\n');
+}
+
 export function mapAnalyzedShape(raw: string | null | undefined): SinkShape {
   const s = (raw || '').trim();
   if (!s) return 'custom';

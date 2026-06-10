@@ -11,6 +11,7 @@ import {
   buildNanoBananaPrompt,
   buildKlingPrompt,
   buildKlingNegativePrompt,
+  buildHiggsfieldPrompt,
   mapAnalyzedShape,
 } from '@/lib/promptTemplates';
 import type { PromptBuilderInputs } from '@/lib/promptTemplates';
@@ -56,6 +57,7 @@ export default function PromptBuilderShell({ mode, customerId, mediaAnalyses }: 
   const nanoBananaPrompt = useMemo(() => buildNanoBananaPrompt(inputs), [inputs]);
   const klingPrompt = useMemo(() => buildKlingPrompt(inputs), [inputs]);
   const klingNegativePrompt = useMemo(() => buildKlingNegativePrompt(), []);
+  const higgsfieldPrompt = useMemo(() => buildHiggsfieldPrompt(inputs), [inputs]);
 
   const sketchAnalysisId = selection.sketch?.analysisId;
   const canSave = mode === 'per-customer' && Boolean(sketchAnalysisId);
@@ -231,6 +233,16 @@ export default function PromptBuilderShell({ mode, customerId, mediaAnalyses }: 
 
         <section>
           <PromptOutputCard nanoBananaPrompt={nanoBananaPrompt} klingPrompt={klingPrompt} klingNegativePrompt={klingNegativePrompt} mode={mode} canSave={canSave} saving={saving} savedVersion={savedVersion} onSave={onSave} />
+          {inputs.renderMode === 'instagram' ? (
+            <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-sm font-semibold text-slate-800">🎬 Higgsfield — פרומפט לרילז (וידאו)</span>
+                <button type="button" onClick={() => { navigator.clipboard.writeText(higgsfieldPrompt); window.alert('פרומפט Higgsfield הועתק'); }} className="text-xs px-3 py-1 rounded-md bg-amber-600 text-white hover:bg-amber-700">📋 העתק</button>
+              </div>
+              <pre className="whitespace-pre-wrap text-xs text-slate-700 font-sans leading-relaxed">{higgsfieldPrompt}</pre>
+              <p className="mt-2 text-xs text-amber-700">העלה את הרינדר מ-Nano Banana כתמונה, בחר את ה-Camera Move, הדבק את הסצנה. תנועה אחת בלבד · 5-8 שניות · 9:16.</p>
+            </div>
+          ) : null}
           {saveError ? <p className="mt-2 text-sm text-rose-600">{saveError}</p> : null}
           <div className="mt-4 rounded-xl border border-pink-200 bg-pink-50 p-3">
             <div className="mb-2 text-sm font-semibold text-slate-800">💾 שמור כהדמיה לגלריה</div>
