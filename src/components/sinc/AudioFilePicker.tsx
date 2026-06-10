@@ -23,7 +23,7 @@ interface Props {
   disabled?:      boolean;
 }
 
-const ACCEPTED_TYPES = '.mp3,.m4a,.wav,.ogg,.aac,.flac,audio/*';
+const ACCEPTED_TYPES = '.mp3,.m4a,.wav,.ogg,.aac,.flac,.mp4,.mov,.m4v,audio/*,video/mp4';
 const MAX_BYTES      = 100 * 1024 * 1024;   // 100 MB
 
 interface PickedFile {
@@ -38,8 +38,8 @@ export default function AudioFilePicker({ onFileSelected, disabled }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const validate = useCallback(async (file: File): Promise<string | null> => {
-    if (!file.type.startsWith('audio/') &&
-        !/\.(mp3|m4a|wav|ogg|aac|flac)$/i.test(file.name)) {
+    if (!file.type.startsWith('audio/') && !file.type.startsWith('video/') &&
+        !/\.(mp3|m4a|wav|ogg|aac|flac|mp4|mov|m4v)$/i.test(file.name)) {
       return 'הקובץ אינו קובץ אודיו (mp3 / m4a / wav / ogg / aac / flac)';
     }
     if (file.size > MAX_BYTES) {

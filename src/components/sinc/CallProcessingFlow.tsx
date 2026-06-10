@@ -1,4 +1,4 @@
-/**
+﻿/**
  * src/components/sinc/CallProcessingFlow.tsx
  *
  * Orchestrates the full SinC-ART pipeline:
@@ -39,6 +39,7 @@ import { saveCallFull, buildCallSubject } from '@/lib/sinc/supabaseSinc';
 import ApiCostMeter from '@/components/shared/ApiCostMeter';
 import ExportFooter from '@/components/shared/ExportFooter';
 import SaveCustomerModal from '@/components/sinc/SaveCustomerModal';
+import { createPastedLead } from '@/lib/leads/leadsData';
 import type {
   ApiMeterReading,
   CallAnalysis,
@@ -200,6 +201,22 @@ export default function CallProcessingFlow({ file, durationSec, onCancel }: Prop
       setStage('error');
       setError(msg);
     }
+  }
+
+  const [leadSaved, setLeadSaved] = useState(false);
+  async function createLeadFromCall() {
+    if (!analysis) return;
+    const notes = [analysis.project_type, analysis.desired_style, analysis.budget_signal, analysis.dimensions, analysis.summary_he].filter(Boolean).join(' · ');
+    const res = await createPastedLead({
+      full_name: analysis.customer_name_he || undefined,
+      phone: analysis.customer_phone || undefined,
+      city_he: analysis.customer_location || undefined,
+      style_he: analysis.desired_style || undefined,
+      notes_he: notes || undefined,
+      source: 'call',
+    });
+    if (res.ok) setLeadSaved(true);
+    else window.alert('יצירת ליד נכשלה: ' + (res.error || ''));
   }
 
   // ── Build snapshot for ExportFooter ──
@@ -437,7 +454,10 @@ export default function CallProcessingFlow({ file, durationSec, onCancel }: Prop
                     >
                       <span>✓ אשר ושמור</span>
                     </button>
-                    <button type="button" onClick={onCancel} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md text-sm hover:bg-gray-300">
+                    <button type="button" onClick={createLeadFromCall} disabled={leadSaved} className="px-4 py-2 bg-pink-600 text-white rounded-md text-sm hover:bg-pink-700 disabled:opacity-50">
+            <span>{leadSaved ? '✓ ליד נוצר' : '📥 צור ליד'}</span>
+          </button>
+          <button type="button" onClick={onCancel} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md text-sm hover:bg-gray-300">
                       <span>ביטול</span>
                     </button>
                   </>
