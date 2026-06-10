@@ -164,3 +164,29 @@ PARKED / OPEN:
   - Prompt template polish beyond hero mode (optional).
 
 STANDING RULES active: delete on every list line; every intake gets view/edit/delete report.
+
+---
+## SESSION REPORT 10/06/2026 (morning) — render loop + ROI dashboard
+SHIPPED (all committed + deployed):
+- #1 RENDER-UPLOAD LOOP: setDemoImage() + ⬆️ upload zone on prompt-only demo cards.
+  Save prompt as demo -> generate in Nano Banana -> upload render onto SAME demo. Loop closed.
+  Also fixed dead 🔗 פרויקט button in prompt-builder -> now opens /demos gallery (standalone).
+- #2 ROI DASHBOARD (/roi): READ-ONLY metrics. Revenue/margin/cost from quotes.total_grand/
+  total_cost/total_margin, lead conversion (leads), project pipeline bars (projects.status),
+  activity counts, as-of timestamp, nav link 📊 ROI.
+
+KEY DATA FACTS:
+  - quotes money lives in: total_grand (customer price), total_cost, total_margin. NOT in projects.
+  - projects.quoted_price_ils is EMPTY (0) — pipeline shows COUNTS not ₪. Future: stamp quote
+    total onto project when quote built, to get pipeline ₪ value.
+  - quote status values seen: 'draft', 'sent'.
+
+STILL OPEN / PARKED:
+  - Dead "coming soon" alert still in intake/page.tsx + CallProcessingFlow.tsx (2 more stubs).
+  - Instagram->CRM paste flow (design approved, not built).
+  - Final demo->customer link (share a demo to existing customer/project) — decided to use
+    /demos gallery as the "DEMOs space" instead; customer-link still possible later.
+  - middleware deprecation warning (rename to proxy) — cosmetic, deferred.
+  - Prompt template polish beyond hero mode (optional).
+
+ALL MAIN PLAN ITEMS NOW DONE: Customer-360, leads pipeline, Demo-Trials, הדמיה Ferrari, ROI.
