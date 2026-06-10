@@ -231,3 +231,24 @@ sheets/quotes, and SCREEN CAPTURES (screenshots). Intake should analyze all:
   - PDF: extract page-1 image (getPdfPreviewUrl exists in cloudinary.ts!) -> analyze as image.
   Strategy: convert everything to an image URL, then reuse existing photo-analyzer.
   getPdfPreviewUrl + getVideoFrameUrl already do Cloudinary transforms — lean on those.
+
+---
+## SESSION REPORT 10/06/2026 (afternoon) — leftovers cleared (1+2+4)
+SHIPPED (committed + deployed):
+- #1 LINK LEAD TO EXISTING CUSTOMER: fetchCustomersLite + linkLeadToExisting + "קשר לקיים"
+  picker dropdown on lead card. Logs inquiry as note on customer timeline. Repeat clients solved.
+- #2 CLEANUP: deleted unused InstagramDmIntake.tsx (superseded by PastedLeadIntake).
+- #4 ANALYZE-ANYTHING INTAKE (core): PDF spec sheets now analyzed — PhotoAnalyzer converts
+  PDF page-1 to JPEG via getPdfPreviewUrl, page routes 'pdf' to PhotoAnalyzer. PROVEN: read a
+  4-sample stone spec sheet, extracted all stone names + design intent. Screenshots already
+  worked (they're images). URL (Pinterest/IG) DELIBERATELY NOT BUILT — sites block scraping,
+  fragile. Notice updated to guide user: screenshot the link, upload as photo.
+
+DECISIONS:
+  - URL-fetch parked permanently: anti-scraping + brittle. Screenshot workaround is reliable.
+  - Cloudinary PDF delivery works (no settings issue hit).
+
+REMAINING (all minor/optional):
+  - intake video path (photo-analyzer can't do video) — but SinC handles video, so moot.
+  - middleware->proxy rename (deferred, auth-gate risk).
+  - prompt template polish beyond hero mode (optional).
