@@ -1,4 +1,4 @@
-/**
+﻿/**
  * prompts.ts
  *
  * Hebrew prompts for marble-sink-specific media analysis.
@@ -20,7 +20,10 @@ export const MEDIA_ANALYSIS_JSON_SCHEMA = `
   "extracted_shape":      "צורה כללית בעברית (כגון 'אובלי', 'מלבני', 'חופשי', 'אגרוף') או null",
   "design_intent_he":     "פסקה קצרה (1-3 משפטים) בעברית: מה הלקוח רוצה לקבל מהכיור הזה? סגנון, אווירה, שימוש מיועד.",
   "reference_summary_he": "פסקה קצרה (1-2 משפטים) בעברית: מה רואים בתמונה/הסרטון/המסמך הזה? תיאור עובדתי בלבד.",
-  "additional_notes_he":  "הערות חופשיות בעברית — דברים שהאמן צריך לדעת לפני שמכין הצעת מחיר. אם אין הערות, החזר null."
+  "additional_notes_he":  "הערות חופשיות בעברית — דברים שהאמן צריך לדעת לפני שמכין הצעת מחיר. אם אין הערות, החזר null.",
+  "detected_mount":       "סוג התקנה אם ניתן לזהות: 'wall' (תלוי קיר) / 'countertop' (משטח) / null",
+  "detected_tap_hole":    "האם יש חור לברז על הכיור? true / false / null",
+  "detected_drain":       "סוג ניקוז אם ניתן לזהות: 'round' (עגול) / 'linear' (תעלה) / null"
 }
 `.trim();
 
