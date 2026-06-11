@@ -6,6 +6,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ProductionOrder, issuePO, updatePOCost, updatePOShipTo, addChangeOrder, addAmendment, addRemark } from '@/lib/po/poData';
+import PoAssetsConfirm from './PoAssetsConfirm';
 
 function fmtDate(iso: string | null) { return iso ? new Date(iso).toLocaleDateString('he-IL') : '—'; }
 
@@ -112,7 +113,7 @@ export default function PoDocument({ po }: { po: ProductionOrder }) {
               ))}
             </div>
           ) : <div className="text-xs text-stone-400 mb-2">אין שינויים.</div>}
-          {!issued && (
+      {!issued && (
             <div className="flex gap-2">
               <input value={coDesc} onChange={(e) => setCoDesc(e.target.value)} placeholder="תיאור השינוי" className="flex-1 px-2 py-1.5 text-sm border border-stone-300 rounded-md" dir="rtl" />
               <input type="number" value={coCost} onChange={(e) => setCoCost(Number(e.target.value) || 0)} placeholder="עלות" className="w-24 px-2 py-1.5 text-sm border border-stone-300 rounded-md" dir="ltr" />
@@ -130,7 +131,7 @@ export default function PoDocument({ po }: { po: ProductionOrder }) {
               ))}
             </div>
           ) : <div className="text-xs text-stone-400 mb-2">אין תיקונים.</div>}
-          {!issued && (
+      {!issued && (
             <div className="flex gap-2">
               <input value={amDesc} onChange={(e) => setAmDesc(e.target.value)} placeholder="תיאור התיקון הרשמי" className="flex-1 px-2 py-1.5 text-sm border border-stone-300 rounded-md" dir="rtl" />
               <button onClick={addAM} disabled={busy} className="text-xs px-3 bg-blue-600 text-white rounded-md hover:bg-blue-700">הוסף</button>
@@ -154,6 +155,8 @@ export default function PoDocument({ po }: { po: ProductionOrder }) {
           </div>
         </div>
       </div>
+
+      <PoAssetsConfirm po={po} />
 
       {!issued && (
         <div className="flex justify-end">
