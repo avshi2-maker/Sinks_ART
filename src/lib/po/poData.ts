@@ -151,3 +151,16 @@ export async function updatePOCost(id: string, agreedCostIls: number): Promise<P
   revalidatePath('/po/' + id);
   return { ok: true, id };
 }
+
+export async function updatePOShipTo(id: string, fields: { ship_to_name?: string; ship_to_phone?: string; ship_to_address?: string; ship_to_city?: string }): Promise<POResult> {
+  const res = await sb().from('production_orders').update({
+    ship_to_name: fields.ship_to_name ?? null,
+    ship_to_phone: fields.ship_to_phone ?? null,
+    ship_to_address: fields.ship_to_address ?? null,
+    ship_to_city: fields.ship_to_city ?? null,
+    updated_at: new Date().toISOString(),
+  }).eq('id', id);
+  if (res.error) return { ok: false, error: res.error.message };
+  revalidatePath('/po/' + id);
+  return { ok: true, id };
+}
