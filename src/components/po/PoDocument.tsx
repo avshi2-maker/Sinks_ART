@@ -5,7 +5,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ProductionOrder, issuePO, updatePOCost, updatePOShipTo } from '@/lib/po/poData';
+import { ProductionOrder, issuePO, updatePOCost, updatePOShipTo, addChangeOrder, addAmendment, addRemark } from '@/lib/po/poData';
 
 function fmtDate(iso: string | null) { return iso ? new Date(iso).toLocaleDateString('he-IL') : '—'; }
 
@@ -15,6 +15,14 @@ export default function PoDocument({ po }: { po: ProductionOrder }) {
   const [cost, setCost] = useState(po.agreed_cost_ils || 0);
   const [ship, setShip] = useState({ name: po.ship_to_name || '', phone: po.ship_to_phone || '', address: po.ship_to_address || '', city: po.ship_to_city || '' });
   async function saveShip() { setBusy(true); await updatePOShipTo(po.id, { ship_to_name: ship.name, ship_to_phone: ship.phone, ship_to_address: ship.address, ship_to_city: ship.city }); setBusy(false); router.refresh(); }
+  const [coDesc, setCoDesc] = useState(''); const [coCost, setCoCost] = useState(0);
+  const [amDesc, setAmDesc] = useState('');
+  const [reText, setReText] = useState(''); const [reAuthor, setReAuthor] = useState('אבשי');
+  const coTotal = po.agreed_cost_ils + po.change_orders.reduce((s, c) => s + (c.cost_delta || 0), 0);
+  async function addCO() { if (!coDesc.trim()) return; setBusy(true); await addChangeOrder(po.id, coDesc, coCost, po.change_orders.length); setCoDesc(''); setCoCost(0); setBusy(false); router.refresh(); }
+  async function addAM() { if (!amDesc.trim()) return; setBusy(true); await addAmendment(po.id, amDesc, po.amendments.length); setAmDesc(''); setBusy(false); router.refresh(); }
+  async function addRE() { if (!reText.trim()) return; setBusy(true); await addRemark(po.id, reAuthor, reText); setReText(''); setBusy(false); router.refresh(); }
+  function fmtDT(iso: string) { return new Date(iso).toLocaleDateString('he-IL'); }
   const [busy, setBusy] = useState(false);
 
   async function saveCost() {
@@ -85,6 +93,65 @@ export default function PoDocument({ po }: { po: ProductionOrder }) {
               <button onClick={saveCost} disabled={busy} className="text-xs px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700">שמור</button>
             </span>
           )}
+        </div>
+      </div>
+
+      <div className="bg-white border border-stone-200 rounded-lg p-5 space-y-5">
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-semibold text-stone-700">שינויים (Change Orders)</span>
+            <span className="text-sm font-semibold text-blue-700">סה"כ ₪{coTotal.toLocaleString('he-IL')}</span>
+          </div>
+          {po.change_orders.length > 0 ? (
+            <div className="space-y-1 mb-2">
+              {po.change_orders.map((c, i) => (
+                <div key={i} className="flex items-center justify-between text-sm bg-stone-50 rounded-md px-3 py-1.5">
+                  <span className="text-stone-700"><b>{c.seq}</b> · {fmtDT(c.date)} · {c.description}</span>
+                  <span className="text-stone-600">{c.cost_delta >= 0 ? '+' : ''}₪{c.cost_delta.toLocaleString('he-IL')}</span>
+                </div>
+              ))}
+            </div>
+          ) : <div className="text-xs text-stone-400 mb-2">אין שינויים.</div>}
+          {!issued && (
+            <div className="flex gap-2">
+              <input value={coDesc} onChange={(e) => setCoDesc(e.target.value)} placeholder="תיאור השינוי" className="flex-1 px-2 py-1.5 text-sm border border-stone-300 rounded-md" dir="rtl" />
+              <input type="number" value={coCost} onChange={(e) => setCoCost(Number(e.target.value) || 0)} placeholder="עלות" className="w-24 px-2 py-1.5 text-sm border border-stone-300 rounded-md" dir="ltr" />
+              <button onClick={addCO} disabled={busy} className="text-xs px-3 bg-blue-600 text-white rounded-md hover:bg-blue-700">הוסף</button>
+            </div>
+          )}
+        </div>
+
+        <div className="border-t border-stone-100 pt-4">
+          <div className="text-sm font-semibold text-stone-700 mb-2">תיקונים רשמיים (Amendments)</div>
+          {po.amendments.length > 0 ? (
+            <div className="space-y-1 mb-2">
+              {po.amendments.map((a, i) => (
+                <div key={i} className="text-sm bg-stone-50 rounded-md px-3 py-1.5 text-stone-700"><b>{a.seq}</b> · {fmtDT(a.date)} · {a.description}</div>
+              ))}
+            </div>
+          ) : <div className="text-xs text-stone-400 mb-2">אין תיקונים.</div>}
+          {!issued && (
+            <div className="flex gap-2">
+              <input value={amDesc} onChange={(e) => setAmDesc(e.target.value)} placeholder="תיאור התיקון הרשמי" className="flex-1 px-2 py-1.5 text-sm border border-stone-300 rounded-md" dir="rtl" />
+              <button onClick={addAM} disabled={busy} className="text-xs px-3 bg-blue-600 text-white rounded-md hover:bg-blue-700">הוסף</button>
+            </div>
+          )}
+        </div>
+
+        <div className="border-t border-stone-100 pt-4">
+          <div className="text-sm font-semibold text-stone-700 mb-2">הערות (Remarks)</div>
+          {po.remarks_log.length > 0 ? (
+            <div className="space-y-1 mb-2">
+              {po.remarks_log.map((r, i) => (
+                <div key={i} className="text-sm bg-stone-50 rounded-md px-3 py-1.5 text-stone-700"><b>{r.author}</b> · {fmtDT(r.date)} · {r.text}</div>
+              ))}
+            </div>
+          ) : <div className="text-xs text-stone-400 mb-2">אין הערות.</div>}
+          <div className="flex gap-2">
+            <select value={reAuthor} onChange={(e) => setReAuthor(e.target.value)} className="px-2 py-1.5 text-sm border border-stone-300 rounded-md bg-white" dir="rtl"><option>אבשי</option><option>אלס</option></select>
+            <input value={reText} onChange={(e) => setReText(e.target.value)} placeholder="הערה חופשית" className="flex-1 px-2 py-1.5 text-sm border border-stone-300 rounded-md" dir="rtl" />
+            <button onClick={addRE} disabled={busy} className="text-xs px-3 bg-blue-600 text-white rounded-md hover:bg-blue-700">הוסף</button>
+          </div>
         </div>
       </div>
 
