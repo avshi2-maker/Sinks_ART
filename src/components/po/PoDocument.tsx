@@ -125,7 +125,7 @@ export default function PoDocument({ po, addonNames = [], customers = [] }: { po
             <span className="text-lg font-semibold text-blue-700">₪{po.agreed_cost_ils.toLocaleString('he-IL')}</span>
           ) : (
             <span className="flex items-center gap-2">
-              <input type="number" value={cost} onChange={(e) => setCost(Number(e.target.value) || 0)} className="w-28 px-2 py-1 text-sm border border-stone-300 rounded-md" dir="ltr" />
+              <input type="number" value={cost || ''} onChange={(e) => setCost(Number(e.target.value) || 0)} className="w-28 px-2 py-1 text-sm border border-stone-300 rounded-md" dir="ltr" />
               <button onClick={saveCost} disabled={busy} className="text-xs px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700">שמור</button>
             </span>
           )}
@@ -136,7 +136,7 @@ export default function PoDocument({ po, addonNames = [], customers = [] }: { po
         <div>
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-semibold text-stone-700">שינויים (Change Orders)</span>
-            <span className="text-sm font-semibold text-blue-700">סה"כ ₪{coTotal.toLocaleString('he-IL')}</span>
+            <span className="text-sm font-semibold text-blue-700">סה"כ הזמנה: ₪{coTotal.toLocaleString('he-IL')} <span className="text-xs font-normal text-stone-400">(בסיס ₪{po.agreed_cost_ils.toLocaleString('he-IL')} + שינויים ₪{(coTotal - po.agreed_cost_ils).toLocaleString('he-IL')})</span></span>
           </div>
           {po.change_orders.length > 0 ? (
             <div className="space-y-1 mb-2">
@@ -152,7 +152,7 @@ export default function PoDocument({ po, addonNames = [], customers = [] }: { po
             <div className="flex gap-2">
 <select onChange={(e) => { if (e.target.value) setCoDesc(e.target.value); }} value="" className="px-2 py-1.5 text-sm border border-stone-300 rounded-md bg-white" dir="rtl"><option value="">בחר מוכן...</option>{presets.map((p) => (<option key={p} value={p}>{p}</option>))}</select>
               <input value={coDesc} onChange={(e) => setCoDesc(e.target.value)} placeholder="או הקלד שינוי חופשי" className="flex-1 px-2 py-1.5 text-sm border border-stone-300 rounded-md" dir="rtl" />
-              <input type="number" value={coCost} onChange={(e) => setCoCost(Number(e.target.value) || 0)} placeholder="עלות" className="w-24 px-2 py-1.5 text-sm border border-stone-300 rounded-md" dir="ltr" />
+              <input type="number" value={coCost || ''} onChange={(e) => setCoCost(Number(e.target.value) || 0)} placeholder="עלות" className="w-24 px-2 py-1.5 text-sm border border-stone-300 rounded-md" dir="ltr" />
               <button onClick={addCO} disabled={busy} className="text-xs px-3 bg-blue-600 text-white rounded-md hover:bg-blue-700">הוסף</button>
             </div>
           )}
