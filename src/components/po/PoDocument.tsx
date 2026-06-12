@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ProductionOrder, issuePO, updatePOCost, updatePOShipTo, addChangeOrder, addAmendment, addRemark } from '@/lib/po/poData';
 import PoAssetsConfirm from './PoAssetsConfirm';
+import PoSendBar from './PoSendBar';
 
 function fmtDate(iso: string | null) { return iso ? new Date(iso).toLocaleDateString('he-IL') : '—'; }
 
@@ -184,6 +185,8 @@ export default function PoDocument({ po }: { po: ProductionOrder }) {
       </div>
 
       <PoAssetsConfirm po={po} />
+
+      <PoSendBar po={po} />
 
       {!issued && (
         <div className="flex flex-col items-end gap-1">
