@@ -4,6 +4,8 @@
 // Spec form + live technical-sketch preview + download/print. RTL Hebrew.
 
 import { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { createPO } from '@/lib/po/poData';
 import { renderSinkSketch, SketchSpec, SketchShape, SketchMount, SketchDrain } from '@/lib/sketch/sketchRenderer';
 
 const SHAPES: { v: SketchShape; he: string }[] = [
@@ -24,6 +26,8 @@ const DEFAULTS: SketchSpec = {
 };
 
 export default function SketchBuilder({ initial }: SketchBuilderProps) {
+  const router = useRouter();
+  const [poBusy, setPoBusy] = useState(false);
   const [spec, setSpec] = useState<SketchSpec>({ ...DEFAULTS, ...initial });
   const svg = useMemo(() => renderSinkSketch(spec), [spec]);
 
@@ -50,6 +54,17 @@ export default function SketchBuilder({ initial }: SketchBuilderProps) {
     w.document.close();
     w.focus();
     setTimeout(() => w.print(), 300);
+  }
+
+  async function sendToPO() {
+    setPoBusy(true);
+    const res = await createPO({
+      sketchSpec: spec as unknown as Record<string, unknown>,
+      sketchSvg: svg,
+    });
+    setPoBusy(false);
+    if (!res.ok || !res.id) { window.alert('יצירת הזמנה נכשלה: ' + (res.error || '')); return; }
+    router.push('/po/' + res.id);
   }
 
   function whatsappToAles() {
@@ -121,6 +136,7 @@ export default function SketchBuilder({ initial }: SketchBuilderProps) {
           <button onClick={downloadSvg} className="text-sm px-4 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700">⬇️ הורד SVG</button>
           <button onClick={printSketch} className="text-sm px-4 py-1.5 bg-stone-700 text-white rounded-md hover:bg-stone-800">🖨️ הדפס</button>
           <button onClick={whatsappToAles} className="text-sm px-4 py-1.5 bg-green-600 text-white rounded-md hover:bg-green-700">💬 שלח לאלס</button>
+          <button onClick={sendToPO} disabled={poBusy} className="text-sm px-4 py-1.5 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50">📋 {poBusy ? 'יוצר...' : 'צור הזמנת ייצור'}</button>
         </div>
       </div>
       <div className="border border-stone-200 rounded-lg p-2 bg-white" dangerouslySetInnerHTML={{ __html: svg }} />

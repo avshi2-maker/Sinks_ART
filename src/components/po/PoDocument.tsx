@@ -84,6 +84,15 @@ export default function PoDocument({ po }: { po: ProductionOrder }) {
           )}
         </div>
 
+        {po.sketch_svg ? (
+          <div className="mb-4">
+            <div className="text-sm font-semibold text-stone-700 mb-2">שרטוט ייצור</div>
+            <div className="border border-stone-200 rounded-md p-2 bg-white" dangerouslySetInnerHTML={{ __html: po.sketch_svg }} />
+          </div>
+        ) : (
+          <div className="mb-4 text-xs text-stone-400">אין שרטוט מצורף. ניתן ליצור הזמנה מעמוד השרטוט (📐).</div>
+        )}
+
         <div className="mt-4 flex items-center justify-between bg-blue-50 rounded-md px-4 py-3">
           <span className="text-sm text-blue-700">עלות מוסכמת (מחיר אלס)</span>
           {issued ? (
