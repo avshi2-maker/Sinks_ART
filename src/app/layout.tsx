@@ -1,6 +1,7 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import { Frank_Ruhl_Libre, Heebo } from "next/font/google";
 import "./globals.css";
+import TopNav from "@/components/shared/TopNav";
 
 const frankRuhl = Frank_Ruhl_Libre({
   variable: "--font-frank-ruhl",
@@ -30,7 +31,10 @@ export default function RootLayout({
         className={`${frankRuhl.variable} ${heebo.variable} antialiased`}
         style={{ fontFamily: "var(--font-heebo), system-ui, sans-serif" }}
       >
-        {children}
+        <div className="min-h-screen bg-gray-50" dir="rtl">
+          <TopNav />
+          {children}
+        </div>
       </body>
     </html>
   );
