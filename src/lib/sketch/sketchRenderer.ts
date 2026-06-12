@@ -85,7 +85,8 @@ export function renderSinkSketch(spec: SketchSpec): string {
   const secH = spec.heightMm * scaleSec;
   const swt = spec.wallThicknessMm * scaleSec;
   const basinTop = sy + (spec.heightMm - spec.basinDepthMm) * scaleSec;
-  const dropPx = (spec.lengthMm / 2) * (pitch / 100) * scaleSec;
+  const trueDropPx = (spec.lengthMm / 2) * (pitch / 100) * scaleSec;
+  const dropPx = pitch > 0 ? Math.max(trueDropPx, 14) : 0; // exaggerate for visibility; label carries true %
   const floorEdgeY = sy + secH - swt;
   const floorCenterY = floorEdgeY + dropPx;
   const cx = sx + secW / 2;

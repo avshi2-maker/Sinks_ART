@@ -6,6 +6,7 @@
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createPO } from '@/lib/po/poData';
+import { MarbleSwatch } from '@/lib/marble/marbleData';
 import { renderSinkSketch, SketchSpec, SketchShape, SketchMount, SketchDrain } from '@/lib/sketch/sketchRenderer';
 
 const SHAPES: { v: SketchShape; he: string }[] = [
@@ -17,7 +18,7 @@ const SHAPES: { v: SketchShape; he: string }[] = [
   { v: 'custom', he: 'חופשי' },
 ];
 
-export interface SketchBuilderProps { initial?: Partial<SketchSpec>; }
+export interface SketchBuilderProps { initial?: Partial<SketchSpec>; swatches?: MarbleSwatch[]; }
 
 const DEFAULTS: SketchSpec = {
   modelName: 'כיור שיש', shape: 'rectangle',
@@ -25,7 +26,7 @@ const DEFAULTS: SketchSpec = {
   mount: 'wall', tapHole: false, drain: 'round', exteriorStone: '', interiorStone: '', pitchPct: 1.5,
 };
 
-export default function SketchBuilder({ initial }: SketchBuilderProps) {
+export default function SketchBuilder({ initial, swatches = [] }: SketchBuilderProps) {
   const router = useRouter();
   const [poBusy, setPoBusy] = useState(false);
   const [cmIn, setCmIn] = useState(0);
@@ -162,10 +163,12 @@ export default function SketchBuilder({ initial }: SketchBuilderProps) {
           <label className="block">
             <span className="block text-xs font-medium text-stone-600 mb-1">שיש חוץ (sample A)</span>
             <input value={spec.exteriorStone} onChange={(e) => set('exteriorStone', e.target.value)} placeholder="קרארה" className="w-full px-2 py-1.5 text-sm border border-stone-300 rounded-md" dir="rtl" />
+            {swatches.length > 0 && (<div className="flex gap-1 overflow-x-auto mt-1 pb-1">{swatches.map((sw) => (<button key={sw.id} type="button" title={sw.name_en} onClick={() => set('exteriorStone', sw.name_he || sw.name_en)} className={'shrink-0 w-9 h-9 rounded border-2 overflow-hidden ' + (spec.exteriorStone === (sw.name_he || sw.name_en) ? 'border-blue-500' : 'border-transparent')}><img src={sw.image_url} alt={sw.name_en} className="w-full h-full object-cover" /></button>))}</div>)}
           </label>
           <label className="block">
             <span className="block text-xs font-medium text-stone-600 mb-1">שיש פנים (sample B)</span>
             <input value={spec.interiorStone} onChange={(e) => set('interiorStone', e.target.value)} placeholder="נרו מרקינה" className="w-full px-2 py-1.5 text-sm border border-stone-300 rounded-md" dir="rtl" />
+            {swatches.length > 0 && (<div className="flex gap-1 overflow-x-auto mt-1 pb-1">{swatches.map((sw) => (<button key={sw.id} type="button" title={sw.name_en} onClick={() => set('interiorStone', sw.name_he || sw.name_en)} className={'shrink-0 w-9 h-9 rounded border-2 overflow-hidden ' + (spec.interiorStone === (sw.name_he || sw.name_en) ? 'border-blue-500' : 'border-transparent')}><img src={sw.image_url} alt={sw.name_en} className="w-full h-full object-cover" /></button>))}</div>)}
           </label>
         </div>
         <div className="flex flex-wrap gap-2 pt-2">
