@@ -6,6 +6,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ProductionOrder, issuePO, updatePOCost, updatePOShipTo, addChangeOrder, addAmendment, addRemark } from '@/lib/po/poData';
+import { CustomerLite } from '@/lib/leads/leadsData';
 import PoAssetsConfirm from './PoAssetsConfirm';
 import PoSendBar from './PoSendBar';
 
@@ -24,7 +25,7 @@ const CO_PRESETS = [
   'שינוי עומק אגן',
 ];
 
-export default function PoDocument({ po, addonNames = [] }: { po: ProductionOrder; addonNames?: string[] }) {
+export default function PoDocument({ po, addonNames = [], customers = [] }: { po: ProductionOrder; addonNames?: string[]; customers?: CustomerLite[] }) {
   const presets = addonNames.length > 0 ? addonNames : CO_PRESETS;
   const router = useRouter();
   const issued = po.status === 'issued';
@@ -92,6 +93,12 @@ export default function PoDocument({ po, addonNames = [] }: { po: ProductionOrde
             </div>
           ) : (
             <div className="space-y-2">
+              {customers.length > 0 && (
+                <select onChange={(e) => { const cust = customers.find((x) => x.id === e.target.value); if (cust) setShip({ ...ship, name: cust.name_he, phone: cust.phone || '' }); }} value="" className="w-full px-2 py-1.5 text-sm border border-blue-300 rounded-md bg-blue-50" dir="rtl">
+                  <option value="">בחר לקוח קיים מה-CRM...</option>
+                  {customers.map((c) => (<option key={c.id} value={c.id}>{c.name_he}{c.phone ? ' · ' + c.phone : ''}</option>))}
+                </select>
+              )}
               <div className="grid grid-cols-2 gap-2">
                 <input value={ship.name} onChange={(e) => setShip({ ...ship, name: e.target.value })} placeholder="שם הלקוח" className="px-2 py-1.5 text-sm border border-stone-300 rounded-md" dir="rtl" />
                 <input value={ship.phone} onChange={(e) => setShip({ ...ship, phone: e.target.value })} placeholder="טלפון נייד (05X-XXXXXXX)" className={'px-2 py-1.5 text-sm border rounded-md ' + (ship.phone === '' ? 'border-stone-300' : phoneValid ? 'border-green-400 bg-green-50' : 'border-red-300 bg-red-50')} dir="ltr" />
