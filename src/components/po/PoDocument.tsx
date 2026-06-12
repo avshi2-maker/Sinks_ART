@@ -10,11 +10,28 @@ import PoAssetsConfirm from './PoAssetsConfirm';
 
 function fmtDate(iso: string | null) { return iso ? new Date(iso).toLocaleDateString('he-IL') : '—'; }
 
+const CO_PRESETS = [
+  'שינוי סוג ניקוז (עגול / תעלה)',
+  'הוספת חור ברז',
+  'ביטול חור ברז',
+  'החלפת גוון שיש חוץ',
+  'החלפת גוון שיש פנים',
+  'שינוי סוג התקנה (קיר / משטח)',
+  'שינוי מידות',
+  'הוספת אגן שני',
+  'עיבוד / גימור מיוחד',
+  'שינוי עומק אגן',
+];
+
 export default function PoDocument({ po }: { po: ProductionOrder }) {
   const router = useRouter();
   const issued = po.status === 'issued';
   const [cost, setCost] = useState(po.agreed_cost_ils || 0);
   const [ship, setShip] = useState({ name: po.ship_to_name || '', phone: po.ship_to_phone || '', address: po.ship_to_address || '', city: po.ship_to_city || '' });
+  const phoneDigits = ship.phone.replace(/\D/g, '');
+  const phoneValid = /^05\d{8}$/.test(phoneDigits);
+  const nameValid = ship.name.trim().length > 1;
+  const canIssue = nameValid && phoneValid && (po.agreed_cost_ils > 0);
   async function saveShip() { setBusy(true); await updatePOShipTo(po.id, { ship_to_name: ship.name, ship_to_phone: ship.phone, ship_to_address: ship.address, ship_to_city: ship.city }); setBusy(false); router.refresh(); }
   const [coDesc, setCoDesc] = useState(''); const [coCost, setCoCost] = useState(0);
   const [amDesc, setAmDesc] = useState('');
@@ -75,7 +92,7 @@ export default function PoDocument({ po }: { po: ProductionOrder }) {
             <div className="space-y-2">
               <div className="grid grid-cols-2 gap-2">
                 <input value={ship.name} onChange={(e) => setShip({ ...ship, name: e.target.value })} placeholder="שם הלקוח" className="px-2 py-1.5 text-sm border border-stone-300 rounded-md" dir="rtl" />
-                <input value={ship.phone} onChange={(e) => setShip({ ...ship, phone: e.target.value })} placeholder="טלפון" className="px-2 py-1.5 text-sm border border-stone-300 rounded-md" dir="ltr" />
+                <input value={ship.phone} onChange={(e) => setShip({ ...ship, phone: e.target.value })} placeholder="טלפון נייד (05X-XXXXXXX)" className={'px-2 py-1.5 text-sm border rounded-md ' + (ship.phone === '' ? 'border-stone-300' : phoneValid ? 'border-green-400 bg-green-50' : 'border-red-300 bg-red-50')} dir="ltr" />
                 <input value={ship.address} onChange={(e) => setShip({ ...ship, address: e.target.value })} placeholder="כתובת" className="px-2 py-1.5 text-sm border border-stone-300 rounded-md" dir="rtl" />
                 <input value={ship.city} onChange={(e) => setShip({ ...ship, city: e.target.value })} placeholder="עיר" className="px-2 py-1.5 text-sm border border-stone-300 rounded-md" dir="rtl" />
               </div>
@@ -124,7 +141,8 @@ export default function PoDocument({ po }: { po: ProductionOrder }) {
           ) : <div className="text-xs text-stone-400 mb-2">אין שינויים.</div>}
       {!issued && (
             <div className="flex gap-2">
-              <input value={coDesc} onChange={(e) => setCoDesc(e.target.value)} placeholder="תיאור השינוי" className="flex-1 px-2 py-1.5 text-sm border border-stone-300 rounded-md" dir="rtl" />
+<select onChange={(e) => { if (e.target.value) setCoDesc(e.target.value); }} value="" className="px-2 py-1.5 text-sm border border-stone-300 rounded-md bg-white" dir="rtl"><option value="">בחר מוכן...</option>{CO_PRESETS.map((p) => (<option key={p} value={p}>{p}</option>))}</select>
+              <input value={coDesc} onChange={(e) => setCoDesc(e.target.value)} placeholder="או הקלד שינוי חופשי" className="flex-1 px-2 py-1.5 text-sm border border-stone-300 rounded-md" dir="rtl" />
               <input type="number" value={coCost} onChange={(e) => setCoCost(Number(e.target.value) || 0)} placeholder="עלות" className="w-24 px-2 py-1.5 text-sm border border-stone-300 rounded-md" dir="ltr" />
               <button onClick={addCO} disabled={busy} className="text-xs px-3 bg-blue-600 text-white rounded-md hover:bg-blue-700">הוסף</button>
             </div>
@@ -168,8 +186,11 @@ export default function PoDocument({ po }: { po: ProductionOrder }) {
       <PoAssetsConfirm po={po} />
 
       {!issued && (
-        <div className="flex justify-end">
-          <button onClick={issue} disabled={busy} className="px-5 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 disabled:opacity-50">🔒 הנפק הזמנה (נעילה)</button>
+        <div className="flex flex-col items-end gap-1">
+          {!canIssue && (
+            <div className="text-xs text-amber-600">לפני הנפקה יש למלא: שם לקוח, נייד תקין, ועלות מוסכמת.</div>
+          )}
+          <button onClick={issue} disabled={busy || !canIssue} className="px-5 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed">🔒 הנפק הזמנה (נעילה)</button>
         </div>
       )}
     </div>
