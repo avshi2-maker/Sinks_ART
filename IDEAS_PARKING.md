@@ -813,3 +813,21 @@ Pick based on energy at start of next session:
 3. Measure conversion lift over 30 days vs baseline (compare leads who got הדמיה vs leads who didn't)
 4. If conversion lift > 2x: invest in instant generation + 2 images + regenerate option
 5. If conversion lift < 1.5x: kill the feature, save the cost
+
+---
+## PO FOOTERS — parked 12/06/2026 (to build next session)
+
+### Idea 1: Customer signature / approval footer
+- Customer signs the PO with a signature pad (added to the PO document).
+- Customer can add a free-text remark.
+- Customer pushes back acceptance of the PO + terms to Avshi.
+- The signed approval lands in a DEDICATED TAB for reference + follow-up (a signed-POs archive).
+- Open question: signature pad library choice; where the signed record is stored (new table? a status on production_orders?); how the customer accesses it (link? in-person on Avshi device?).
+
+### Idea 2: Constant footer remark (back-to-back clarity)
+- A fixed remark on every PO: "Once signed, Ales provides the official PO + invoice + payment receipts directly. The entire commercial process is back-to-back Customer <-> Ales."
+- Purpose: make Avshi's promoter-only role explicit and keep him out of the commercial/liability chain (liability handled separately via standalone Ales agreement + Gadi review).
+
+### Related smaller items
+- Payment terms: free-text box on the PO.
+- VAT note: constant "כל המחירים כוללים מע"מ" shown on the PO.
