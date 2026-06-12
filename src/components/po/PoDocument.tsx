@@ -24,7 +24,8 @@ const CO_PRESETS = [
   'שינוי עומק אגן',
 ];
 
-export default function PoDocument({ po }: { po: ProductionOrder }) {
+export default function PoDocument({ po, addonNames = [] }: { po: ProductionOrder; addonNames?: string[] }) {
+  const presets = addonNames.length > 0 ? addonNames : CO_PRESETS;
   const router = useRouter();
   const issued = po.status === 'issued';
   const [cost, setCost] = useState(po.agreed_cost_ils || 0);
@@ -142,7 +143,7 @@ export default function PoDocument({ po }: { po: ProductionOrder }) {
           ) : <div className="text-xs text-stone-400 mb-2">אין שינויים.</div>}
       {!issued && (
             <div className="flex gap-2">
-<select onChange={(e) => { if (e.target.value) setCoDesc(e.target.value); }} value="" className="px-2 py-1.5 text-sm border border-stone-300 rounded-md bg-white" dir="rtl"><option value="">בחר מוכן...</option>{CO_PRESETS.map((p) => (<option key={p} value={p}>{p}</option>))}</select>
+<select onChange={(e) => { if (e.target.value) setCoDesc(e.target.value); }} value="" className="px-2 py-1.5 text-sm border border-stone-300 rounded-md bg-white" dir="rtl"><option value="">בחר מוכן...</option>{presets.map((p) => (<option key={p} value={p}>{p}</option>))}</select>
               <input value={coDesc} onChange={(e) => setCoDesc(e.target.value)} placeholder="או הקלד שינוי חופשי" className="flex-1 px-2 py-1.5 text-sm border border-stone-300 rounded-md" dir="rtl" />
               <input type="number" value={coCost} onChange={(e) => setCoCost(Number(e.target.value) || 0)} placeholder="עלות" className="w-24 px-2 py-1.5 text-sm border border-stone-300 rounded-md" dir="ltr" />
               <button onClick={addCO} disabled={busy} className="text-xs px-3 bg-blue-600 text-white rounded-md hover:bg-blue-700">הוסף</button>

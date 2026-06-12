@@ -20,10 +20,11 @@ export default function MarbleManager({ swatches }: { swatches: MarbleSwatch[] }
     if (!file) return;
     setBusy(true);
     try {
-      const up = await uploadToCloudinary(file, 'marble-swatches');
+      const timeout = new Promise<never>((_, rej) => setTimeout(() => rej(new Error('timeout - נסה שוב')), 30000));
+      const up = await Promise.race([uploadToCloudinary(file, 'marble-swatches'), timeout]) as { url: string };
       setPendingUrl(up.url);
     } catch (err) {
-      window.alert('העלאה נכשלה: ' + (err instanceof Error ? err.message : ''));
+      window.alert('העלאה נכשלה: ' + (err instanceof Error ? err.message : '') + '\nנסה קובץ אחד בכל פעם.');
     }
     setBusy(false);
     e.target.value = '';

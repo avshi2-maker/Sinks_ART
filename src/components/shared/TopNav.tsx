@@ -14,6 +14,7 @@ const NAV_ITEMS = [
   { href: '/demos',          label: 'גלריה',  icon: '🎨' },
   { href: '/sketch',         label: 'שרטוט',  icon: '📐' },
   { href: '/marble',         label: 'שיש',    icon: '🪨' },
+  { href: '/addons',         label: 'תוספות', icon: '🧩' },
   { href: '/po',             label: 'הזמנות', icon: '📋' },
   { href: '/options',        label: 'מחירון', icon: '📖' },
   { href: '/quotes',         label: 'הצעות',  icon: '🧾' },
