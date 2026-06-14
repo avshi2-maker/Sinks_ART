@@ -4,6 +4,7 @@
 import Link from 'next/link';
 import { fetchOptions } from '@/lib/options/optionsCatalog';
 import OptionRowEditor from '@/components/options/OptionRowEditor';
+import AddOptionForm from '@/components/options/AddOptionForm';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -37,6 +38,7 @@ export default async function OptionsPage() {
         <Link href="/dashboard" className="text-sm text-blue-600 no-underline hover:underline">← חזרה ללוח הבקרה</Link>
       </div>
 
+      <AddOptionForm />
       {rows.length === 0 ? (
         <div className="bg-stone-50 border border-stone-200 rounded-lg px-4 py-8 text-center text-sm text-stone-500">המחירון ריק.</div>
       ) : (
