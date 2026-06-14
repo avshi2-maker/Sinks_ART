@@ -58,7 +58,7 @@ export default async function QuotesPage({ searchParams }: { searchParams: Promi
                 <th className="py-2 px-3 font-medium">לקוח</th>
                 <th className="py-2 px-3 font-medium">סכום</th>
                 <th className="py-2 px-3 font-medium">סטטוס</th>
-                <th className="py-2 px-3 font-medium">תאריך</th>
+                <th className="py-2 px-3 font-medium">תאריכים</th>
                 <th className="py-2 px-3 font-medium w-8"></th>
               </tr>
             </thead>
@@ -75,7 +75,7 @@ export default async function QuotesPage({ searchParams }: { searchParams: Promi
                       {QUOTE_STATUS_LABELS_HE[q.status as QuoteStatus] || q.status}
                     </span>
                   </td>
-                  <td className="py-3 px-3 text-stone-600 text-xs">{fmtDate(q.created_at)}</td>
+                  <td className="py-3 px-3 text-stone-600 text-xs"><div>נוצר: {fmtDate(q.created_at)}</div>{q.updated_at && q.updated_at !== q.created_at && (<div className="text-stone-400">עודכן: {fmtDate(q.updated_at)}</div>)}</td>
                   <td className="py-3 px-3 text-center"><DeleteQuoteButton quoteId={q.id} quoteNumber={q.quote_number} /></td>
                 </tr>
               ))}
