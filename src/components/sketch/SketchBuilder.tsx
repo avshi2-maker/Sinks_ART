@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 // src/components/sketch/SketchBuilder.tsx
 // Spec form + live technical-sketch preview + download/print. RTL Hebrew.
@@ -24,6 +24,7 @@ const DEFAULTS: SketchSpec = {
   modelName: 'כיור שיש', shape: 'rectangle',
   lengthMm: 600, widthMm: 400, heightMm: 150, basinDepthMm: 120, wallThicknessMm: 20,
   mount: 'wall', tapHole: false, drain: 'round', exteriorStone: '', interiorStone: '', pitchPct: 1.5,
+  wallLeftMm: 20, wallRightMm: 20, pitchLeftPct: 1.5, pitchRightPct: 1.5, drainRadiusMm: 0, stoneSiphonCover: false,
 };
 
 export default function SketchBuilder({ initial, swatches = [] }: SketchBuilderProps) {
@@ -77,10 +78,21 @@ export default function SketchBuilder({ initial, swatches = [] }: SketchBuilderP
   function printSketch() {
     const w = window.open('', '_blank');
     if (!w) return;
-    w.document.write('<html dir="rtl"><head><title>' + spec.modelName + '</title></head><body style="margin:0">' + svg + '</body></html>');
+    const m = svg.match(/viewBox="([\d.\s-]+)"/);
+    let landscape = false;
+    if (m && m[1]) {
+      const pp = m[1].trim().split(/\s+/).map(Number);
+      if (pp.length === 4 && pp[2] > pp[3]) landscape = true;
+    }
+    const pageSize = landscape ? 'A4 landscape' : 'A4 portrait';
+    const sheetW = landscape ? '277mm' : '190mm';
+    const sheetH = landscape ? '190mm' : '277mm';
+    const css = '@page { size: ' + pageSize + '; margin: 10mm; } * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; } html, body { margin: 0; padding: 0; } .sheet { width: ' + sheetW + '; height: ' + sheetH + '; display: flex; align-items: center; justify-content: center; page-break-inside: avoid; break-inside: avoid; } .sheet svg { width: 100%; height: 100%; max-width: 100%; max-height: 100%; }';
+    const title = spec.modelName || 'שרטוט';
+    w.document.write('<!DOCTYPE html><html dir="rtl" lang="he"><head><meta charset="utf-8"><title>' + title + '</title><style>' + css + '</style></head><body><div class="sheet">' + svg + '</div></body></html>');
     w.document.close();
     w.focus();
-    setTimeout(() => w.print(), 300);
+    setTimeout(() => w.print(), 500);
   }
 
   async function sendToPO() {
@@ -95,7 +107,20 @@ export default function SketchBuilder({ initial, swatches = [] }: SketchBuilderP
   }
 
   function whatsappToAles() {
-    const txt = encodeURIComponent('שרטוט ייצור: ' + spec.modelName + '\nצורה: ' + (SHAPES.find((s) => s.v === spec.shape)?.he || '') + '\nמידות: ' + spec.lengthMm + '×' + spec.widthMm + '×' + spec.heightMm + ' מ"מ\nחוץ: ' + spec.exteriorStone + ' · פנים: ' + spec.interiorStone + '\nניקוז: ' + (spec.drain === 'linear' ? 'תעלה' : 'עגול') + ' · ברז: ' + (spec.tapHole ? 'כן' : 'לא') + ' · התקנה: ' + (spec.mount === 'wall' ? 'קיר' : 'משטח'));
+    const wallTxt = (spec.wallLeftMm ?? spec.wallThicknessMm) + '/' + (spec.wallRightMm ?? spec.wallThicknessMm);
+    const pitchTxt = (spec.pitchLeftPct ?? spec.pitchPct ?? 0) + '%/' + (spec.pitchRightPct ?? spec.pitchPct ?? 0) + '%';
+    const drainTxt = (spec.drain === 'linear' ? 'תעלה' : 'עגול') + (spec.drainRadiusMm ? ' R' + spec.drainRadiusMm : '');
+    const siphonTxt = spec.stoneSiphonCover ? 'מאבן תואמת' : 'סטנדרטי';
+    const lines = [
+      'שרטוט ייצור: ' + spec.modelName,
+      'צורה: ' + (SHAPES.find((s) => s.v === spec.shape)?.he || ''),
+      'מידות: ' + spec.lengthMm + '×' + spec.widthMm + '×' + spec.heightMm + ' מ"מ',
+      'דפנות קצה (שמ/ימ): ' + wallTxt + ' מ"מ · שיפוע (שמ/ימ): ' + pitchTxt,
+      'חוץ: ' + spec.exteriorStone + ' · פנים: ' + spec.interiorStone,
+      'ניקוז: ' + drainTxt + ' · סיפון: ' + siphonTxt,
+      'ברז: ' + (spec.tapHole ? 'כן' : 'לא') + ' · התקנה: ' + (spec.mount === 'wall' ? 'קיר' : 'משטח'),
+    ];
+    const txt = encodeURIComponent(lines.join('\n'));
     window.open('https://api.whatsapp.com/send?text=' + txt, '_blank');
   }
 
@@ -135,9 +160,20 @@ export default function SketchBuilder({ initial, swatches = [] }: SketchBuilderP
         </div>
         <div className="grid grid-cols-3 gap-2">
           {numField('עומק אגן', 'basinDepthMm')}
-          {numField('עובי דופן', 'wallThicknessMm')}
-          <label className="block"><span className="block text-xs font-medium text-stone-600 mb-1">שיפוע ניקוז %</span><input type="number" step="0.1" value={spec.pitchPct ?? 0} onChange={(e) => set('pitchPct', Number(e.target.value) || 0)} className="w-full px-2 py-1.5 text-sm border border-stone-300 rounded-md" dir="ltr" /></label>
-          {spec.shape === 'trapezoid' ? numField('אורך אחורי', 'backLengthMm') : <div />}
+          {numField('עובי תחתית', 'wallThicknessMm')}
+          {numField('רדיוס ניקוז R', 'drainRadiusMm')}
+        </div>
+        <div className="bg-stone-50 border border-stone-200 rounded-md p-2 space-y-2">
+          <div className="text-xs font-semibold text-stone-700">דפנות קצה ושיפועים (לפי שרטוט הלקוח)</div>
+          <div className="grid grid-cols-2 gap-2">
+            {numField('דופן קצה שמאל (מ"מ)', 'wallLeftMm')}
+            {numField('דופן קצה ימין (מ"מ)', 'wallRightMm')}
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <label className="block"><span className="block text-xs font-medium text-stone-600 mb-1">שיפוע שמאל %</span><input type="number" step="0.1" value={spec.pitchLeftPct ?? 0} onChange={(e) => set('pitchLeftPct', Number(e.target.value) || 0)} className="w-full px-2 py-1.5 text-sm border border-stone-300 rounded-md" dir="ltr" /></label>
+            <label className="block"><span className="block text-xs font-medium text-stone-600 mb-1">שיפוע ימין %</span><input type="number" step="0.1" value={spec.pitchRightPct ?? 0} onChange={(e) => set('pitchRightPct', Number(e.target.value) || 0)} className="w-full px-2 py-1.5 text-sm border border-stone-300 rounded-md" dir="ltr" /></label>
+          </div>
+          {spec.shape === 'trapezoid' && (<div className="grid grid-cols-2 gap-2">{numField('אורך אחורי', 'backLengthMm')}<div /></div>)}
         </div>
         <div className="grid grid-cols-2 gap-2">
           <label className="block">
@@ -158,6 +194,10 @@ export default function SketchBuilder({ initial, swatches = [] }: SketchBuilderP
         <label className="flex items-center gap-2 text-sm text-stone-700">
           <input type="checkbox" checked={spec.tapHole} onChange={(e) => set('tapHole', e.target.checked)} />
           <span>חור ברז על הכיור</span>
+        </label>
+        <label className="flex items-center gap-2 text-sm text-stone-700">
+          <input type="checkbox" checked={!!spec.stoneSiphonCover} onChange={(e) => set('stoneSiphonCover', e.target.checked)} />
+          <span>סיפון מאבן תואמת</span>
         </label>
         <div className="grid grid-cols-2 gap-2">
           <label className="block">
