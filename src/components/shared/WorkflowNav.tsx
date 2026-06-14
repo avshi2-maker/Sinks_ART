@@ -27,7 +27,6 @@ export const STAGES: NavStage[] = [
   ] },
   { id: 'catalogs', label: 'קטלוגים', tools: [
     { href: '/marble', label: 'שיש', icon: '🪨' },
-    { href: '/addons', label: 'תוספות', icon: '🧩' },
     { href: '/options', label: 'מחירון', icon: '📖' },
     { href: '/sites', label: 'אתרים', icon: '🏨' },
     { href: '/roi', label: 'ROI', icon: '📊' },

@@ -1,6 +1,6 @@
 ﻿// src/app/po/[id]/page.tsx
 import { fetchPO } from '@/lib/po/poData';
-import { fetchAddons } from '@/lib/addons/addonsData';
+import { fetchActiveOptions } from '@/lib/options/optionsCatalog';
 import { fetchCustomersLite } from '@/lib/leads/leadsData';
 import PoDocument from '@/components/po/PoDocument';
 export const dynamic = 'force-dynamic';
@@ -11,11 +11,11 @@ export default async function PoDetailPage({ params }: { params: Promise<{ id: s
   if (!po) {
     return <div className="max-w-3xl mx-auto px-4 py-10 text-center text-stone-500" dir="rtl">ההזמנה לא נמצאה.</div>;
   }
-  const addons = await fetchAddons();
+  const options = await fetchActiveOptions();
   const customers = await fetchCustomersLite();
   return (
     <div className="max-w-3xl mx-auto px-4 py-6">
-      <PoDocument po={po} addonNames={addons.map((a) => a.name_he)} customers={customers} />
+      <PoDocument po={po} addonNames={options.map((o) => o.name_he)} customers={customers} />
     </div>
   );
 }
