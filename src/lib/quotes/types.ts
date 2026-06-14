@@ -89,6 +89,7 @@ export interface QuoteRow {
   rejected_at:         string | null;
 
   source:              QuoteSource;
+  rfq_images:          { url: string; label: string; uploaded_at: string }[] | null;
 }
 
 export interface QuoteLineRow {
