@@ -831,3 +831,9 @@ Pick based on energy at start of next session:
 ### Related smaller items
 - Payment terms: free-text box on the PO.
 - VAT note: constant "כל המחירים כוללים מע"מ" shown on the PO.
+
+---
+## WhatsApp Business auto-flow to CRM — parked 14/06/2026
+- Goal: incoming WhatsApp leads/RFQ auto-flow into CRM (no manual paste).
+- Reality: requires WhatsApp Business Platform (Cloud API) — Meta business verification, migrate the number off the regular app, webhook endpoint, a provider (Twilio/360dialog), per-message fees.
+- Decision: NOT now. Current paste-into-/leads flow (AI extraction) is enough for low volume. Revisit if lead volume grows.
