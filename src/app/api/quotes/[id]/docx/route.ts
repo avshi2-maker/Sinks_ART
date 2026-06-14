@@ -3,6 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchQuote } from '@/lib/quotes/fetchQuotes';
+import JSZip from 'jszip';
 import {
   Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, ImageRun,
   AlignmentType, WidthType, BorderStyle, ShadingType,
@@ -81,7 +82,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     new Paragraph({ alignment: AlignmentType.CENTER, bidirectional: true, spacing: { after: 60 }, children: [new TextRun({ text: 'טיוטת הצעת מחיר', bold: true, font: 'Arial', size: 36 })] }),
     new Paragraph({ alignment: AlignmentType.CENTER, bidirectional: true, spacing: { after: 240 }, children: [new TextRun({ text: '(לאלס — להוספת לוגו, נייר מכתבים ועריכה לפני שליחה ללקוח)', italics: true, font: 'Arial', size: 18, color: '888888' })] }),
     pRtl('הצעה מספר: ' + quote.quote_number, { bold: true }),
-    pRtl('תאריך: ' + fmtDate(quote.created_at)),
+    pRtl('תאריך: ' + new Date().toLocaleDateString('he-IL')),
   ];
   if (quote.valid_until) children.push(pRtl('בתוקף עד: ' + fmtDate(quote.valid_until)));
   children.push(pRtl('לכבוד', { bold: true, after: 40 }));
@@ -114,10 +115,21 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     }],
   });
 
+  void quote.created_at;
   const buffer = await Packer.toBuffer(doc);
-  const body = new Uint8Array(buffer);
+  let body: Uint8Array;
+  try {
+    const zip = await JSZip.loadAsync(buffer);
+    const f = zip.file('word/document.xml');
+    if (f) {
+      let xml = await f.async('string');
+      if (!xml.includes('<w:bidi/>')) { xml = xml.replace(/(<w:sectPr[^>]*>)/, '$1<w:bidi/>'); }
+      zip.file('word/document.xml', xml);
+      body = await zip.generateAsync({ type: 'uint8array' });
+    } else { body = new Uint8Array(buffer); }
+  } catch { body = new Uint8Array(buffer); }
   const fileName = 'quote_' + quote.quote_number + '_DRAFT.docx';
-  return new NextResponse(body, {
+  return new NextResponse(body as unknown as BodyInit, {
     status: 200,
     headers: {
       'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
