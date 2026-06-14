@@ -7,6 +7,7 @@ import { fetchQuote } from '@/lib/quotes/fetchQuotes';
 import { QUOTE_STATUS_LABELS_HE, QUOTE_STATUS_COLORS, QuoteStatus } from '@/lib/quotes/types';
 import QuoteDetail from '@/components/quotes/QuoteDetail';
 import RfqImages from '@/components/quotes/RfqImages';
+import QuoteDocxExport from '@/components/quotes/QuoteDocxExport';
 import { fetchActiveOptions } from '@/lib/options/optionsCatalog';
 
 export const dynamic = 'force-dynamic';
@@ -41,6 +42,7 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
         )}
       </div>
 
+      <QuoteDocxExport quoteId={quote.id} quoteNumber={quote.quote_number} />
       <RfqImages quoteId={quote.id} images={quote.rfq_images || []} />
       <QuoteDetail quote={quote} catalogOptions={catalogOptions} />
     </div>
