@@ -21,6 +21,7 @@ export interface OptionRow {
   customer_price: number;
   note_he: string | null;
   active: boolean;
+  included_in_base: boolean;
   sort_order: number;
 }
 
@@ -45,6 +46,7 @@ export interface SaveOptionInput {
   customer_price: number;
   note_he: string | null;
   active: boolean;
+  included_in_base?: boolean;
 }
 
 export interface SaveResult { ok: boolean; error?: string; }
@@ -59,9 +61,38 @@ export async function saveOption(input: SaveOptionInput): Promise<SaveResult> {
       customer_price: Number(input.customer_price) || 0,
       note_he: input.note_he?.trim() || null,
       active: input.active,
+      included_in_base: input.included_in_base ?? false,
       updated_at: new Date().toISOString(),
     })
     .eq('id', input.id);
+  if (res.error) return { ok: false, error: res.error.message };
+  revalidatePath('/options');
+  return { ok: true };
+}
+
+export async function deleteOption(id: string): Promise<SaveResult> {
+  if (!id) return { ok: false, error: 'missing id' };
+  const sb = getServerSupabase();
+  const res = await sb.from('options_catalog').delete().eq('id', id);
+  if (res.error) return { ok: false, error: res.error.message };
+  revalidatePath('/options');
+  return { ok: true };
+}
+
+export interface AddOptionInput { name_he: string; chapter?: string; ales_cost?: number; customer_price?: number; note_he?: string; included_in_base?: boolean; }
+
+export async function addOption(input: AddOptionInput): Promise<SaveResult> {
+  if (!input.name_he?.trim()) return { ok: false, error: 'missing name' };
+  const sb = getServerSupabase();
+  const res = await sb.from('options_catalog').insert({
+    name_he: input.name_he.trim(),
+    chapter: input.chapter?.trim() || null,
+    ales_cost: Number(input.ales_cost) || 0,
+    customer_price: Number(input.customer_price) || 0,
+    note_he: input.note_he?.trim() || null,
+    included_in_base: input.included_in_base ?? false,
+    active: true,
+  });
   if (res.error) return { ok: false, error: res.error.message };
   revalidatePath('/options');
   return { ok: true };
