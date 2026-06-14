@@ -1,10 +1,10 @@
 ﻿// src/app/api/quotes/[id]/docx/route.ts
-// Generates a Word (.docx) DRAFT of a quote for Ales — he adds logo/letterhead and sends to customer.
+// Word (.docx) DRAFT of a quote for Ales — full RTL, final price (VAT included), embedded RFQ images.
 
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchQuote } from '@/lib/quotes/fetchQuotes';
 import {
-  Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
+  Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, ImageRun,
   AlignmentType, WidthType, BorderStyle, ShadingType,
 } from 'docx';
 
@@ -24,13 +24,22 @@ function cell(text: string, width: number, opts: { bold?: boolean; fill?: string
   });
 }
 
-function pRtl(text: string, opts: { bold?: boolean; size?: number; after?: number } = {}) {
+function pRtl(text: string, opts: { bold?: boolean; size?: number; after?: number; align?: (typeof AlignmentType)[keyof typeof AlignmentType] } = {}) {
   return new Paragraph({
     bidirectional: true,
-    alignment: AlignmentType.RIGHT,
+    alignment: opts.align || AlignmentType.RIGHT,
     spacing: { after: opts.after ?? 120 },
     children: [new TextRun({ text, bold: opts.bold, font: 'Arial', size: opts.size ?? 22 })],
   });
+}
+
+async function fetchImageBytes(url: string): Promise<Uint8Array | null> {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const ab = await res.arrayBuffer();
+    return new Uint8Array(ab);
+  } catch { return null; }
 }
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -64,29 +73,38 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const table = new Table({
     width: { size: 9360, type: WidthType.DXA },
     columnWidths: COLS,
+    visuallyRightToLeft: true,
     rows: [headerRow, ...lineRows],
   });
 
-  const children = [
-    new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 60 }, children: [new TextRun({ text: 'טיוטת הצעת מחיר', bold: true, font: 'Arial', size: 36 })] }),
-    new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 240 }, children: [new TextRun({ text: '(לאלס — להוספת לוגו, נייר מכתבים ועריכה לפני שליחה ללקוח)', italics: true, font: 'Arial', size: 18, color: '888888' })] }),
-    pRtl('מספר הצעה: ' + quote.quote_number, { bold: true }),
+  const children: (Paragraph | Table)[] = [
+    new Paragraph({ alignment: AlignmentType.CENTER, bidirectional: true, spacing: { after: 60 }, children: [new TextRun({ text: 'טיוטת הצעת מחיר', bold: true, font: 'Arial', size: 36 })] }),
+    new Paragraph({ alignment: AlignmentType.CENTER, bidirectional: true, spacing: { after: 240 }, children: [new TextRun({ text: '(לאלס — להוספת לוגו, נייר מכתבים ועריכה לפני שליחה ללקוח)', italics: true, font: 'Arial', size: 18, color: '888888' })] }),
+    pRtl('הצעה מספר: ' + quote.quote_number, { bold: true }),
     pRtl('תאריך: ' + fmtDate(quote.created_at)),
-    quote.valid_until ? pRtl('בתוקף עד: ' + fmtDate(quote.valid_until)) : pRtl(''),
-    pRtl('לכבוד', { bold: true, after: 40 }),
-    pRtl(quote.customer_name_he || '—'),
-    quote.customer_phone ? pRtl('טלפון: ' + quote.customer_phone) : pRtl(''),
-    quote.customer_address ? pRtl('כתובת: ' + quote.customer_address) : pRtl('', { after: 200 }),
-    table,
-    new Paragraph({ bidirectional: true, alignment: AlignmentType.RIGHT, spacing: { before: 200, after: 40 }, children: [new TextRun({ text: 'סיכום', bold: true, font: 'Arial', size: 24 })] }),
-    pRtl('סכום ביניים: ' + ils(quote.total_subtotal), { after: 40 }),
-    pRtl('מע"מ (' + Math.round((quote.vat_rate || 0) * 100) + '%): ' + ils(quote.total_vat), { after: 40 }),
-    pRtl('סה"כ כולל מע"מ: ' + ils(quote.total_grand), { bold: true, size: 26 }),
-    pRtl('כל המחירים כוללים מע"מ.', { size: 18, after: 40 }),
   ];
+  if (quote.valid_until) children.push(pRtl('בתוקף עד: ' + fmtDate(quote.valid_until)));
+  children.push(pRtl('לכבוד', { bold: true, after: 40 }));
+  children.push(pRtl(quote.customer_name_he || '—'));
+  if (quote.customer_phone) children.push(pRtl('טלפון: ' + quote.customer_phone));
+  if (quote.customer_address) children.push(pRtl('כתובת: ' + quote.customer_address));
+  children.push(new Paragraph({ spacing: { after: 120 }, children: [] }));
+  children.push(table);
+  children.push(pRtl('סה"כ לתשלום: ' + ils(quote.total_grand), { bold: true, size: 28 }));
+  children.push(pRtl('המחיר כולל מע"מ.', { size: 20, after: 120 }));
+  if (quote.payment_terms_he) children.push(pRtl('תנאי תשלום: ' + quote.payment_terms_he, { size: 20 }));
+  if (quote.notes_he) children.push(pRtl('הערות: ' + quote.notes_he, { size: 20 }));
 
-  if (quote.payment_terms_he) { children.push(pRtl('תנאי תשלום: ' + quote.payment_terms_he, { size: 20 })); }
-  if (quote.notes_he) { children.push(pRtl('הערות: ' + quote.notes_he, { size: 20 })); }
+  const rfqImages = quote.rfq_images || [];
+  if (rfqImages.length > 0) {
+    children.push(new Paragraph({ bidirectional: true, alignment: AlignmentType.RIGHT, spacing: { before: 300, after: 120 }, children: [new TextRun({ text: 'תמונות הפניה מהלקוח', bold: true, font: 'Arial', size: 24 })] }));
+    for (const img of rfqImages) {
+      const bytes = await fetchImageBytes(img.url);
+      if (!bytes) continue;
+      children.push(new Paragraph({ alignment: AlignmentType.RIGHT, spacing: { after: 60 }, children: [new ImageRun({ type: 'jpg', data: bytes, transformation: { width: 360, height: 270 } })] }));
+      if (img.label) children.push(pRtl(img.label, { size: 18, after: 160 }));
+    }
+  }
 
   const doc = new Document({
     styles: { default: { document: { run: { font: 'Arial', size: 22 } } } },
