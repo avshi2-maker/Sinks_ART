@@ -15,6 +15,7 @@ export const STAGES: NavStage[] = [
     { href: '/intake', label: 'מדיה', icon: '📸' },
     { href: '/leads', label: 'פניות', icon: '📥' },
     { href: '/customers', label: 'לקוחות', icon: '👥' },
+    { href: '/suppliers', label: 'ספקים', icon: '🏭' },
   ] },
   { id: 'design', label: 'עיצוב', tools: [
     { href: '/sketch', label: 'שרטוט', icon: '📐' },
@@ -65,3 +66,4 @@ export default function WorkflowNav({ newLeads = 0 }: { newLeads?: number }) {
     </div>
   );
 }
+
