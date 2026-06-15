@@ -11,6 +11,7 @@ import {
   updateSupplier, deleteSupplier,
   updateSupplierOffer, deleteSupplierOffer, finalizeOfferCustomer,
 } from '@/lib/suppliers/suppliersData';
+import { createCustomer } from '@/lib/customers/customerMutations';
 
 const STATUS_HE: Record<string, { label: string; cls: string }> = {
   new: { label: 'חדש', cls: 'bg-amber-100 text-amber-700' },
@@ -132,6 +133,7 @@ export default function SuppliersReport({ suppliers, offers, customers = [] }: {
     const noteLines = (f.custNotes || '').split('\n').map((s) => s.trim()).filter(Boolean).map((s) => '• ' + s);
     return [
       'הצעת מחיר',
+      o.project_ref ? o.project_ref : '',
       '',
       f.custName ? 'לכבוד: ' + f.custName : '',
       f.custAddress ? 'כתובת: ' + f.custAddress : '',
@@ -148,6 +150,17 @@ export default function SuppliersReport({ suppliers, offers, customers = [] }: {
       noteLines.length ? 'הערות:' : '',
       ...noteLines,
     ].filter((x) => x !== '' || true).join('\n').replace(/\n{3,}/g, '\n\n');
+  }
+
+  async function saveNewCustomer() {
+    if (!fin.custName.trim()) { window.alert('הזן שם לקוח קודם'); return; }
+    setBusy('newcust');
+    const res = await createCustomer({ name_he: fin.custName, phone: fin.custPhone, city: fin.custAddress, source: 'phone' });
+    setBusy(null);
+    if (!res.ok || !res.id) { window.alert('שמירת לקוח נכשלה: ' + (res.error || '')); return; }
+    setFin((p) => ({ ...p, customerId: res.id as string }));
+    window.alert('הלקוח נשמר ב-CRM ✓');
+    router.refresh();
   }
 
   async function saveFinalize(o: SupplierOfferRow) {
@@ -285,6 +298,7 @@ export default function SuppliersReport({ suppliers, offers, customers = [] }: {
                     <div className="text-sm font-bold text-stone-900">סה"כ ללקוח (כולל מע"מ): {ils(custTotalPreview)}</div>
                     <textarea value={fin.custNotes} onChange={(e) => setFin({ ...fin, custNotes: e.target.value })} placeholder="הערות (שורה לכל הערה) — לדוגמה: חיבור אינסטלטור בנפרד · אספקה תוך 3 שבועות" rows={3} className="w-full px-2 py-1.5 text-sm border border-stone-300 rounded-md resize-y" dir="rtl" />
                     <div className="flex gap-2 flex-wrap">
+                      <button onClick={saveNewCustomer} disabled={busy === 'newcust'} className="text-xs px-3 py-1 rounded-md bg-blue-600 text-white font-semibold hover:bg-blue-700 disabled:opacity-50">➕ שמור כלקוח חדש</button>
                       <button onClick={() => copyText('cust-' + o.id, customerOfferText(o, fin))} className="text-xs px-3 py-1 rounded-md bg-amber-600 text-white font-semibold hover:bg-amber-700">{copied === 'cust-' + o.id ? '✓ הועתק' : '📋 העתק הצעת לקוח'}</button>
                       <button onClick={() => saveFinalize(o)} disabled={busy === o.id} className="text-xs px-3 py-1 rounded-md bg-emerald-600 text-white font-semibold hover:bg-emerald-700 disabled:opacity-50">💾 שמור (ל-ROI)</button>
                       <button onClick={() => setFinalizeId(null)} className="text-xs px-3 py-1 rounded-md bg-stone-100 text-stone-600 hover:bg-stone-200">סגור</button>
@@ -339,4 +353,9 @@ export default function SuppliersReport({ suppliers, offers, customers = [] }: {
     </div>
   );
 }
+
+
+
+
+
 
