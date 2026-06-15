@@ -1,7 +1,7 @@
-'use server';
+﻿'use server';
 
 // src/lib/suppliers/suppliersData.ts
-// Suppliers directory + captured supplier price offers.
+// Suppliers directory + captured supplier price offers (+ customer/commission finalize for the turnkey offer).
 // Mirrors leadsData.ts conventions: getServerSupabase() with NEXT_PUBLIC_* env, anon RLS, revalidatePath.
 
 import { createClient } from '@supabase/supabase-js';
@@ -41,11 +41,31 @@ export interface SupplierOfferRow {
   total_ils: number;
   status: string;
   api_cost_usd: number;
+  // customer + commission (Step 1)
+  commission_type: string | null;   // 'pct' | 'fixed'
+  commission_value: number | null;
+  customer_total_ils: number | null;
+  cust_name: string | null;
+  cust_phone: string | null;
+  cust_address: string | null;
+  cust_notes: string | null;
   created_at: string;
   updated_at: string;
 }
 
 export interface SupplierResult { ok: boolean; error?: string; id?: string; }
+
+// ---------- customers (with city, for the turnkey offer) ----------
+
+export interface CustomerPick { id: string; name_he: string; phone: string | null; city: string | null; }
+
+export async function fetchCustomersForOffer(): Promise<CustomerPick[]> {
+  const sb = getServerSupabase();
+  const res = await sb.from('customers').select('*').is('archived_at', null).order('name_he', { ascending: true });
+  if (res.error) { console.error('[fetchCustomersForOffer]', res.error.message); return []; }
+  const rows = (res.data || []) as Record<string, unknown>[];
+  return rows.map((r) => ({ id: String(r.id), name_he: (r.name_he as string) || (r.name as string) || '', phone: (r.phone as string) || null, city: (r.city as string) || (r.address as string) || null }));
+}
 
 // ---------- suppliers directory ----------
 
@@ -179,6 +199,14 @@ export async function fetchSupplierOffers(): Promise<SupplierOfferRow[]> {
   return (res.data || []) as SupplierOfferRow[];
 }
 
+export async function fetchSupplierOffer(id: string): Promise<SupplierOfferRow | null> {
+  if (!id) return null;
+  const sb = getServerSupabase();
+  const res = await sb.from('supplier_offers').select('*').eq('id', id).single();
+  if (res.error || !res.data) { console.error('[fetchSupplierOffer]', res.error?.message); return null; }
+  return res.data as SupplierOfferRow;
+}
+
 export async function updateSupplierOffer(
   id: string,
   patch: { line_items?: OfferLine[]; total_ils?: number; project_ref?: string; customer_id?: string | null; status?: string },
@@ -202,6 +230,39 @@ export async function updateSupplierOffer(
   return { ok: true, id };
 }
 
+// Save customer details + commission onto the offer (feeds the turnkey customer offer + ROI later).
+export interface FinalizeInput {
+  customer_id?: string | null;
+  cust_name?: string;
+  cust_phone?: string;
+  cust_address?: string;
+  cust_notes?: string;
+  commission_type: string;   // 'pct' | 'fixed'
+  commission_value: number;
+  customer_total_ils: number;
+}
+
+export async function finalizeOfferCustomer(id: string, input: FinalizeInput): Promise<SupplierResult> {
+  if (!id) return { ok: false, error: 'missing id' };
+  const sb = getServerSupabase();
+  const res = await sb.from('supplier_offers').update({
+    customer_id: input.customer_id || null,
+    cust_name: input.cust_name?.trim() || null,
+    cust_phone: input.cust_phone?.trim() || null,
+    cust_address: input.cust_address?.trim() || null,
+    cust_notes: input.cust_notes?.trim() || null,
+    commission_type: input.commission_type,
+    commission_value: Number(input.commission_value) || 0,
+    customer_total_ils: Number(input.customer_total_ils) || 0,
+    status: 'drafted',
+    updated_at: new Date().toISOString(),
+  }).eq('id', id);
+  if (res.error) return { ok: false, error: res.error.message };
+  revalidatePath('/suppliers');
+  revalidatePath('/roi');
+  return { ok: true, id };
+}
+
 export async function deleteSupplierOffer(id: string): Promise<SupplierResult> {
   if (!id) return { ok: false, error: 'missing id' };
   const sb = getServerSupabase();
@@ -210,3 +271,4 @@ export async function deleteSupplierOffer(id: string): Promise<SupplierResult> {
   revalidatePath('/suppliers');
   return { ok: true };
 }
+
