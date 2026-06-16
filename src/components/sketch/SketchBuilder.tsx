@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 // src/components/sketch/SketchBuilder.tsx
 // Spec form + live technical-sketch preview + download/print. RTL Hebrew.
@@ -24,7 +24,7 @@ const DEFAULTS: SketchSpec = {
   modelName: 'כיור שיש', shape: 'rectangle',
   lengthMm: 600, widthMm: 400, heightMm: 150, basinDepthMm: 120, wallThicknessMm: 20,
   mount: 'wall', tapHole: false, drain: 'round', exteriorStone: '', interiorStone: '', pitchPct: 1.5,
-  wallLeftMm: 20, wallRightMm: 20, pitchLeftPct: 1.5, pitchRightPct: 1.5, drainRadiusMm: 0, stoneSiphonCover: false,
+  wallLeftMm: 20, wallRightMm: 20, pitchLeftPct: 1.5, pitchRightPct: 1.5, drainRadiusMm: 0, stoneSiphonCover: false, basinCount: 1,
 };
 
 export default function SketchBuilder({ initial, swatches = [] }: SketchBuilderProps) {
@@ -199,6 +199,10 @@ export default function SketchBuilder({ initial, swatches = [] }: SketchBuilderP
           <input type="checkbox" checked={!!spec.stoneSiphonCover} onChange={(e) => set('stoneSiphonCover', e.target.checked)} />
           <span>סיפון מאבן תואמת</span>
         </label>
+        <label className="flex items-center gap-2 text-sm text-stone-700">
+          <input type="checkbox" checked={(spec.basinCount ?? 1) >= 2} onChange={(e) => set('basinCount', (e.target.checked ? 2 : 1) as never)} />
+          <span>כיור כפול (2 אגנים · 2 ניקוזים)</span>
+        </label>
         <div className="grid grid-cols-2 gap-2">
           <label className="block">
             <span className="block text-xs font-medium text-stone-600 mb-1">שיש חוץ (sample A)</span>
@@ -223,3 +227,5 @@ export default function SketchBuilder({ initial, swatches = [] }: SketchBuilderP
     </div>
   );
 }
+
+
