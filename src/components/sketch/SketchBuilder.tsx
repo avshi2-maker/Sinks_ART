@@ -21,10 +21,10 @@ const SHAPES: { v: SketchShape; he: string }[] = [
 export interface SketchBuilderProps { initial?: Partial<SketchSpec>; swatches?: MarbleSwatch[]; }
 
 const DEFAULTS: SketchSpec = {
-  modelName: 'כיור שיש', shape: 'rectangle',
-  lengthMm: 600, widthMm: 400, heightMm: 150, basinDepthMm: 120, wallThicknessMm: 20,
-  mount: 'wall', tapHole: false, drain: 'round', exteriorStone: '', interiorStone: '', pitchPct: 1.5,
-  wallLeftMm: 20, wallRightMm: 20, pitchLeftPct: 1.5, pitchRightPct: 1.5, drainRadiusMm: 0, stoneSiphonCover: false, basinCount: 1,
+  modelName: '', shape: 'rectangle',
+  lengthMm: 0, widthMm: 0, heightMm: 0, basinDepthMm: 0, wallThicknessMm: 0,
+  mount: 'wall', tapHole: false, drain: 'round', exteriorStone: '', interiorStone: '', pitchPct: 0,
+  wallLeftMm: 0, wallRightMm: 0, pitchLeftPct: 0, pitchRightPct: 0, drainRadiusMm: 0, stoneSiphonCover: false, basinCount: 1,
 };
 
 export default function SketchBuilder({ initial, swatches = [] }: SketchBuilderProps) {
@@ -85,9 +85,7 @@ export default function SketchBuilder({ initial, swatches = [] }: SketchBuilderP
       if (pp.length === 4 && pp[2] > pp[3]) landscape = true;
     }
     const pageSize = landscape ? 'A4 landscape' : 'A4 portrait';
-    const sheetW = landscape ? '277mm' : '190mm';
-    const sheetH = landscape ? '190mm' : '277mm';
-    const css = '@page { size: ' + pageSize + '; margin: 10mm; } * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; } html, body { margin: 0; padding: 0; } .sheet { width: ' + sheetW + '; height: ' + sheetH + '; display: flex; align-items: center; justify-content: center; page-break-inside: avoid; break-inside: avoid; } .sheet svg { width: 100%; height: 100%; max-width: 100%; max-height: 100%; }';
+    const css = '@page { size: ' + pageSize + '; margin: 0; } * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; } html, body { margin: 0; padding: 0; background: #fff; } .sheet { box-sizing: border-box; padding: 10mm; width: 100%; min-height: 100vh; display: flex; align-items: center; justify-content: center; } .sheet svg { width: 100%; height: auto; max-width: 100%; }';
     const title = spec.modelName || 'שרטוט';
     w.document.write('<!DOCTYPE html><html dir="rtl" lang="he"><head><meta charset="utf-8"><title>' + title + '</title><style>' + css + '</style></head><body><div class="sheet">' + svg + '</div></body></html>');
     w.document.close();
@@ -227,5 +225,7 @@ export default function SketchBuilder({ initial, swatches = [] }: SketchBuilderP
     </div>
   );
 }
+
+
 
 
