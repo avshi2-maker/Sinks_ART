@@ -1,4 +1,4 @@
-﻿// src/components/prompt-builder/PromptBuilderShell.tsx
+// src/components/prompt-builder/PromptBuilderShell.tsx
 'use client';
 
 import { useMemo, useState } from 'react';
@@ -9,6 +9,8 @@ import type { MediaSelection } from './MediaInputPanel';
 import PromptOutputCard from './PromptOutputCard';
 import {
   buildNanoBananaPrompt,
+  buildNanoBananaPitchPrompt,
+  buildNanoBananaPitchFromBasePrompt,
   buildKlingPrompt,
   buildKlingNegativePrompt,
   buildHiggsfieldPrompt,
@@ -47,6 +49,7 @@ const DEFAULT_INPUTS: PromptBuilderInputs = {
 export default function PromptBuilderShell({ mode, customerId, mediaAnalyses }: PromptBuilderShellProps) {
   const router = useRouter();
   const [inputs, setInputs] = useState<PromptBuilderInputs>(DEFAULT_INPUTS);
+  const [pitchMode, setPitchMode] = useState<'none' | 'rim' | 'base'>('none');
   const [selection, setSelection] = useState<MediaSelection>(EMPTY_SELECTION);
   const [meter, setMeter] = useState<ApiMeterReading>(makeIdleReading());
   const [analyzeNote, setAnalyzeNote] = useState<string | null>(null);
@@ -54,7 +57,7 @@ export default function PromptBuilderShell({ mode, customerId, mediaAnalyses }: 
   const [savedVersion, setSavedVersion] = useState<number | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  const nanoBananaPrompt = useMemo(() => buildNanoBananaPrompt(inputs), [inputs]);
+  const nanoBananaPrompt = useMemo(() => (pitchMode === 'rim' ? buildNanoBananaPitchPrompt(inputs) : pitchMode === 'base' ? buildNanoBananaPitchFromBasePrompt(inputs) : buildNanoBananaPrompt(inputs)), [inputs, pitchMode]);
   const klingPrompt = useMemo(() => buildKlingPrompt(inputs), [inputs]);
   const klingNegativePrompt = useMemo(() => buildKlingNegativePrompt(), []);
   const higgsfieldPrompt = useMemo(() => buildHiggsfieldPrompt(inputs), [inputs]);
@@ -199,6 +202,8 @@ export default function PromptBuilderShell({ mode, customerId, mediaAnalyses }: 
         <div className="mb-3 flex items-center gap-2">
           <button type="button" onClick={() => setInputs((p) => ({ ...p, renderMode: 'accurate' }))} className={inputs.renderMode !== 'instagram' ? 'rounded-lg bg-slate-800 px-4 py-2 text-sm font-semibold text-white' : 'rounded-lg bg-slate-100 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200'}>📐 מדויק</button>
           <button type="button" onClick={() => setInputs((p) => ({ ...p, renderMode: 'instagram' }))} className={inputs.renderMode === 'instagram' ? 'rounded-lg bg-gradient-to-r from-pink-500 to-orange-500 px-4 py-2 text-sm font-semibold text-white' : 'rounded-lg bg-slate-100 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200'}>🔥 אינסטגרם</button>
+          <button type="button" onClick={() => setPitchMode((v) => v === 'rim' ? 'none' : 'rim')} className={pitchMode === 'rim' ? 'rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white' : 'rounded-lg bg-slate-100 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200'}>📐 שיפועים</button>
+          <button type="button" onClick={() => setPitchMode((v) => v === 'base' ? 'none' : 'base')} className={pitchMode === 'base' ? 'rounded-lg bg-sky-700 px-4 py-2 text-sm font-semibold text-white' : 'rounded-lg bg-slate-100 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200'}>📐 שיפוע מבסיס</button>
           <span className="mr-2 text-xs text-slate-400">{inputs.renderMode === 'instagram' ? 'מצב הירו — דרמטי, עוצר גלילה' : 'מצב מדויק — נאמן לסקיצה'}</span>
         </div>
         {inputs.renderMode === 'instagram' ? (

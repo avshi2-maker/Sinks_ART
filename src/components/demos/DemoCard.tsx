@@ -114,7 +114,7 @@ export default function DemoCard({ demo }: { demo: DemoTrial }) {
     try {
       const blob = await svgToPngBlob(demo.sketch_svg, 2.5);
       const file = new File([blob], baseName + '.png', { type: 'image/png' });
-      const up = await uploadToCloudinary(file, 'Demo-Trials');
+      const up = await uploadToCloudinary(file, 'marble-art/sketches-bank');
       const res = await setDemoImage(demo.id, up.url, up.publicId);
       if (!res.ok) { window.alert('העלאה נכשלה: ' + (res.error || '')); setExporting(''); return; }
       window.alert('הועלה ל-Cloudinary בהצלחה');
@@ -215,7 +215,7 @@ export default function DemoCard({ demo }: { demo: DemoTrial }) {
                 <a href={demo.cloudinary_url} download title="הורד" className="hover:text-blue-600 text-sm">⬇️</a>
               ) : null}
               <button onClick={sendWhatsApp} title="שלח בוואטסאפ" className="hover:text-green-600 text-sm">💬</button>
-              <button onClick={() => setEditing(true)} title="ערוך" className="hover:text-blue-600 text-sm">✏️</button>
+              <button onClick={() => { if (isSketch) { router.push('/sketch?load=' + demo.id); } else { setEditing(true); } }} title={isSketch ? 'ערוך מידות' : 'ערוך'} className="hover:text-blue-600 text-sm">✏️</button>
               <button onClick={remove} disabled={busy} title="מחק" className="hover:text-red-600 text-sm">🗑️</button>
             </div>
           </>

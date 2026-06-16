@@ -1,4 +1,4 @@
-﻿// src/lib/promptTemplates.ts
+// src/lib/promptTemplates.ts
 // Pure prompt-builder functions. NO React, NO Supabase, NO side effects.
 // All validated construction-rule language (Sessions 32-33) is baked in here.
 // Session 34: rectangle/square shapes + countertop/wall mount + pitch + drain.
@@ -263,4 +263,105 @@ export function mapAnalyzedShape(raw: string | null | undefined): SinkShape {
   if (/טרפז|trapez/i.test(s)) return 'trapezoid';
   if (/מחומש|pentagon/i.test(s)) return 'pentagon';
   return 'custom';
+}
+// ---- PITCH-EMPHASIS PROMPT (תמונה סטטית עם שיפועים) ----
+// Same builder as buildNanoBananaPrompt, but the basin floor SLOPE is made the visible hero feature.
+// Use when the gentle drainage pitch — the signature beauty of these sinks — must read in the image.
+// The default builder tends to flatten the floor ("FLAT polygon" + low side camera); this version
+// swaps in slope-revealing geometry language, a look-into-the-basin camera angle, and raking light.
+export function buildNanoBananaPitchPrompt(inputs: PromptBuilderInputs): string {
+  const model = inputs.modelName.trim() || 'custom marble sink';
+  const dims = inputs.dimensions.trim() || 'as drawn in the sketch';
+  const mood = inputs.mood || 'golden';
+  const m = moodPreset(mood);
+  const setting = inputs.setting.trim() || m.setting;
+
+  const construction = [
+    'CONSTRUCTION RULES (follow exactly):',
+    `- The sink OUTER body is ${shapePhrase(inputs.shape)} — straight outer sides, flat vertical faces, no rounded outer edges.`,
+    '- Built from polished stone slabs joined at INVISIBLE color-matched hairline seams. NO white grout, NO white caulk, NO contrasting joint lines.',
+    '- CRITICAL — THE BASIN FLOOR IS NOT FLAT. It is a shallow inclined plane: a gentle four-way taper that visibly slopes downward from all four basin walls toward a single low point at the drain. Like a very shallow inverted pyramid / wet-room floor draining to a central point (about a 2% fall).',
+    '- MAKE THE SLOPE VISIBLE: the four tapered floor facets catch light at slightly different angles so the incline reads clearly; a faint crease line runs from each basin corner down to the drain where the sloped facets meet. This sloped, faceted basin floor is the SIGNATURE FOCAL FEATURE of the image — it must not be hidden or flattened.',
+    `- DRAIN: ${drainPhrase(inputs.drain)}, at the exact CENTER and LOWEST point of the basin floor, where all four slopes converge.`,
+    '- COLOR MAPPING: reference image 2 (marble sample A) for ALL EXTERIOR surfaces (outer panels, front face, top rim, surrounding countertop). Reference image 3 (marble sample B) for the INTERIOR basin — basin walls AND the sloped basin floor. The two materials meet cleanly at the rim.',
+    '- For a DOUBLE basin: two separate sloped basins, each with its own central drain and four-way taper, divided by a solid stone rib.',
+    `- ${mountAndFaucetClause(inputs.mount, inputs.faucetType)}`,
+  ].join('\n');
+
+  const renderStyle = [
+    'RENDER STYLE — INSTAGRAM HERO (editorial, scroll-stopping), SLOPE-REVEALING:',
+    '- Hero angle chosen to REVEAL the basin floor slope: a higher three-quarter vantage looking INTO the basin so the downward taper toward the drain is clearly visible. AVOID a low side angle that flattens the floor. 35mm lens, shallow depth of field.',
+    '- SETTING: ' + m.setting + '.',
+    '- LIGHTING: ' + m.light + '. The light rakes ACROSS the sloped basin floor at a low angle so the incline casts a soft gradient from rim (brighter) down to drain (deeper) — the light itself describes the slope.',
+    '- ATMOSPHERE: a thin sheet of water glides DOWN the slope toward the central drain, tracing the incline. ' + m.extras + '.',
+    '- Polished marble with faint mirror reflections, subtle translucency at thin edges, veining flowing like ink. Architectural Digest / Kinfolk editorial quality, ultra-detailed, razor-sharp, 8K, rich tonal depth.',
+    '- Composition leaves clean negative space (room for an Instagram caption).',
+  ].join('\n');
+
+  return [
+    'You are given three reference images:',
+    '  1. A technical sketch of the sink (geometry — follow it precisely, INCLUDING the basin floor SLOPE shown in the side-section view).',
+    '  2. Marble sample A — the EXTERIOR / countertop stone.',
+    '  3. Marble sample B — the INTERIOR basin stone.',
+    '',
+    `Produce a single photorealistic studio-quality still of the "${model}" marble sink, installed in ${setting}. Dimensions and slopes: ${dims}.`,
+    '',
+    construction,
+    '',
+    renderStyle,
+    '',
+    'ABSOLUTE FORBIDS: a perfectly flat or level basin floor (the floor MUST visibly slope to the center drain); white porcelain, ceramic, round or oval sink, bowl shape, carved or curved basin, rounded outer edges, pedestal, white grout, white caulk, contrasting seams, placeholder or starter sink, people, hands, text, captions, watermark.',
+  ].join('\n');
+}
+
+// ---- PITCH FROM WALL-BASE PROMPT (שיפוע מבסיס הדופן) ----
+// Variant of the pitch prompt where the basin has STRAIGHT VERTICAL WALLS, and from the
+// wall-base a SINGLE CONTINUOUS slope runs to the center drain — NO flat bottom shelf, no
+// two-stage step. Fixes the common render error of a flat landing zone before the slope.
+export function buildNanoBananaPitchFromBasePrompt(inputs: PromptBuilderInputs): string {
+  const model = inputs.modelName.trim() || 'custom marble sink';
+  const dims = inputs.dimensions.trim() || 'as drawn in the sketch';
+  const mood = inputs.mood || 'golden';
+  const m = moodPreset(mood);
+  const setting = inputs.setting.trim() || m.setting;
+
+  const construction = [
+    'CONSTRUCTION RULES (follow exactly):',
+    `- The sink OUTER body is ${shapePhrase(inputs.shape)} — straight outer sides, flat vertical faces, no rounded outer edges.`,
+    '- Built from polished stone slabs joined at INVISIBLE color-matched hairline seams. NO white grout, NO white caulk, NO contrasting joint lines.',
+    '- BASIN GEOMETRY (critical, two distinct parts):',
+    '  (a) WALLS: the basin walls are STRAIGHT and VERTICAL, dropping straight down from the rim with no taper. The corner where wall meets floor is a single clean crease line.',
+    '  (b) FLOOR: from that wall-base crease, the floor is ONE SINGLE CONTINUOUS inclined plane that slopes uninterrupted all the way down to the center drain. The four floor facets meet at the drain like a very shallow inverted pyramid.',
+    '- ABSOLUTELY NO FLAT BOTTOM: there is NO flat landing, NO flat shelf, NO level ledge, and NO two-stage step between the walls and the slope. The slope begins immediately at the wall-base and continues unbroken to the drain. The lowest point is the drain itself; every part of the floor tilts toward it.',
+    '- MAKE THE SLOPE VISIBLE: the four tapered floor facets catch light at slightly different angles; a faint crease runs from each basin corner down to the drain. This continuous wall-to-drain slope is the SIGNATURE FOCAL FEATURE — it must read clearly and must not be flattened.',
+    `- DRAIN: ${drainPhrase(inputs.drain)}, at the exact CENTER and LOWEST point of the basin floor, where all four slopes converge.`,
+    '- COLOR MAPPING: reference image 2 (marble sample A) for ALL EXTERIOR surfaces (outer panels, front face, top rim, surrounding countertop). Reference image 3 (marble sample B) for the INTERIOR basin — vertical walls AND the sloped floor. The two materials meet cleanly at the rim.',
+    '- For a DOUBLE basin: two separate basins, each with straight vertical walls and its own continuous wall-base-to-drain slope, divided by a solid stone rib.',
+    `- ${mountAndFaucetClause(inputs.mount, inputs.faucetType)}`,
+  ].join('\n');
+
+  const renderStyle = [
+    'RENDER STYLE — INSTAGRAM HERO (editorial, scroll-stopping), SLOPE-REVEALING:',
+    '- Hero angle chosen to REVEAL the basin floor slope: a higher three-quarter vantage looking INTO the basin so the vertical walls AND the continuous downward slope toward the drain are both clearly visible. AVOID a low side angle that flattens the floor. 35mm lens, shallow depth of field.',
+    '- SETTING: ' + m.setting + '.',
+    '- LIGHTING: ' + m.light + '. The light rakes ACROSS the sloped floor at a low angle so the incline casts a soft gradient from the wall-base (brighter) down to the drain (deeper) — the light itself describes the unbroken slope.',
+    '- ATMOSPHERE: a thin sheet of water glides DOWN the slope from the wall-base toward the central drain, tracing the continuous incline. ' + m.extras + '.',
+    '- Polished marble with faint mirror reflections, subtle translucency at thin edges, veining flowing like ink. Architectural Digest / Kinfolk editorial quality, ultra-detailed, razor-sharp, 8K, rich tonal depth.',
+    '- Composition leaves clean negative space (room for an Instagram caption).',
+  ].join('\n');
+
+  return [
+    'You are given three reference images:',
+    '  1. A technical sketch of the sink (geometry — follow it precisely, INCLUDING the continuous basin-floor SLOPE shown in the side-section view).',
+    '  2. Marble sample A — the EXTERIOR / countertop stone.',
+    '  3. Marble sample B — the INTERIOR basin stone.',
+    '',
+    `Produce a single photorealistic studio-quality still of the "${model}" marble sink, installed in ${setting}. Dimensions and slopes: ${dims}.`,
+    '',
+    construction,
+    '',
+    renderStyle,
+    '',
+    'ABSOLUTE FORBIDS: a flat bottom shelf, a flat landing zone, a level ledge, or any two-stage stepped floor (the slope MUST run continuously from the wall-base to the center drain); a perfectly flat or level basin floor; white porcelain, ceramic, round or oval sink, bowl shape, carved or curved basin, rounded outer edges, pedestal, white grout, white caulk, contrasting seams, placeholder or starter sink, people, hands, text, captions, watermark.',
+  ].join('\n');
 }

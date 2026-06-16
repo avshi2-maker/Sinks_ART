@@ -142,6 +142,15 @@ export async function setDemoImage(id: string, cloudinaryUrl: string, publicId?:
   return { ok: true, id };
 }
 
+// Load one saved sketch's spec (for re-opening in the builder to edit -> save as new).
+export interface SketchLoad { spec: Record<string, unknown>; title_he: string | null; }
+export async function fetchSketchSpec(id: string): Promise<SketchLoad | null> {
+  if (!id) return null;
+  const sb = getServerSupabase();
+  const res = await sb.from('demo_trials').select('inputs_jsonb, title_he').eq('id', id).eq('kind', 'sketch').single();
+  if (res.error || !res.data) { console.error('[fetchSketchSpec]', res.error?.message); return null; }
+  return { spec: (res.data.inputs_jsonb || {}) as Record<string, unknown>, title_he: res.data.title_he };
+}
 // ---- pickers for the save-to-gallery panel ----
 
 export interface CustomerPickLite { id: string; name_he: string; }
