@@ -1,10 +1,10 @@
-﻿// src/app/demos/page.tsx
-// Phase 38 — Demo-Trials gallery: upload + browse AI הדמיה demos.
+// src/app/demos/page.tsx
+// Demo-Trials gallery: upload AI demos + browse demos & saved sketches with filter tabs.
 
 import Link from 'next/link';
 import { fetchDemos } from '@/lib/demos/demosData';
 import DemoUploader from '@/components/demos/DemoUploader';
-import DemoCard from '@/components/demos/DemoCard';
+import GalleryGrid from '@/components/demos/GalleryGrid';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -18,8 +18,8 @@ export default async function DemosPage() {
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-md bg-stone-100 flex items-center justify-center text-xl">🎨</div>
           <div>
-            <div className="text-lg font-medium text-stone-900">ספריית הדמיות</div>
-            <div className="text-xs text-stone-500">{demos.length} הדמיות · Demo-Trials</div>
+            <div className="text-lg font-medium text-stone-900">גלריה</div>
+            <div className="text-xs text-stone-500">{demos.length} פריטים · הדמיות ושרטוטים</div>
           </div>
         </div>
         <Link href="/dashboard" className="text-sm text-blue-600 no-underline hover:underline">← חזרה ללוח הבקרה</Link>
@@ -27,13 +27,7 @@ export default async function DemosPage() {
 
       <div className="mb-4"><DemoUploader /></div>
 
-      {demos.length === 0 ? (
-        <div className="bg-stone-50 border border-stone-200 rounded-lg px-4 py-8 text-center text-sm text-stone-500">אין הדמיות עדיין. העלו את הראשונה.</div>
-      ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-          {demos.map((d) => (<DemoCard key={d.id} demo={d} />))}
-        </div>
-      )}
+      <GalleryGrid demos={demos} />
     </div>
   );
 }

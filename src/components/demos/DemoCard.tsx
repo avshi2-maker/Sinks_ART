@@ -1,7 +1,7 @@
-﻿'use client';
+'use client';
 
 // src/components/demos/DemoCard.tsx
-// Phase 38 — single demo card: image, title, marble, prompt copy, edit/delete/download/whatsapp.
+// Single gallery card: AI demo (image/video) OR saved sketch (inline SVG). Edit/delete/download/whatsapp.
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -11,6 +11,7 @@ import { getVideoFrameUrl } from '@/lib/intake/cloudinary';
 
 export default function DemoCard({ demo }: { demo: DemoTrial }) {
   const router = useRouter();
+  const isSketch = demo.kind === 'sketch' && !!demo.sketch_svg;
   const isVideo = !!demo.cloudinary_url && demo.cloudinary_url.includes('/video/upload/');
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(demo.title_he || '');
@@ -26,7 +27,7 @@ export default function DemoCard({ demo }: { demo: DemoTrial }) {
     setEditing(false); router.refresh();
   }
   async function remove() {
-    if (!window.confirm('למחוק הדמיה זו לצמיתות?')) return;
+    if (!window.confirm('למחוק פריט זה לצמיתות?')) return;
     setBusy(true);
     const res = await deleteDemo(demo.id);
     setBusy(false);
@@ -51,14 +52,26 @@ export default function DemoCard({ demo }: { demo: DemoTrial }) {
   function copyPrompt() {
     if (demo.nano_banana_prompt) { navigator.clipboard.writeText(demo.nano_banana_prompt); window.alert('הפרומפט הועתק'); }
   }
+  function downloadSketch() {
+    if (!demo.sketch_svg) return;
+    const blob = new Blob([demo.sketch_svg], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = (demo.title_he || 'sketch').replace(/\s+/g, '_') + '.svg';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
   function sendWhatsApp() {
-    const txt = encodeURIComponent((demo.title_he || 'הדמיה') + (demo.cloudinary_url ? '\n' + demo.cloudinary_url : ''));
+    const txt = encodeURIComponent((demo.title_he || 'פריט') + (demo.cloudinary_url ? '\n' + demo.cloudinary_url : ''));
     window.open('https://api.whatsapp.com/send?text=' + txt, '_blank');
   }
 
   return (
     <div className="bg-white border border-stone-200 rounded-lg overflow-hidden shadow-sm" dir="rtl">
-      {demo.cloudinary_url ? (
+      {isSketch ? (
+        <div className="relative w-full h-44 bg-white border-b border-stone-100 overflow-hidden flex items-center justify-center p-1" dangerouslySetInnerHTML={{ __html: demo.sketch_svg as string }} />
+      ) : demo.cloudinary_url ? (
         isVideo ? (
           <a href={demo.cloudinary_url} target="_blank" rel="noopener noreferrer" className="relative block">
             <img src={getVideoFrameUrl(demo.cloudinary_url, 1)} alt={demo.title_he || 'הדמיה'} className="w-full h-44 object-cover" />
@@ -80,7 +93,7 @@ export default function DemoCard({ demo }: { demo: DemoTrial }) {
         {editing ? (
           <div className="space-y-2">
             <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="כותרת" className="w-full px-2 py-1.5 text-sm border border-stone-300 rounded-md" dir="rtl" />
-            <input value={marble} onChange={(e) => setMarble(e.target.value)} placeholder="סוג שיש" className="w-full px-2 py-1.5 text-sm border border-stone-300 rounded-md" dir="rtl" />
+            {!isSketch && (<input value={marble} onChange={(e) => setMarble(e.target.value)} placeholder="סוג שיש" className="w-full px-2 py-1.5 text-sm border border-stone-300 rounded-md" dir="rtl" />)}
             <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="הערות" rows={2} className="w-full px-2 py-1.5 text-sm border border-stone-300 rounded-md resize-y" dir="rtl" />
             <div className="flex gap-2">
               <button onClick={save} disabled={busy} className="text-sm px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50">שמור</button>
@@ -89,12 +102,19 @@ export default function DemoCard({ demo }: { demo: DemoTrial }) {
           </div>
         ) : (
           <>
-            <div className="text-sm font-medium text-stone-800">{demo.title_he || 'הדמיה'}</div>
+            <div className="flex items-center gap-1.5">
+              {isSketch && (<span className="text-[10px] px-1.5 py-0.5 rounded-full bg-pink-100 text-pink-700 font-semibold">📐 שרטוט</span>)}
+              <div className="text-sm font-medium text-stone-800">{demo.title_he || (isSketch ? 'שרטוט' : 'הדמיה')}</div>
+            </div>
             {demo.marble_family && (<div className="text-xs text-stone-500">🪨 {demo.marble_family}</div>)}
             {demo.notes_he && (<div className="text-xs text-stone-500">{demo.notes_he}</div>)}
             <div className="flex items-center gap-3 pt-1 text-stone-400">
               {demo.nano_banana_prompt && (<button onClick={copyPrompt} title="העתק פרומפט" className="hover:text-blue-600 text-sm">📋</button>)}
-              {demo.cloudinary_url && (<a href={demo.cloudinary_url} download title="הורד" className="hover:text-blue-600 text-sm">⬇️</a>)}
+              {isSketch ? (
+                <button onClick={downloadSketch} title="הורד SVG" className="hover:text-blue-600 text-sm">⬇️</button>
+              ) : demo.cloudinary_url ? (
+                <a href={demo.cloudinary_url} download title="הורד" className="hover:text-blue-600 text-sm">⬇️</a>
+              ) : null}
               <button onClick={sendWhatsApp} title="שלח בוואטסאפ" className="hover:text-green-600 text-sm">💬</button>
               <button onClick={() => setEditing(true)} title="ערוך" className="hover:text-blue-600 text-sm">✏️</button>
               <button onClick={remove} disabled={busy} title="מחק" className="hover:text-red-600 text-sm">🗑️</button>

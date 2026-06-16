@@ -1,9 +1,10 @@
-﻿'use client';
+'use client';
 
 // src/components/sketch/SketchBuilder.tsx
 // Spec form + live technical-sketch preview + download/print. RTL Hebrew.
 
 import { useMemo, useState } from 'react';
+import SaveSketchToGallery from '@/components/sketch/SaveSketchToGallery';
 import { useRouter } from 'next/navigation';
 import { createPO } from '@/lib/po/poData';
 import { MarbleSwatch } from '@/lib/marble/marbleData';
@@ -219,12 +220,16 @@ export default function SketchBuilder({ initial, swatches = [] }: SketchBuilderP
           <button onClick={printSketch} className="text-sm px-4 py-1.5 bg-stone-700 text-white rounded-md hover:bg-stone-800">🖨️ הדפס / PDF</button>
           <button onClick={whatsappToAles} className="text-sm px-4 py-1.5 bg-green-600 text-white rounded-md hover:bg-green-700">💬 שלח לאלס</button>
           <button onClick={sendToPO} disabled={poBusy} className="text-sm px-4 py-1.5 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50">📋 {poBusy ? 'יוצר...' : 'צור הזמנת ייצור'}</button>
+            <SaveSketchToGallery svg={svg} spec={spec as unknown as Record<string, unknown>} defaultTitle={spec.modelName} />
         </div>
       </div>
       <div className="border border-stone-200 rounded-lg p-2 bg-white" dangerouslySetInnerHTML={{ __html: svg }} />
     </div>
   );
 }
+
+
+
 
 
 

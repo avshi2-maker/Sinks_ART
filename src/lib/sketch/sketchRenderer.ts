@@ -1,4 +1,4 @@
-﻿// src/lib/sketch/sketchRenderer.ts
+// src/lib/sketch/sketchRenderer.ts
 // SVG technical-sketch generator — auto-scale, dual pitch, and DOUBLE-BASIN (two troughs in one block).
 
 export type SketchShape = 'rectangle' | 'square' | 'triangle' | 'trapezoid' | 'pentagon' | 'custom';
@@ -65,7 +65,7 @@ function dimLineV(y1: number, y2: number, x: number, label: string): string {
 
 export function renderSinkSketch(spec: SketchSpec): string {
   if (!(spec.lengthMm > 0) || !(spec.widthMm > 0) || !(spec.heightMm > 0)) {
-    return `<svg viewBox="0 0 ${PAGE_W} ${PAGE_H}" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, sans-serif"><rect x="0" y="0" width="${PAGE_W}" height="${PAGE_H}" fill="white"/><text x="${PAGE_W / 2}" y="${PAGE_H / 2 - 10}" text-anchor="middle" font-size="20" font-weight="600" fill="${DIM}">הזן מידות להצגת השרטוט</text><text x="${PAGE_W / 2}" y="${PAGE_H / 2 + 18}" text-anchor="middle" font-size="13" fill="${DIM}">אורך · רוחב · גובה (מ"מ)</text></svg>`;
+    return `<svg viewBox="0 0 ${PAGE_W} ${PAGE_H}" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, sans-serif" style="direction:ltr"><rect x="0" y="0" width="${PAGE_W}" height="${PAGE_H}" fill="white"/><text x="${PAGE_W / 2}" y="${PAGE_H / 2 - 10}" text-anchor="middle" font-size="20" font-weight="600" fill="${DIM}">הזן מידות להצגת השרטוט</text><text x="${PAGE_W / 2}" y="${PAGE_H / 2 + 18}" text-anchor="middle" font-size="13" fill="${DIM}">אורך · רוחב · גובה (מ"מ)</text></svg>`;
   }
   const wallL = spec.wallLeftMm ?? spec.wallThicknessMm;
   const wallR = spec.wallRightMm ?? spec.wallThicknessMm;
@@ -236,7 +236,7 @@ export function renderSinkSketch(spec: SketchSpec): string {
     `<rect x="92" y="${fy + 134}" width="13" height="13" fill="${FILL_EXT}" stroke="${STROKE}"/><text x="110" y="${fy + 145}" font-size="12" fill="${STROKE}">שיש חוץ: ${esc(spec.exteriorStone || '—')}</text>` +
     `<rect x="300" y="${fy + 134}" width="13" height="13" fill="${FILL_INT}" stroke="${STROKE}"/><text x="318" y="${fy + 145}" font-size="12" fill="${STROKE}">שיש פנים (אגן): ${esc(spec.interiorStone || '—')}</text>`;
 
-  return `<svg viewBox="0 0 ${PAGE_W} ${PAGE_H}" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, sans-serif"><rect x="0" y="0" width="${PAGE_W}" height="${PAGE_H}" fill="white"/><text x="${PAGE_W / 2}" y="34" text-anchor="middle" font-size="18" font-weight="600" fill="${STROKE}">${esc(spec.modelName || 'כיור שיש')}</text><text x="${PAGE_W / 2}" y="54" text-anchor="middle" font-size="12" fill="${DIM}">שרטוט ייצור · מידות במ"מ${isDouble ? ' · כיור כפול' : ''}</text><text x="${topBoxX}" y="${topBoxY - 12}" font-size="13" font-weight="600" fill="${STROKE}">מבט על (TOP)</text><polygon points="${pts}" fill="${FILL_EXT}" stroke="${STROKE}" stroke-width="1.5"/>${topBasins}${topDrains}${drainRLabel}${tapSvg}${dimLineH(ox, ox + Lpx, oy + Wpx + 24, spec.lengthMm + '')}${dimLineV(oy, oy + Wpx, ox - 22, spec.widthMm + '')}<text x="${secBoxX}" y="${secBoxY - 12}" font-size="13" font-weight="600" fill="${STROKE}">חתך צד (SECTION)</text>${section}${drainSecSvg}${pitchLabel}${wallHatch}${dimLineV(sy, sy + secH, sx + secW + 24, spec.heightMm + '')}${sectionDims}<text x="${sx + secW / 2}" y="${sy + secH + 18}" text-anchor="middle" font-size="11" fill="${DIM}">${esc(mountLabel)}</text>${techPanel}</svg>`;
+  return `<svg viewBox="0 0 ${PAGE_W} ${PAGE_H}" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, sans-serif" style="direction:ltr"><rect x="0" y="0" width="${PAGE_W}" height="${PAGE_H}" fill="white"/><text x="${PAGE_W / 2}" y="34" text-anchor="middle" font-size="18" font-weight="600" fill="${STROKE}">${esc(spec.modelName || 'כיור שיש')}</text><text x="${PAGE_W / 2}" y="54" text-anchor="middle" font-size="12" fill="${DIM}">שרטוט ייצור · מידות במ"מ${isDouble ? ' · כיור כפול' : ''}</text><text x="${topBoxX}" y="${topBoxY - 12}" font-size="13" font-weight="600" fill="${STROKE}">מבט על (TOP)</text><polygon points="${pts}" fill="${FILL_EXT}" stroke="${STROKE}" stroke-width="1.5"/>${topBasins}${topDrains}${drainRLabel}${tapSvg}${dimLineH(ox, ox + Lpx, oy + Wpx + 24, spec.lengthMm + '')}${dimLineV(oy, oy + Wpx, ox - 22, spec.widthMm + '')}<text x="${secBoxX}" y="${secBoxY - 12}" font-size="13" font-weight="600" fill="${STROKE}">חתך צד (SECTION)</text>${section}${drainSecSvg}${pitchLabel}${wallHatch}${dimLineV(sy, sy + secH, sx + secW + 24, spec.heightMm + '')}${sectionDims}<text x="${sx + secW / 2}" y="${sy + secH + 18}" text-anchor="middle" font-size="11" fill="${DIM}">${esc(mountLabel)}</text>${techPanel}</svg>`;
 }
 
 

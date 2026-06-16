@@ -1,7 +1,7 @@
-﻿'use server';
+'use server';
 
 // src/lib/demos/demosData.ts
-// Phase 38 — Demo-Trials library: standalone AI הדמיה demos with optional customer link.
+// Phase 38 — Demo-Trials library: AI הדמיה demos. Extended: also holds saved sketches (kind='sketch').
 
 import { createClient } from '@supabase/supabase-js';
 import { revalidatePath } from 'next/cache';
@@ -26,6 +26,8 @@ export interface DemoTrial {
   notes_he: string | null;
   customer_id: string | null;
   project_id: string | null;
+  kind: string | null;          // 'demo' | 'sketch'
+  sketch_svg: string | null;    // inline SVG when kind === 'sketch'
   is_archived: boolean;
   created_at: string;
 }
@@ -65,6 +67,36 @@ export async function saveDemo(input: SaveDemoInput): Promise<DemoResult> {
     marble_family: input.marble_family?.trim() || null,
     notes_he: input.notes_he?.trim() || null,
     customer_id: input.customer_id || null,
+    kind: 'demo',
+  }).select('id').single();
+  if (res.error || !res.data) return { ok: false, error: res.error?.message || 'no row' };
+  revalidatePath('/demos');
+  return { ok: true, id: res.data.id as string };
+}
+
+// Save a technical sketch into the gallery (kind='sketch'). Optional customer + project link.
+export interface SaveSketchInput {
+  title_he?: string;
+  sketch_svg: string;
+  spec?: Record<string, unknown>;
+  notes_he?: string;
+  customer_id?: string | null;
+  project_id?: string | null;
+}
+
+export async function saveSketchToGallery(input: SaveSketchInput): Promise<DemoResult> {
+  if (!input.sketch_svg) return { ok: false, error: 'אין שרטוט לשמירה' };
+  const sb = getServerSupabase();
+  const d = new Date();
+  const stamp = String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear();
+  const res = await sb.from('demo_trials').insert({
+    title_he: input.title_he?.trim() || ('שרטוט · ' + stamp),
+    sketch_svg: input.sketch_svg,
+    inputs_jsonb: input.spec || null,
+    notes_he: input.notes_he?.trim() || null,
+    customer_id: input.customer_id || null,
+    project_id: input.project_id || null,
+    kind: 'sketch',
   }).select('id').single();
   if (res.error || !res.data) return { ok: false, error: res.error?.message || 'no row' };
   revalidatePath('/demos');
@@ -108,4 +140,23 @@ export async function setDemoImage(id: string, cloudinaryUrl: string, publicId?:
   if (res.error) return { ok: false, error: res.error.message };
   revalidatePath('/demos');
   return { ok: true, id };
+}
+
+// ---- pickers for the save-to-gallery panel ----
+
+export interface CustomerPickLite { id: string; name_he: string; }
+export async function fetchCustomersForPicker(): Promise<CustomerPickLite[]> {
+  const sb = getServerSupabase();
+  const res = await sb.from('customers').select('id, name_he').is('archived_at', null).order('name_he', { ascending: true });
+  if (res.error) { console.error('[fetchCustomersForPicker]', res.error.message); return []; }
+  return (res.data || []) as CustomerPickLite[];
+}
+
+export interface ProjectPickLite { id: string; title_he: string | null; }
+export async function fetchProjectsForCustomer(customerId: string): Promise<ProjectPickLite[]> {
+  if (!customerId) return [];
+  const sb = getServerSupabase();
+  const res = await sb.from('projects').select('id, title_he').eq('customer_id', customerId).order('created_at', { ascending: false });
+  if (res.error) { console.error('[fetchProjectsForCustomer]', res.error.message); return []; }
+  return (res.data || []) as ProjectPickLite[];
 }
