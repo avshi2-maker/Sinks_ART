@@ -1,4 +1,4 @@
-﻿# Marble Art Sinks — Ideas Parking Lot
+# Marble Art Sinks — Ideas Parking Lot
 
 A living document. Add ideas as they come up — no filtering, no judgement, no prioritization needed at the time of capture. Triage and prioritize later.
 
@@ -837,3 +837,43 @@ Pick based on energy at start of next session:
 - Goal: incoming WhatsApp leads/RFQ auto-flow into CRM (no manual paste).
 - Reality: requires WhatsApp Business Platform (Cloud API) — Meta business verification, migrate the number off the regular app, webhook endpoint, a provider (Twilio/360dialog), per-message fees.
 - Decision: NOT now. Current paste-into-/leads flow (AI extraction) is enough for low volume. Revisit if lead volume grows.
+---
+## Session 16/06/2026 — Sketch tooling, gallery export, pitch prompts, lead-capture plan
+
+### DONE & PUSHED this session
+- **BUG #1 fixed** — duplicate `SaveSketchToGallery` import in SketchBuilder.tsx (was 5 copies → 1). `/sketch` compiles.
+- **Sketch panel direction bug fixed** — TECHNICAL DATA panel was clipping (Hebrew right-column cut, "TECHNICAL DAT", title overflow). Cause: SVG inherited page RTL; flipped right-aligned text math off the canvas. Fix: added `style="direction:ltr"` to both `<svg>` opening tags in sketchRenderer.ts (2 occurrences). Hebrew still renders correctly; only alignment math restored.
+- **Save-sketch-to-gallery VERIFIED** — saves a real row to `demo_trials` (kind='sketch', svg in `sketch_svg`, spec in `inputs_jsonb`). Shows in גלריה under 📐 שרטוטים. (Earlier "save failed" was a 0-rows scare; proven via REST insert test = OK. Real issue was never reproduced — saving works.)
+- **Sketch cards — export buttons** (DemoCard.tsx): 🖼️ PNG download (canvas rasterize SVG, 2.5x), 📄 PDF (customer-ready A4 print page with ARVO header, opens anywhere), ☁️ upload PNG to Cloudinary. SVG rasterized to PNG via canvas, no new libraries.
+- **Cloudinary folder split** — sketch ☁️ uploads → `marble-art/sketches-bank` (PRIVATE bank, NOT wired to public website — nothing queries it, so it never appears on the live site). Demo-render uploads stay → `Demo-Trials`. Two upload calls in DemoCard.tsx: line ~74 = Demo-Trials (demo renders), line ~117 = sketches-bank (sketch button).
+- **✏️ edit reopens the BUILDER** — clicking ✏️ on a שרטוט card now navigates to `/sketch?load=<id>`, pre-fills the builder from saved spec, saves changes as a NEW sketch (original preserved). Added `fetchSketchSpec(id)` to demosData.ts; sketch/page.tsx reads `?load=` searchParam + amber "editing — saves as new" banner. SketchBuilder already accepted `initial` prop (no change needed there).
+
+### Nano Banana pitch prompts — the big win (promptTemplates.ts + PromptBuilderShell.tsx)
+Problem: AI renders showed FLAT basin floors — the drainage pitch (the signature beauty) was invisible. Root cause in original prompt: word "FLAT" repeated ~6x drowned out the one "slopes" line; low side camera also flattens the read.
+Added FOUR Nano Banana variants, selectable via buttons next to מדויק/אינסטגרם (pitchMode state: 'none'|'rim'|'base'|'fromrim'):
+- **(normal)** `buildNanoBananaPrompt` — original, flat floor.
+- **📐 שיפועים** `buildNanoBananaPitchPrompt` — slope tapers from rim, four-way taper.
+- **📐 שיפוע מבסיס** `buildNanoBananaPitchFromBasePrompt` — straight vertical walls, then ONE continuous slope from wall-base to drain, no flat shelf.
+- **📐 שיפוע מהשפה** `buildNanoBananaSlopeFromRimPrompt(inputs, isDouble)` — THE PROVEN WINNER. Shallow faceted HOPPER, slope begins AT THE RIM, no flat collar, steep ~65° top-down camera. Takes `isDouble` flag → auto-writes two-basin version (two hoppers + 100mm stone rib) when model name/dims contain double/כפול/2 אגנים. Validated in Nano Banana on BOTH single and double renders — pitch finally reads correctly.
+Lesson for image-prompt tuning: image models blend instructions with training photos of flat sinks; flat collar keeps creeping back. Levers that worked: steep top-down camera + describe geometry as a "faceted hopper / inverted shallow pyramid" + explicitly forbid flat collar/shelf/ledge + water visibly running downhill.
+
+### OPEN JOBS pulled from HANDOVER_16062026 (still to do)
+1. **BUG #2 — Print/PDF popup "about:blank"/headers.** Both printSketch() and the new 📄 PDF use `window.open` popup; Chrome's "Headers and footers" box re-adds date/page#/about:blank and won't stick per-site on a blank popup. Proper fix: print from a hidden in-page `@media print` container instead of a popup. Workaround: untick the box each print.
+2. **BUG #3 — Swapped-field supplier offer (data).** One `supplier_offers` row: project_ref=customer name, supplier_name=sink desc. Fix on /suppliers ✏️ פריטים. Optionally tighten analyze-supplier prompt.
+3. **BUG #4 — Data cleanup.** "אלס - קבלן ביצוע כיורים" wrongly a CUSTOMER row (supplier only). Plus demo rows (פנייה משיחה, דנה, old Avshalom Sapir) to archive via /customers 🗑️.
+4. **TEST SKETCH ROW** — test card created this session still in gallery; delete it.
+5. **Ales Mobile RFQ tool** — DB ready (`rfqs`, `rfq_responses` tables + anon RLS done), NOT built. Ales opens link, taps picker, enters price+photo → lands in /suppliers. Access-code gate via env `ALES_ACCESS_CODE`. MUST stay separate from customer-facing branded PDF.
+6. **Branded PDF → /suppliers integration.** `ARVO_price_offer_template.html` works standalone; wire into הצעה ללקוח tab. Avshi priority.
+
+### LEAD CAPTURE — two named tools for two lead behaviors (planned this session)
+Problem Avshi raised: website visitors are scared of forms, fall back to slow WhatsApp chatting instead of submitting structured data. Real WhatsApp example received: master bath marble sink+counter 2.40m, guest bath 1.0–1.2m — i.e. they DO give the data, just as chat prose, not form fields.
+Decision: build TWO distinct tools, Avshi picks per lead attitude:
+- **טופס זריזים (Quick Form)** — public chat-style, ONE-question-per-screen, thumb-friendly RFQ form (tap buttons: room / single-double / length / marble thumbnails; only phone typed; optional photo). For decisive leads. **LIVES IN THE SEPARATE PUBLIC-SITE REPO (marble-art.co.il), NOT in Sinks_ART CRM.** Reshape the existing public RFQ form there — needs that repo's local path. NOT YET BUILT.
+- **לכידת שיחה (Chat Capture)** — AI paste-intake HERE in the CRM: paste a chatter's WhatsApp/IG message → existing `/api/analyze-dm` (Claude) extracts structured lead → /leads. For form-shy chatters. Components `leads/PastedLeadIntake.tsx` + `/api/analyze-dm` already exist (verify/polish, not build from scratch). NOT YET VERIFIED this session.
+- WhatsApp true auto-bot = still parked (needs WhatsApp Business Cloud API, fees, Meta verification — see earlier parked note). Free alternative: WhatsApp greeting auto-reply with a one-tap link to טופס זריזים.
+- Key architecture fact confirmed this session: `Sinks_ART` repo is the INTERNAL CRM only (root page.tsx just redirects to /dashboard). The public marketing site is a SEPARATE repo. Any public-form work happens there.
+
+### Confirmed working-method reminders (reinforced this session)
+- READ the file before proposing a cause (saved time repeatedly today vs. guessing).
+- Line-number edits (`$lines[N]=...`) and full-file base64 beat multi-line `.Replace()` anchors (CRLF/LF mismatches caused several `Replaced: 0`/`Replaced: 2` misfires).
+- Commit early and often — pushed 4 times this session at each verified milestone.
