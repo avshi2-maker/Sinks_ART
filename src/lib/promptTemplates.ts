@@ -365,3 +365,60 @@ export function buildNanoBananaPitchFromBasePrompt(inputs: PromptBuilderInputs):
     'ABSOLUTE FORBIDS: a flat bottom shelf, a flat landing zone, a level ledge, or any two-stage stepped floor (the slope MUST run continuously from the wall-base to the center drain); a perfectly flat or level basin floor; white porcelain, ceramic, round or oval sink, bowl shape, carved or curved basin, rounded outer edges, pedestal, white grout, white caulk, contrasting seams, placeholder or starter sink, people, hands, text, captions, watermark.',
   ].join('\n');
 }
+
+// ---- SLOPE-FROM-RIM PROMPT (שיפוע מהשפה) ----
+// The proven wording (validated on single + double renders): each basin is a shallow faceted
+// HOPPER whose slope begins AT THE RIM LINE — no flat collar, no flat shelf. Steep near-top-down
+// camera. Adapts to single or double basin via inputs (double = two hoppers + stone rib).
+export function buildNanoBananaSlopeFromRimPrompt(inputs: PromptBuilderInputs, isDouble = false): string {
+  const model = inputs.modelName.trim() || 'custom marble sink';
+  const dims = inputs.dimensions.trim() || 'as drawn in the sketch';
+  const mood = inputs.mood || 'golden';
+  const m = moodPreset(mood);
+  const setting = inputs.setting.trim() || m.setting;
+
+  const basinGeometry = isDouble
+    ? [
+        'ONE single wide stone block containing TWO separate basins side by side, separated by a solid stone divider rib (about 100mm wide) running front-to-back. Each basin is its own independent recess.',
+        'EACH BASIN = A SHALLOW FACETED HOPPER (inverted shallow pyramid): four flat triangular facets, one per side, each tilting steeply DOWN and INWARD from the rim straight to that basin\'s OWN center drain. Diagonal crease lines run corner-to-drain, meeting at the drain at the lowest point. Each basin has exactly ONE round drain at its own center — two basins, two separate center drains.',
+        'The solid stone rib between the two basins stays flat/level on top (structure, not a basin).',
+      ].join('\n')
+    : [
+        'EACH BASIN = A SHALLOW FACETED HOPPER (inverted shallow pyramid): four flat triangular facets, one per side, each tilting steeply DOWN and INWARD from the rim straight to the center drain. Diagonal crease lines run corner-to-drain, meeting at the single round drain at the lowest point.',
+      ].join('\n');
+
+  const construction = [
+    'CONSTRUCTION RULES (follow exactly):',
+    '- BASIN LAYOUT: ' + basinGeometry,
+    '- CRITICAL — NO FLAT COLLAR: in each basin the slope begins AT THE RIM LINE. NO flat horizontal band, NO level shelf, NO flat collar between the rim and the sloped facets. The inside of each basin is ENTIRELY sloped surface — zero flat area inside any basin.',
+    `- OUTER body is ${shapePhrase(inputs.shape)} — clean rectangle, flat polished exterior slabs, invisible color-matched hairline seams. NO white grout, NO contrasting joint lines.`,
+    `- DRAIN: ${drainPhrase(inputs.drain)} at each basin's exact center and lowest point, where the four facets converge.`,
+    '- COLOR MAPPING: reference image 2 (marble sample A) for ALL EXTERIOR surfaces (outer panels, front face, top rim, surrounding countertop' + (isDouble ? ', and the divider rib top' : '') + '). Reference image 3 (marble sample B) for the INTERIOR sloped facets of ' + (isDouble ? 'BOTH basins' : 'the basin') + '. The two materials meet cleanly at the rim.',
+    `- ${mountAndFaucetClause(inputs.mount, inputs.faucetType)}`,
+  ].join('\n');
+
+  const renderStyle = [
+    'RENDER STYLE — INSTAGRAM HERO (editorial, scroll-stopping), SLOPE-REVEALING:',
+    '- CAMERA: steep near-top-down angle (about 65°) looking DOWN INTO the ' + (isDouble ? 'two basins so both faceted hoppers and both center drains' : 'basin so the faceted hopper and the center drain') + ' are fully visible and no flat area can hide. NOT a low side angle. 35mm lens, shallow depth of field.',
+    '- SETTING: ' + m.setting + '.',
+    '- LIGHTING: ' + m.light + '. Golden-hour light rakes across the facets so each slope reads clearly.',
+    '- ATMOSPHERE: a thin sheet of water runs visibly DOWN the facets into ' + (isDouble ? 'each center drain' : 'the center drain') + ', proving the incline. ' + m.extras + '.',
+    '- Polished marble with faint mirror reflections, veining flowing like ink. Architectural Digest / Kinfolk editorial quality, ultra-detailed, razor-sharp, 8K.',
+    '- Composition leaves clean negative space (room for an Instagram caption).',
+  ].join('\n');
+
+  return [
+    'You are given three reference images:',
+    '  1. A technical sketch of the sink (geometry — follow it precisely, including the basin-floor SLOPE in the side-section view).',
+    '  2. Marble sample A — the EXTERIOR / countertop stone.',
+    '  3. Marble sample B — the INTERIOR basin stone.',
+    '',
+    `Produce a single photorealistic studio-quality still of the "${model}" marble sink, installed in ${setting}. Dimensions and slopes: ${dims}.`,
+    '',
+    construction,
+    '',
+    renderStyle,
+    '',
+    'ABSOLUTE FORBIDS: ' + (isDouble ? 'a single basin (there must be TWO), one shared drain, ' : '') + 'a flat collar, flat rim band, flat shelf, level ledge inside a basin, flat basin floor, stepped/two-stage floor, bowl, curved or carved basin, rounded outer edges, white porcelain, ceramic, pedestal, white grout, white caulk, contrasting seams, placeholder or starter sink, people, hands, text, captions, watermark.',
+  ].join('\n');
+}
