@@ -1,11 +1,12 @@
 'use server';
 
 // src/lib/rfq/rfqData.ts
-// Ales RFQ pipeline: create an RFQ (Avshi side), fetch by token (Ales mobile page),
-// submit a response (Ales side) -> recorded; supplier-offer + email come in chunk 3.
+// Ales RFQ pipeline: create (Avshi), fetch by token (Ales page), submit response (Ales)
+// -> saves response + creates a /suppliers offer to review. Email alert = chunk 3b.
 
 import { createClient } from '@supabase/supabase-js';
 import { revalidatePath } from 'next/cache';
+import { createSupplierOffer } from '@/lib/suppliers/suppliersData';
 
 function getServerSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -112,10 +113,12 @@ export async function submitRfqResponse(input: SubmitRfqInput): Promise<SubmitRf
   if (!input.totalIls || input.totalIls <= 0) return { ok: false, error: 'missing price' };
   const sb = getServerSupabase();
 
-  // resolve rfq by token
-  const rfqRes = await sb.from('rfqs').select('id, status').eq('token', input.token).single();
+  // resolve rfq by token (need title/project for the supplier offer)
+  const rfqRes = await sb.from('rfqs').select('id, title_he, project_ref, customer_hint').eq('token', input.token).single();
   if (rfqRes.error || !rfqRes.data) return { ok: false, error: 'RFQ not found' };
   const rfqId = rfqRes.data.id as string;
+  const title = (rfqRes.data.title_he as string) || 'RFQ';
+  const projectRef = (rfqRes.data.project_ref as string) || title;
 
   // insert the response
   const insRes = await sb.from('rfq_responses').insert({
@@ -124,8 +127,33 @@ export async function submitRfqResponse(input: SubmitRfqInput): Promise<SubmitRf
     total_ils: input.totalIls,
     remark_he: input.remarkHe?.trim() || null,
     ales_photo_urls: input.sitePhotoUrls && input.sitePhotoUrls.length > 0 ? input.sitePhotoUrls : null,
-  });
-  if (insRes.error) return { ok: false, error: insRes.error.message };
+  }).select('id').single();
+  if (insRes.error || !insRes.data) return { ok: false, error: insRes.error?.message || 'no response row' };
+  const responseId = insRes.data.id as string;
+
+  // create a /suppliers offer from Ales's pricing (flows into the review + commission screen)
+  let offerId: string | null = null;
+  try {
+    const offer = await createSupplierOffer({
+      supplier_name: 'אלס - ARVO',
+      trade: 'ייצור כיורי שיש',
+      project_ref: projectRef,
+      source: 'ales_rfq',
+      raw_message: input.remarkHe?.trim() || null,
+      line_items: input.lineItems,
+      total_ils: input.totalIls,
+      save_to_directory: true,
+    });
+    if (offer.ok) offerId = offer.id || null;
+    else console.error('[submitRfqResponse] createSupplierOffer failed:', offer.error);
+  } catch (e) {
+    console.error('[submitRfqResponse] offer creation threw (non-blocking):', e);
+  }
+
+  // link the offer back onto the response (best-effort)
+  if (offerId) {
+    await sb.from('rfq_responses').update({ supplier_offer_id: offerId }).eq('id', responseId);
+  }
 
   // mark the RFQ answered
   const updRes = await sb.from('rfqs').update({ status: 'answered', updated_at: new Date().toISOString() }).eq('id', rfqId);
