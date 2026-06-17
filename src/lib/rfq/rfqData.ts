@@ -2,10 +2,11 @@
 
 // src/lib/rfq/rfqData.ts
 // Ales RFQ pipeline: create (Avshi), fetch by token (Ales page), submit response (Ales)
-// -> saves response + creates a /suppliers offer to review. Email alert = chunk 3b.
+// -> saves response + creates a /suppliers offer + emails Avshi an alert.
 
 import { createClient } from '@supabase/supabase-js';
 import { revalidatePath } from 'next/cache';
+import { Resend } from 'resend';
 import { createSupplierOffer } from '@/lib/suppliers/suppliersData';
 
 function getServerSupabase() {
@@ -13,6 +14,41 @@ function getServerSupabase() {
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !key) throw new Error('Supabase env vars missing on server');
   return createClient(url, key, { auth: { persistSession: false } });
+}
+
+// Non-blocking alert email when Ales prices a job. Mirrors the lead-alert pattern.
+async function sendAlesAlertEmail(opts: {
+  title: string;
+  total: number;
+  lineItems: { desc: string; price: number }[];
+  remark?: string;
+}): Promise<void> {
+  try {
+    const apiKey = process.env.RESEND_API_KEY;
+    const to = process.env.LEAD_ALERT_EMAIL;
+    if (!apiKey || !to) { console.warn('[alesAlert] missing RESEND_API_KEY/LEAD_ALERT_EMAIL — skip'); return; }
+    const resend = new Resend(apiKey);
+    const breakdown = opts.lineItems.map((li) => `  ${li.desc}: ₪${li.price.toLocaleString()}`).join('\n');
+    const text = [
+      `אלס תמחר עבודה: ${opts.title}`,
+      ``,
+      `סה"כ (עלות אלס, כולל מע"מ): ₪${opts.total.toLocaleString()}`,
+      ``,
+      `פירוט:`,
+      breakdown,
+      opts.remark ? `\nהערה: ${opts.remark}` : '',
+      `\nפתח את /suppliers להוספת עמלה ובניית הצעת לקוח.`,
+    ].filter((l) => l !== '').join('\n');
+    await resend.emails.send({
+      from: 'Marble Art RFQ <onboarding@resend.dev>',
+      to: [to],
+      subject: `🏭 אלס תמחר: ${opts.title} — ₪${opts.total.toLocaleString()}`,
+      text,
+    });
+    console.log('[alesAlert] alert email sent');
+  } catch (e) {
+    console.error('[alesAlert] email failed (non-blocking):', e);
+  }
 }
 
 export interface RfqAsset {
@@ -113,14 +149,12 @@ export async function submitRfqResponse(input: SubmitRfqInput): Promise<SubmitRf
   if (!input.totalIls || input.totalIls <= 0) return { ok: false, error: 'missing price' };
   const sb = getServerSupabase();
 
-  // resolve rfq by token (need title/project for the supplier offer)
   const rfqRes = await sb.from('rfqs').select('id, title_he, project_ref, customer_hint').eq('token', input.token).single();
   if (rfqRes.error || !rfqRes.data) return { ok: false, error: 'RFQ not found' };
   const rfqId = rfqRes.data.id as string;
   const title = (rfqRes.data.title_he as string) || 'RFQ';
   const projectRef = (rfqRes.data.project_ref as string) || title;
 
-  // insert the response
   const insRes = await sb.from('rfq_responses').insert({
     rfq_id: rfqId,
     line_items: input.lineItems,
@@ -131,7 +165,6 @@ export async function submitRfqResponse(input: SubmitRfqInput): Promise<SubmitRf
   if (insRes.error || !insRes.data) return { ok: false, error: insRes.error?.message || 'no response row' };
   const responseId = insRes.data.id as string;
 
-  // create a /suppliers offer from Ales's pricing (flows into the review + commission screen)
   let offerId: string | null = null;
   try {
     const offer = await createSupplierOffer({
@@ -150,14 +183,15 @@ export async function submitRfqResponse(input: SubmitRfqInput): Promise<SubmitRf
     console.error('[submitRfqResponse] offer creation threw (non-blocking):', e);
   }
 
-  // link the offer back onto the response (best-effort)
   if (offerId) {
     await sb.from('rfq_responses').update({ supplier_offer_id: offerId }).eq('id', responseId);
   }
 
-  // mark the RFQ answered
   const updRes = await sb.from('rfqs').update({ status: 'answered', updated_at: new Date().toISOString() }).eq('id', rfqId);
   if (updRes.error) return { ok: false, error: updRes.error.message };
+
+  // fire the alert email (non-blocking)
+  await sendAlesAlertEmail({ title, total: input.totalIls, lineItems: input.lineItems, remark: input.remarkHe });
 
   return { ok: true };
 }
