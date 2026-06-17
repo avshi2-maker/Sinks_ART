@@ -877,3 +877,39 @@ Decision: build TWO distinct tools, Avshi picks per lead attitude:
 - READ the file before proposing a cause (saved time repeatedly today vs. guessing).
 - Line-number edits (`$lines[N]=...`) and full-file base64 beat multi-line `.Replace()` anchors (CRLF/LF mismatches caused several `Replaced: 0`/`Replaced: 2` misfires).
 - Commit early and often — pushed 4 times this session at each verified milestone.
+
+---
+## Session 17/06/2026 — Lead capture system (two tools) + marble swatch prompts
+
+### Marble swatch prompts (validated, saved to library by Avshi)
+- Goal: generate a matching marble-color swatch for Nano sink renders from an RFQ stone photo.
+- Built TWO Nano prompts (honed/matte + polished/glossy) for a flat top-down full-bleed swatch tile.
+- Key tuning lesson: first attempts came out too LIGHT (words "wet sand / milky coffee / greige" pulled pale). Fix = swap to "milk chocolate / roasted coffee / dark walnut / cocoa" AND add "light brown, beige, sand, taupe, pale" to FORBIDS. Both versions then matched the deep warm brown. Raw prompts only (NOT wired into CRM, per Avshi).
+- Fallback if words still drift: upload the original stone photo into Nano as a reference + "match this exact stone color."
+
+### לכידת שיחה (Chat Capture) — DONE, upgraded, committed
+For form-shy leads who chat instead of filling forms. Lives in CRM (Sinks_ART), at /leads, component `leads/PastedLeadIntake.tsx` + `/api/analyze-dm`.
+- Was already built; this session VERIFIED working on a real WhatsApp message (Adi Milikowski, 050-632-8241, master 2.40m + guest 1.0-1.2m). AI correctly extracted name/phone/sinks and (correctly) left blank what wasn't in the message — no fabrication.
+- UPGRADES added this session: (1) AI now extracts a dedicated `sinks_he` field (sinks + dimensions, one per line) — added to /api/analyze-dm system prompt + captured + shown as editable "כיורים / מידות" field + folded into saved notes (no DB change). (2) WhatsApp phone reminder: when source=whatsapp and phone empty, shows amber "📱 הוסף את מספר הוואטסאפ של השולח לפני שמירה".
+- Pipeline confirmed: paste message → ✨ נתח עם AI → review/edit → ✓ צור ליד ב-CRM → lead in /leads → "המר ללקוח חדש" converts to /customers.
+
+### טופס זריזים (Quick Form) — ALREADY EXISTS, works, now polished
+For decisive leads. **Lives in the SEPARATE public-site repo `C:\SinkS\sinks-bathroom-design` (marble-art.co.il), deployed on Vercel from GitHub.** NOT in the CRM repo.
+- MAJOR FINDING: the form already existed and is excellent — `src/components/LeadForm.tsx`, the ARVO "מלאו פרטי בקשה" form. Captures: name, phone (IL-validated), city, project_type, mount_type (5 options w/ icons), size_bucket, budget_tier (4), free notes, file uploads (Cloudinary up to 5), gallery picks, GA4 tracking.
+- CRITICAL CONFIRMATION: it saves via `submitLead` (`src/app/actions.ts`) → Supabase `leads` table → **same DB as the CRM (`givcxgzhfoetujhrjgvc`)**. So public-form leads ALREADY flow straight into the CRM /leads inbox. The whole "one-shot, structured, into CRM, no chat tennis" system was already built — only missing piece was sending customers TO it.
+- POLISH 1 DONE & DEPLOYED LIVE: simplified the thank-you screen, removed the redundant green WhatsApp button + all its dead code (buildWhatsAppMessage, BUSINESS_WHATSAPP, waHref/waMessage/onWaClick). New thank-you: calm "קיבלנו את הפרטים שלכם בהצלחה. נחזור אליכם תוך 24-48 שעות עם הצעה והדמיה מותאמת אישית." Delivered as full-file base64 (line-surgery kept failing + a Cursor "History restored" reverted edits twice — full-file replace was the reliable fix). Committed + pushed (04fe957) → live.
+
+### The live lead funnel (ready to use NOW — no more building)
+- Direct link (one tap → jumps to form → saves to CRM): `https://marble-art.co.il/#lead-form` (form section already has id="lead-form").
+- WhatsApp Business greeting message (set in app, free, no API): warm one-liner + the #lead-form link. Flips chatters into form-fillers.
+- Instagram bio: link in bio field + "📋 הצעת מחיר מהירה ↓".
+- Workflow: decisive lead → טופס זריזים → CRM /leads. Chatty lead → לכידת שיחה (paste→AI) → CRM /leads. Both → review → convert to customer.
+
+### POLISH 2 — SUBDOMAIN (PARKED, decided not to build now)
+- Idea: `quote.marble-art.co.il` as a clean form-only page.
+- Decision 17/06: NOT now. The `#lead-form` link already does the job for free. Subdomain is cosmetic. Revisit after seeing form-fill rate.
+- IF built later: do OPTION B (a dedicated standalone form-only page in the public-site repo, no homepage/scroll) — worth it only that way. Needs: new page in sinks-bathroom-design + DNS record + Vercel domain config. Option A (subdomain just redirecting to #lead-form) is pointless — skip it.
+- Same pattern is the blueprint for the future ALES mobile RFQ tool (tech RFQ → Ales fills few clicks on phone → back to CRM). Reuse this architecture.
+
+### Still open (carried forward, unchanged)
+BUG #2 print/PDF popup headers fix · BUG #3 swapped supplier-offer fields · BUG #4 data cleanup (אלס as customer row + demo rows) · delete TEST SKETCH ROW from gallery · Ales Mobile RFQ tool (DB ready, not built) · Branded PDF → /suppliers integration.
