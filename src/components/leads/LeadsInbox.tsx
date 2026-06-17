@@ -1,7 +1,7 @@
-﻿'use client';
+'use client';
 
 // src/components/leads/LeadsInbox.tsx
-// Phase 37 — leads inbox: list + one-click convert + archive.
+// Phase 37 — leads inbox: list + one-click convert + archive. Shows uploaded photos/videos.
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -9,6 +9,8 @@ import Link from 'next/link';
 import { convertLead, archiveLead, linkLeadToExisting, LeadRow, CustomerLite } from '@/lib/leads/leadsData';
 
 function fmtDate(iso: string) { return new Date(iso).toLocaleDateString('he-IL'); }
+
+function isVideo(url: string) { return url.includes('/video/upload/'); }
 
 export default function LeadsInbox({ leads, customers }: { leads: LeadRow[]; customers: CustomerLite[] }) {
   const [linkingId, setLinkingId] = useState<string | null>(null);
@@ -53,6 +55,7 @@ export default function LeadsInbox({ leads, customers }: { leads: LeadRow[]; cus
     <div className="space-y-2" dir="rtl">
       {leads.map((l) => {
         const converted = !!l.converted_to_customer_id;
+        const media = Array.isArray(l.inspiration_image_urls) ? l.inspiration_image_urls : [];
         return (
           <div key={l.id} className={converted ? 'bg-stone-50 border border-stone-200 rounded-lg p-4 opacity-70' : 'bg-white border border-blue-200 rounded-lg p-4 shadow-sm'}>
             <div className="flex items-start justify-between gap-3">
@@ -69,7 +72,25 @@ export default function LeadsInbox({ leads, customers }: { leads: LeadRow[]; cus
                   {l.city_he && (<span>📍 {l.city_he}</span>)}
                   {l.utm_source && (<span className="text-stone-400">מקור: {l.utm_source}</span>)}
                 </div>
-                {l.notes_he && (<div className="text-sm text-stone-600 mt-2 bg-stone-50 rounded p-2">{l.notes_he}</div>)}
+                {l.notes_he && (<div className="text-sm text-stone-600 mt-2 bg-stone-50 rounded p-2 whitespace-pre-line">{l.notes_he}</div>)}
+                {media.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {media.map((url, i) => (
+                      <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="relative block w-16 h-16 rounded-md overflow-hidden border border-stone-200 bg-stone-100 hover:ring-2 hover:ring-blue-400">
+                        {isVideo(url) ? (
+                          <>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={url.replace('/video/upload/', '/video/upload/so_1,w_120,h_120,c_fill,f_jpg/').replace(/\.(mp4|mov|webm|avi|m4v)(\?.*)?$/i, '.jpg$2')} alt={'media ' + (i + 1)} className="w-full h-full object-cover" />
+                            <span className="absolute inset-0 flex items-center justify-center text-white text-xl drop-shadow">▶</span>
+                          </>
+                        ) : (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={url.replace('/image/upload/', '/image/upload/w_120,h_120,c_fill/')} alt={'media ' + (i + 1)} className="w-full h-full object-cover" />
+                        )}
+                      </a>
+                    ))}
+                  </div>
+                )}
                 <div className="text-xs text-stone-400 mt-1">{fmtDate(l.created_at)}</div>
               </div>
               <div className="flex flex-col items-end gap-2 shrink-0">
