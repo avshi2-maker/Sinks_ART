@@ -1,4 +1,4 @@
-﻿// src/app/api/analyze-dm/route.ts
+// src/app/api/analyze-dm/route.ts
 // Phase 42 — Instagram DM -> structured lead fields via Claude.
 
 import { NextResponse } from 'next/server';
@@ -12,6 +12,7 @@ const SYSTEM = `You extract lead details from an Instagram DM conversation for a
 - project_type_raw: free text of what they want (Hebrew), else null
 - budget_raw: any budget/price hint as free text, else null
 - style_he: desired style in Hebrew if mentioned, else null
+- sinks_he: if the customer mentions one or more sinks/counters with locations or dimensions, list them concisely in Hebrew, one per line (e.g. 'יחידת הורים: 2.40מ · משטח שיש'), else null
 - summary_he: one short Hebrew sentence summarizing the inquiry
 Respond with valid JSON only.`;
 

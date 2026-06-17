@@ -34,7 +34,7 @@ export default function PastedLeadIntake() {
   const [ok, setOk] = useState<string | null>(null);
 
   // customer extract (unchanged shape)
-  const [extracted, setExtracted] = useState<null | { full_name: string; phone: string; city_he: string; style_he: string; notes_he: string }>(null);
+  const [extracted, setExtracted] = useState<null | { full_name: string; phone: string; city_he: string; style_he: string; sinks_he: string; notes_he: string }>(null);
   // supplier extract
   const [sup, setSup] = useState<SupplierExtract | null>(null);
   const [saveToDir, setSaveToDir] = useState(true);
@@ -72,6 +72,7 @@ export default function PastedLeadIntake() {
           phone: p.phone || '',
           city_he: p.city_he || '',
           style_he: p.style_he || '',
+          sinks_he: p.sinks_he || '',
           notes_he: [p.project_type_raw, p.budget_raw, p.summary_he].filter(Boolean).join(' · '),
         });
       }
@@ -94,7 +95,8 @@ export default function PastedLeadIntake() {
   async function saveCustomer() {
     if (!extracted) return;
     setSaving(true);
-    const res = await createPastedLead({ ...extracted, source });
+    const mergedNotes = [extracted.sinks_he ? 'כיורים: ' + extracted.sinks_he : '', extracted.notes_he].filter(Boolean).join(' · ');
+    const res = await createPastedLead({ ...extracted, notes_he: mergedNotes, source });
     setSaving(false);
     if (!res.ok) { setError('שמירה נכשלה: ' + (res.error || '')); return; }
     setDm(''); resetOut(); setOk('הליד נשמר ב-CRM');
@@ -160,6 +162,8 @@ export default function PastedLeadIntake() {
             <input value={extracted.city_he} onChange={(e) => setExtracted({ ...extracted, city_he: e.target.value })} placeholder="עיר" className="px-2 py-1.5 text-sm border border-stone-300 rounded-md" dir="rtl" />
             <input value={extracted.style_he} onChange={(e) => setExtracted({ ...extracted, style_he: e.target.value })} placeholder="סגנון" className="px-2 py-1.5 text-sm border border-stone-300 rounded-md" dir="rtl" />
           </div>
+          {source === 'whatsapp' && !extracted.phone.trim() && (<div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2 py-1 mb-2">📱 הוסף את מספר הוואטסאפ של השולח לפני שמירה</div>)}
+          <input value={extracted.sinks_he} onChange={(e) => setExtracted({ ...extracted, sinks_he: e.target.value })} placeholder="כיורים / מידות" className="w-full px-2 py-1.5 text-sm border border-stone-300 rounded-md mb-2" dir="rtl" />
           <textarea value={extracted.notes_he} onChange={(e) => setExtracted({ ...extracted, notes_he: e.target.value })} placeholder="הערות" rows={2} className="w-full px-2 py-1.5 text-sm border border-stone-300 rounded-md resize-y" dir="rtl" />
           <button onClick={saveCustomer} disabled={saving} className="text-sm px-4 py-1.5 bg-emerald-600 text-white rounded-md font-semibold hover:bg-emerald-700 disabled:opacity-50">{saving ? 'שומר…' : '✓ צור ליד ב-CRM'}</button>
         </div>
