@@ -2,7 +2,7 @@
 
 // src/lib/rfq/rfqData.ts
 // Ales RFQ pipeline: create an RFQ (Avshi side), fetch by token (Ales mobile page),
-// submit a response (Ales side) -> becomes a supplier offer to review.
+// submit a response (Ales side) -> recorded; supplier-offer + email come in chunk 3.
 
 import { createClient } from '@supabase/supabase-js';
 import { revalidatePath } from 'next/cache';
@@ -14,14 +14,12 @@ function getServerSupabase() {
   return createClient(url, key, { auth: { persistSession: false } });
 }
 
-// A media asset shown to Ales (customer photo/video/voice, or the sketch).
 export interface RfqAsset {
   url: string;
   kind: 'image' | 'video' | 'audio' | 'sketch' | 'file';
   label?: string;
 }
 
-// The sink spec snapshot Ales sees (read-only context).
 export interface RfqSpec {
   modelName?: string;
   dimensions?: string;
@@ -56,7 +54,6 @@ export interface CreateRfqInput {
 export interface CreateRfqResult { ok: boolean; error?: string; token?: string; id?: string; }
 
 function makeToken(): string {
-  // url-safe random token, ~22 chars
   const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
   let t = '';
   for (let i = 0; i < 22; i++) t += chars[Math.floor(Math.random() * chars.length)];
@@ -94,4 +91,45 @@ export async function listRecentRfqs(limit = 20): Promise<RfqRow[]> {
   const res = await sb.from('rfqs').select('*').order('created_at', { ascending: false }).limit(limit);
   if (res.error) { console.error('[listRecentRfqs]', res.error.message); return []; }
   return (res.data || []) as RfqRow[];
+}
+
+// ---- Ales side: submit a priced response ----
+
+export interface RfqLineItem { desc: string; price: number; }
+
+export interface SubmitRfqInput {
+  token: string;
+  lineItems: RfqLineItem[];
+  totalIls: number;
+  remarkHe?: string;
+  sitePhotoUrls?: string[];
+}
+
+export interface SubmitRfqResult { ok: boolean; error?: string; }
+
+export async function submitRfqResponse(input: SubmitRfqInput): Promise<SubmitRfqResult> {
+  if (!input.token) return { ok: false, error: 'missing token' };
+  if (!input.totalIls || input.totalIls <= 0) return { ok: false, error: 'missing price' };
+  const sb = getServerSupabase();
+
+  // resolve rfq by token
+  const rfqRes = await sb.from('rfqs').select('id, status').eq('token', input.token).single();
+  if (rfqRes.error || !rfqRes.data) return { ok: false, error: 'RFQ not found' };
+  const rfqId = rfqRes.data.id as string;
+
+  // insert the response
+  const insRes = await sb.from('rfq_responses').insert({
+    rfq_id: rfqId,
+    line_items: input.lineItems,
+    total_ils: input.totalIls,
+    remark_he: input.remarkHe?.trim() || null,
+    ales_photo_urls: input.sitePhotoUrls && input.sitePhotoUrls.length > 0 ? input.sitePhotoUrls : null,
+  });
+  if (insRes.error) return { ok: false, error: insRes.error.message };
+
+  // mark the RFQ answered
+  const updRes = await sb.from('rfqs').update({ status: 'answered', updated_at: new Date().toISOString() }).eq('id', rfqId);
+  if (updRes.error) return { ok: false, error: updRes.error.message };
+
+  return { ok: true };
 }
