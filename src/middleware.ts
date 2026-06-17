@@ -7,7 +7,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 // Paths that must stay public so the gate itself can work.
-const PUBLIC_PATHS = ['/login', '/api/login'];
+const PUBLIC_PATHS = ['/login', '/api/login', '/rfq'];
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
