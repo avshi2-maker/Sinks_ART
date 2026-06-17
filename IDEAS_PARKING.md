@@ -913,3 +913,27 @@ For decisive leads. **Lives in the SEPARATE public-site repo `C:\SinkS\sinks-bat
 
 ### Still open (carried forward, unchanged)
 BUG #2 print/PDF popup headers fix · BUG #3 swapped supplier-offer fields · BUG #4 data cleanup (אלס as customer row + demo rows) · delete TEST SKETCH ROW from gallery · Ales Mobile RFQ tool (DB ready, not built) · Branded PDF → /suppliers integration.
+
+---
+## Session 17/06/2026 (cont.) — Email lead alerts (Resend) + lead-card photo display
+
+### Lead photos now visible in CRM
+- Leads inbox (src/components/leads/LeadsInbox.tsx, CRM repo) now shows uploaded photos/videos as tappable thumbnails on each lead card (videos get a play marker via Cloudinary frame URL). Fixed a pre-existing ll.preferred_marble_family typo. Committed (4e5d57a). Data was always saved in inspiration_image_urls; this just displays it.
+- Confirmed live: real lead "Adi Milikowski" arrived via the public form with 3 photos + full spec (2 sinks, 2.40m master + 1.20m guest, Calacatta/Statuario) - whole form->CRM pipeline proven in the wild.
+
+### Email alert on new lead (Resend) - DONE & LIVE
+- Goal: push (email -> phone) when a form lands, so Avshi (solo, on the move) knows to process it.
+- Chose Resend (free 3000/mo, simplest). Lives in PUBLIC-SITE repo (sinks-bathroom-design), wired into src/app/actions.ts submitLead.
+- Reusable helper sendLeadAlertEmail() - fires after a successful lead save, NON-BLOCKING (email failure never breaks the save). Sends name/phone/city/project/budget/notes + "N files in CRM" note. From onboarding@resend.dev (Resend test sender, zero domain setup), to LEAD_ALERT_EMAIL.
+- KEY REUSE NOTE: this same helper is the blueprint for next session's Ales RFQ - when Ales submits pricing, fire the same email pattern. Don't rebuild; reuse sendLeadAlertEmail.
+- Env vars: RESEND_API_KEY + LEAD_ALERT_EMAIL=avshi2@gmail.com. Added to BOTH local .env.local AND Vercel (Production+Preview), Vercel redeployed. Tested: live form submit -> Gmail arrived.
+- Committed public-site (89f15d1).
+
+### Painful lesson (avoid next time): editing .env.local
+- Local .env.local got CORRUPTED - a PowerShell command block was accidentally pasted into the file (via Notepad) replacing all real vars; a Windows auto-restart also interrupted a mid-run fix.
+- RECOVERED by copying the working Supabase URL + anon key straight from the CRM's intact .env.local (same shared Supabase givcxgzhfoetujhrjgvc, OLD JWT eyJ... format - NOT the new sb_publishable_ format Supabase now shows by default) + known Cloudinary values + recovered re_gZ6... Resend key. Rebuilt 6 vars cleanly via WriteAllLines.
+- FOR NEXT TIME: never hand Avshi multi-line PowerShell that edits .env.local in place. If env edits needed, either (a) plain Notepad block to paste, or (b) copy values from the intact CRM .env.local. Keep env work to Notepad + simple verify commands.
+- Terminal setup: Avshi uses TWO terminals only - Terminal 1 = paste assistant commands, Terminal 2 = npm run dev (cd to whichever project). There is no Terminal 3.
+
+### The 6 env vars the public site needs (reference)
+NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY (eyJ format), NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME (dqdku88vv), NEXT_PUBLIC_CLOUDINARY_LEAD_PRESET (marble_lead_uploads), RESEND_API_KEY, LEAD_ALERT_EMAIL (avshi2@gmail.com)
