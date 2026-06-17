@@ -172,7 +172,7 @@ export async function submitRfqResponse(input: SubmitRfqInput): Promise<SubmitRf
       trade: 'ייצור כיורי שיש',
       project_ref: projectRef,
       source: 'ales_rfq',
-      raw_message: input.remarkHe?.trim() || null,
+      raw_message: input.remarkHe?.trim() || undefined,
       line_items: input.lineItems,
       total_ils: input.totalIls,
       save_to_directory: true,
