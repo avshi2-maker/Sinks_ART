@@ -1,30 +1,30 @@
 // src/middleware.ts
-// Simple site-wide password gate. Every request must carry a valid auth cookie;
-// otherwise it is redirected to /login. The password itself lives in the
-// CRM_PASSWORD env var (never in code). This is a lightweight gate, not full
-// user auth — Supabase Auth with real accounts is the proper later upgrade.
+// Site-wide password gate + stamps the request path into a header so the root
+// layout can render public pages (/rfq) without the CRM nav.
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-// Paths that must stay public so the gate itself can work.
+// Paths that must stay public (no login): the gate itself + Ales RFQ pages.
 const PUBLIC_PATHS = ['/login', '/api/login', '/rfq'];
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Allow the login page + login API + Next internals/assets through.
-  if (
+  // Stamp the path so server components (root layout) can read it.
+  const requestHeaders = new Headers(req.headers);
+  requestHeaders.set('x-pathname', pathname);
+
+  const isPublic =
     PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/')) ||
     pathname.startsWith('/_next') ||
-    pathname.startsWith('/favicon')
-  ) {
-    return NextResponse.next();
+    pathname.startsWith('/favicon');
+
+  if (isPublic) {
+    return NextResponse.next({ request: { headers: requestHeaders } });
   }
 
   const expected = process.env.CRM_PASSWORD;
   const cookie = req.cookies.get('crm_auth')?.value;
-
-  // If no password is configured on the server, fail OPEN is unsafe — fail CLOSED.
   if (!expected || cookie !== expected) {
     const url = req.nextUrl.clone();
     url.pathname = '/login';
@@ -32,10 +32,9 @@ export function middleware(req: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  return NextResponse.next();
+  return NextResponse.next({ request: { headers: requestHeaders } });
 }
 
-// Run on everything except static assets.
 export const config = {
   matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
 };
