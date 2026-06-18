@@ -937,3 +937,36 @@ BUG #2 print/PDF popup headers fix · BUG #3 swapped supplier-offer fields · BU
 
 ### The 6 env vars the public site needs (reference)
 NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY (eyJ format), NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME (dqdku88vv), NEXT_PUBLIC_CLOUDINARY_LEAD_PRESET (marble_lead_uploads), RESEND_API_KEY, LEAD_ALERT_EMAIL (avshi2@gmail.com)
+
+---
+## Session 18/06/2026 — Ales RFQ live, mobile fix, closed real deal (Adi), Nano stone renders
+
+### Ales RFQ tool — built, deployed, LIVE end-to-end (chunks 1-3b done)
+- Full pipeline working on crm.marble-art.co.il: create RFQ (/rfq-create) -> public link -> Ales prices on phone (/rfq/[token]) -> supplier offer in /suppliers + email alert to avshi2@gmail.com -> add commission -> branded ARVO PDF.
+- Data: rfqs + rfq_responses tables (confirmed columns). rfqData.ts has createRfq, fetchRfqByToken, listRecentRfqs, submitRfqResponse (creates supplier offer via createSupplierOffer + fires sendAlesAlertEmail). Reused the lead-alert Resend pattern (installed resend in CRM, env vars copied from public-site .env.local).
+- Middleware: /rfq made public (no login) so Ales can open it; middleware also now stamps x-pathname header.
+- Root layout (src/app/layout.tsx) made CONDITIONAL: /rfq pages render WITHOUT TopNav (no CRM nav, no private cost/lead data fetched for Ales) + overflow-x-hidden. This fixed the Android mobile BLANK-PAGE bug (TopNav was causing RTL horizontal overflow). Was the real fix after form-level overflow guards alone didn't solve it.
+- rfq_responses.ales_photo_urls had NOT NULL constraint -> dropped via SQL (ALTER TABLE ... DROP NOT NULL). Site photo is optional.
+- Build lesson: a STRAY src/components/LeadForm.tsx existed in the CRM (belongs to public site, imports @/app/actions which CRM lacks) — broke Vercel build. Moved out to LeadForm.tsx.removed_bak. Always `npm run build` locally before push (Avshi's rule reinforced).
+
+### CLOSED A REAL DEAL — Adi Milikowski (proof the whole system works)
+- Lead came via public form (2 sinks: master 2.40m + guest 1.20m, Calacatta/Statuario, mount on cabinet, siphon cube, matched grout).
+- Ales's prices from WhatsApp: 1.20m sink = 8,000; 2.40m sink = 11,000 (both incl VAT, net to Avshi). Total Ales cost 19,000.
+- Avshi adds commission ON TOP (customer pays more). Used existing /suppliers flow (edit line items "פריטים", "הצעת לקוח" with commission % or fixed, computeCustomerTotal). NO redesign needed — existing CRM handles 2 sinks as 2 line items fine.
+- Built branded offer in ARVO_price_offer_template.html (contenteditable body, auto offer-no + date, ARVO logo/VAT/contact). Saved as PDF. Offer ARVO-20260618-1047, total 20,500 (19,000 + 1,500 commission), turnkey VAT-incl.
+- Workflow: Avshi emails PDF to Ales -> Ales forwards to Adi from his Gmail (commercial contact stays direct Ales<->customer, per rule).
+- Follow-up: Avshi also sent Adi 2 Nano teaser renders (Calacatta + Statuario).
+
+### Nano stone-render prompts that WORKED (save for reuse)
+- Calacatta vs Statuario ARE distinguishable when prompted right: Calacatta = bright white + BOLD dramatic grey veins + warm GOLD/beige accents + open space. Statuario = soft white + FINE uniform LINEAR grey veins + NO gold + calmer/refined. Validated on real double-basin renders.
+- Hebrew character note for customers: "שיש קלקטה — מראה יוקרתי ודרמטי, אמירה עיצובית נועזת. שיש סטטוארית — מראה נקי וקלאסי, אלגנטיות נצחית שלא מתיישנת."
+- Same proven structure as before: steep ~65deg top-down camera, faceted hopper/inverted form, walls slope continuously to drain, NO flat collar/shelf, water runs downhill. Round drain when spec says ניקוז עגול; square when square.
+- Corner triangle guest sink (1.20m): wrote isosceles-right-triangle corner-sink prompts (two equal ~1200mm sides at 90deg against walls, long diagonal front, wall-hung, round drain toward corner). If shape renders wrong -> export sketch PNG, upload to Nano, "match this exact triangular shape."
+
+### PARKED for next sessions (priority order)
+1. SKETCH MODEL: modify triangle/corner-sink shape. Verify how sketchRenderer.ts draws "משולש" before changing values; for corner sink want isosceles right triangle. (Avshi was setting אורך 1200 רוחב 600 גובה 250, שיפוע 2% each side, ניקוז עגול, תלוי קיר.)
+2. ALES RFQ REDESIGN (the big QA'd one): multi-sink (one price block PER sink, count set by Avshi at RFQ creation) + simplified 3-field structure replacing material/labor/install: A) מחיר מלא complete price (MANDATORY), B) התקנה dropdown [כולל התקנה / תוספת התקנה price], C) שונות/הערות open price+text or blank. Add-ons section stays.
+3. POLISH: show Ales site-photo on supplier card (saved in rfq_responses.ales_photo_urls, not displayed); add timestamp + RFQ ref number to supplier card.
+4. SVG-PLACEHOLDER FILTER: gallery-pick icons save as data:image/svg+xml in inspiration_image_urls and get treated as real photos — filter them out when pulling media into RFQ.
+5. AUTO-PULL lead media into RFQ create form (currently manual URL paste).
+6. Customer-facing add-ons gallery with AI sample pics (future, Nano prompt to build).
