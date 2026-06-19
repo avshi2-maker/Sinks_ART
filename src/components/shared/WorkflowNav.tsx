@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 // src/components/shared/WorkflowNav.tsx
 // Two-level nav: top bar = workflow stages, second row = tools in the active stage.
@@ -25,6 +25,7 @@ export const STAGES: NavStage[] = [
   { id: 'sell', label: 'מכירה', tools: [
     { href: '/quotes', label: 'הצעות', icon: '🧾' },
     { href: '/po', label: 'הזמנות', icon: '📋' },
+    { href: '/rfq-create', label: 'RFQ לאלס', icon: '🏭' },
   ] },
   { id: 'catalogs', label: 'קטלוגים', tools: [
     { href: '/marble', label: 'שיש', icon: '🪨' },

@@ -263,7 +263,7 @@ export default function AlesRfqForm({ rfq, options }: { rfq: RfqRow; options: Op
           <label className="flex items-center justify-center gap-2 w-full max-w-full box-border py-3 border-2 border-dashed border-stone-300 rounded-lg bg-white cursor-pointer text-sm text-stone-600">
             <span className="text-xl">📷</span>
             <span>{uploading ? 'מעלה...' : 'צלם / צרף תמונת אתר'}</span>
-            <input type="file" accept="image/*" capture="environment" multiple className="hidden" onChange={onSitePhoto} disabled={uploading} />
+            <input type="file" accept="image/*" multiple className="hidden" onChange={onSitePhoto} disabled={uploading} />
           </label>
           {sitePhotos.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-2">
