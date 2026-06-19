@@ -970,3 +970,45 @@ NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY (eyJ format), NEXT_PUBLI
 4. SVG-PLACEHOLDER FILTER: gallery-pick icons save as data:image/svg+xml in inspiration_image_urls and get treated as real photos — filter them out when pulling media into RFQ.
 5. AUTO-PULL lead media into RFQ create form (currently manual URL paste).
 6. Customer-facing add-ons gallery with AI sample pics (future, Nano prompt to build).
+
+---
+## Session 19/06/2026 — Multi-sink RFQ redesign, ARVO page in-app, Pipeline command center
+
+### Multi-sink RFQ redesign — DONE (data model -> create form -> Ales form)
+- rfqData.ts v5: added RfqSink type + questions.sinks[] array (replaces single questions.spec, but spec kept as fallback via sinksFromRfq / resolveSinks for old RFQs like Adi). createRfq accepts sinks[]. Non-breaking.
+- RfqCreateForm.tsx v2: multi-sink section — "+ הוסף כיור" add/remove, each sink has name/dimensions/stone/notes. Title/project/customer-hint/asset-URLs unchanged.
+- AlesRfqForm.tsx v3: ONE pricing block per sink, each with A) מחיר מלא (mandatory), B) התקנה dropdown [כולל התקנה / תוספת התקנה -> price field], C) שונות/הערה (optional text + optional price). Per-sink subtotal, add-ons section, grand total. line_items tagged per sink ("אמבט הורים — מחיר מלא"). All mobile overflow guards preserved. Install = PER SINK (decided).
+- Page /rfq/[token] unchanged (form resolves sinks internally).
+
+### Fixes
+- Ales site-photo button: removed capture="environment" so phone offers CAMERA **and** GALLERY (was camera-only).
+- Added nav links in WorkflowNav 'sell' (מכירה) stage: "RFQ לאלס" (/rfq-create), "הצעת ARVO" (/arvo-offer), "צנרת עבודות" (/pipeline at front).
+- "פתח קישור" on recent-RFQ list opens ALES's page (shows "already answered" if done) — that's correct, it's Ales's link not a review view. The real review surface is the new pipeline.
+
+### ARVO offer template -> in-app page (Ferrari)
+- /arvo-offer React page (src/app/arvo-offer/page.tsx): full port of standalone ARVO_price_offer_template.html. Embedded logo (79KB data URI), exact CSS via injected <style>, auto offer-no (ARVO-YYYYMMDD-HHMM) + date, contenteditable body with paste-as-plain-text, "שמור כ-PDF" (window.print), print CSS hides toolbar. Reachable from menu now (no more loose HTML file).
+
+### PIPELINE COMMAND CENTER — DONE (the big new module)
+- NEW Supabase table job_pipeline (Marble project): id, title_he, customer_name/phone/city, rfq_id, supplier_offer_id, stage, ales_cost, customer_total, commission, notes, ordered_at, paid_at, offer_sent_at, created/updated. RLS all=true.
+- 8 stages: new_lead / awaiting_ales / priced / offer_sent / ordered / delivered / paid / lost. Hebrew labels + colors in jobPipelineTypes.ts (STAGE_META, STAGE_ORDER).
+- ARCH NOTE: 'use server' files can ONLY export async functions. Types/constants (STAGE_META etc.) MUST live in a separate non-server file (jobPipelineTypes.ts). jobPipelineData.ts = server actions only (listJobs, createJob, advanceJobStage, updateJobValues, deleteJob, pipelineSummary, findJobByOfferId).
+- /pipeline page + PipelineBoard.tsx (Option B): 5 money tiles (active count, active value, עמלה צפויה forecast = commission on active jobs, paid total, commission collected), per-stage filter buttons, job table with green → advance button, "אבוד", 🗑️ delete.
+- AUTO-CREATE: submitRfqResponse now calls createJob (stage 'priced') when Ales prices an RFQ — jobs flow in automatically. Non-blocking.
+- CONFIRM POPUPS added on advance + mark-lost buttons (prevent accidental stage changes — happened once: both backfilled jobs accidentally went to 'paid', fixed via SQL).
+
+### Backfilled 2 real ACTIVE jobs (both stage offer_sent / הצעה בחוץ)
+- Adi Milikowski: ales 19,000 / customer 20,500 / commission 1,500. Offer ARVO-20260618-1047, sent 18.06.2026.
+- דודו בלחסן (hotel owner, Ziv-Altshuler project): 2 sinks — 295cm (ales 19,484 / cust 20,984) + 213cm (ales 11,800 / cust 12,800). Total ales 31,284 / customer 33,784 / commission 2,500. Sent to general supervisor זיו אלטשולר - מסד-עוז בע"מ on 16.06.2026.
+- Active pipeline now: 2 jobs, ₪54,284 value, ₪4,000 forecast commission.
+
+### PARKED (next)
+1. SHOW offer_sent_at date on pipeline cards (column exists + dated, not yet displayed — "נשלח 18.06 · לפני X ימים").
+2. Pipeline polish: manual "+ עבודה חדשה" button; edit job values inline (ales_cost/customer_total/commission); link job card to its supplier offer / customer.
+3. Wire pipeline summary tiles into MAIN /dashboard (currently only on /pipeline).
+4. OLD polish still pending: site-photo (rfq_responses.ales_photo_urls) on /suppliers card; timestamp + RFQ ref # on supplier card; SVG-placeholder filter (data:image/svg+xml in inspiration_image_urls treated as real photos).
+5. Auto-pull lead media into RFQ create form (currently manual URL paste).
+6. SKETCH MODEL: triangle/corner-sink shape (verify sketchRenderer.ts; isosceles right triangle for corner sink).
+7. Customer-facing add-ons gallery with AI sample pics (Nano).
+
+### Ziv hotel single-sink Nano prompt (saved)
+- Single uniform marble, long narrow 2950×450×250 wall-hung, V-channel trough to one drain, hotel-lobby editorial Instagram-hero style. Corrected from earlier double-sink/countertop draft per כיור_רחב_295.pdf spec.
