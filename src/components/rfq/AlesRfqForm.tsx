@@ -1,14 +1,24 @@
 'use client';
 
 // src/components/rfq/AlesRfqForm.tsx
-// Ales's mobile pricing screen. RTL-safe, no horizontal overflow on Android.
+// Ales's mobile pricing screen. MULTI-SINK: one pricing block per sink, each with
+// A) full price (mandatory), B) installation (included / +price), C) misc (+price + text).
+// RTL-safe, no horizontal overflow on Android (all the v2 overflow guards preserved).
 import { useState, useMemo } from 'react';
-import { submitRfqResponse, RfqRow, RfqAsset } from '@/lib/rfq/rfqData';
+import { submitRfqResponse, RfqRow, RfqAsset, RfqSink } from '@/lib/rfq/rfqData';
 import type { OptionRow } from '@/lib/options/optionsCatalog';
 import { uploadToCloudinary } from '@/lib/intake/cloudinary';
 
 const ARVO_DARK = '#161616';
 const ARVO_GOLD = '#e6c870';
+
+// Resolve sinks from an RFQ (new sinks[] or legacy single spec) — mirrors sinksFromRfq.
+function resolveSinks(rfq: RfqRow): RfqSink[] {
+  const q = rfq.questions || {};
+  if (Array.isArray(q.sinks) && q.sinks.length > 0) return q.sinks;
+  const s = q.spec || {};
+  return [{ id: 'legacy-1', name: s.modelName || rfq.title_he || 'כיור', dimensions: s.dimensions, stone: s.stone, notes: s.notes }];
+}
 
 function MediaItem({ asset }: { asset: RfqAsset }) {
   if (asset.kind === 'video') {
@@ -30,13 +40,29 @@ function MediaItem({ asset }: { asset: RfqAsset }) {
   );
 }
 
+// per-sink pricing state
+interface SinkPrice {
+  full: number;            // A) מחיר מלא (mandatory)
+  installMode: 'included' | 'extra'; // B) התקנה
+  installPrice: number;    // when extra
+  miscPrice: number;       // C) שונות price
+  miscText: string;        // C) שונות text
+}
+
+function emptyPrice(): SinkPrice {
+  return { full: 0, installMode: 'included', installPrice: 0, miscPrice: 0, miscText: '' };
+}
+
 export default function AlesRfqForm({ rfq, options }: { rfq: RfqRow; options: OptionRow[] }) {
-  const spec = rfq.questions?.spec || {};
+  const sinks = useMemo(() => resolveSinks(rfq), [rfq]);
   const assets = Array.isArray(rfq.asset_urls) ? rfq.asset_urls : [];
 
-  const [stonePrice, setStonePrice] = useState(0);
-  const [laborPrice, setLaborPrice] = useState(0);
-  const [installPrice, setInstallPrice] = useState(0);
+  const [prices, setPrices] = useState<Record<string, SinkPrice>>(() => {
+    const init: Record<string, SinkPrice> = {};
+    sinks.forEach((s) => { init[s.id] = emptyPrice(); });
+    return init;
+  });
+
   const [deliveryDays, setDeliveryDays] = useState('');
   const [remark, setRemark] = useState('');
   const [busy, setBusy] = useState(false);
@@ -48,8 +74,19 @@ export default function AlesRfqForm({ rfq, options }: { rfq: RfqRow; options: Op
   const [picked, setPicked] = useState<Record<string, boolean>>({});
   const [addonPrice, setAddonPrice] = useState<Record<string, number>>({});
 
+  function setP(id: string, patch: Partial<SinkPrice>) {
+    setPrices((prev) => ({ ...prev, [id]: { ...prev[id], ...patch } }));
+  }
+
   const addonTotal = useMemo(() => options.reduce((s, o) => s + (picked[o.id] ? (Number(addonPrice[o.id]) || 0) : 0), 0), [options, picked, addonPrice]);
-  const total = (Number(stonePrice) || 0) + (Number(laborPrice) || 0) + (Number(installPrice) || 0) + addonTotal;
+
+  const sinkTotal = (p: SinkPrice) => (Number(p.full) || 0) + (p.installMode === 'extra' ? (Number(p.installPrice) || 0) : 0) + (Number(p.miscPrice) || 0);
+
+  const total = useMemo(() => {
+    let t = addonTotal;
+    sinks.forEach((s) => { t += sinkTotal(prices[s.id] || emptyPrice()); });
+    return t;
+  }, [sinks, prices, addonTotal]);
 
   async function onSitePhoto(e: React.ChangeEvent<HTMLInputElement>) {
     const files = e.target.files;
@@ -69,20 +106,43 @@ export default function AlesRfqForm({ rfq, options }: { rfq: RfqRow; options: Op
 
   async function send() {
     setError(null);
+    // validate: every sink must have a full price
+    for (const s of sinks) {
+      const p = prices[s.id] || emptyPrice();
+      if (!p.full || p.full <= 0) { setError('הזן מחיר מלא לכל כיור (חסר: ' + s.name + ')'); return; }
+    }
     if (total <= 0) { setError('הזן מחיר לפני שליחה'); return; }
     setBusy(true);
-    const lineItems = [
-      stonePrice > 0 ? { desc: 'אבן / חומר', price: Number(stonePrice) } : null,
-      laborPrice > 0 ? { desc: 'עבודה / ייצור', price: Number(laborPrice) } : null,
-      installPrice > 0 ? { desc: 'התקנה / הובלה', price: Number(installPrice) } : null,
-      ...options.filter((o) => picked[o.id]).map((o) => ({ desc: o.name_he, price: Number(addonPrice[o.id]) || 0 })),
-    ].filter(Boolean) as { desc: string; price: number }[];
+
+    const lineItems: { desc: string; price: number }[] = [];
+    sinks.forEach((s) => {
+      const p = prices[s.id] || emptyPrice();
+      lineItems.push({ desc: s.name + ' — מחיר מלא', price: Number(p.full) || 0 });
+      if (p.installMode === 'extra' && (Number(p.installPrice) || 0) > 0) {
+        lineItems.push({ desc: s.name + ' — התקנה', price: Number(p.installPrice) || 0 });
+      }
+      if ((Number(p.miscPrice) || 0) > 0) {
+        lineItems.push({ desc: s.name + ' — ' + (p.miscText.trim() || 'שונות'), price: Number(p.miscPrice) || 0 });
+      }
+    });
+    options.filter((o) => picked[o.id]).forEach((o) => {
+      lineItems.push({ desc: o.name_he, price: Number(addonPrice[o.id]) || 0 });
+    });
+
+    // collect per-sink install-included notes + per-sink misc text (no price) into the remark
+    const notes: string[] = [];
+    sinks.forEach((s) => {
+      const p = prices[s.id] || emptyPrice();
+      if (p.installMode === 'included') notes.push(s.name + ': המחיר כולל התקנה');
+      if (p.miscText.trim() && (Number(p.miscPrice) || 0) <= 0) notes.push(s.name + ': ' + p.miscText.trim());
+    });
+    const remarkParts = [deliveryDays ? 'אספקה: ' + deliveryDays : '', notes.join(' · '), remark].filter(Boolean);
 
     const res = await submitRfqResponse({
       token: rfq.token,
       lineItems,
       totalIls: total,
-      remarkHe: [deliveryDays ? 'אספקה: ' + deliveryDays : '', remark].filter(Boolean).join(' · '),
+      remarkHe: remarkParts.join(' · '),
       sitePhotoUrls: sitePhotos,
     });
     setBusy(false);
@@ -102,13 +162,6 @@ export default function AlesRfqForm({ rfq, options }: { rfq: RfqRow; options: Op
     );
   }
 
-  const numInput = (label: string, val: number, set: (n: number) => void) => (
-    <label className="block w-full">
-      <span className="block text-xs font-medium text-stone-600 mb-1">{label}</span>
-      <input type="number" inputMode="numeric" value={val || ''} onChange={(e) => set(Number(e.target.value) || 0)} placeholder="0" className="w-full max-w-full box-border px-2 py-2 text-base border border-stone-300 rounded-md" dir="ltr" />
-    </label>
-  );
-
   return (
     <div className="w-full overflow-x-hidden" dir="rtl">
       <div className="w-full max-w-md mx-auto px-3 py-4">
@@ -120,12 +173,6 @@ export default function AlesRfqForm({ rfq, options }: { rfq: RfqRow; options: Op
           </div>
         </div>
 
-        <div className="bg-stone-50 border border-stone-200 rounded-lg p-3 mb-3 text-sm text-stone-700 break-words">
-          <div className="font-medium text-stone-900 mb-1">{spec.modelName || 'כיור שיש'}{spec.dimensions ? ' · ' + spec.dimensions : ''}</div>
-          {spec.stone && (<div className="text-xs text-stone-500">שיש: {spec.stone}</div>)}
-          {spec.notes && (<div className="text-xs text-stone-500 mt-1 break-words">{spec.notes}</div>)}
-        </div>
-
         {assets.length > 0 && (
           <div className="mb-3">
             <div className="text-xs font-semibold text-stone-700 mb-2">מהלקוח ({assets.length})</div>
@@ -135,30 +182,71 @@ export default function AlesRfqForm({ rfq, options }: { rfq: RfqRow; options: Op
           </div>
         )}
 
+        {/* one pricing block per sink */}
+        {sinks.map((s, idx) => {
+          const p = prices[s.id] || emptyPrice();
+          return (
+            <div key={s.id} className="mb-3 border border-stone-300 rounded-lg overflow-hidden">
+              <div className="px-3 py-2 bg-stone-100 border-b border-stone-200">
+                <div className="text-sm font-bold text-stone-900 break-words">כיור {idx + 1}: {s.name}</div>
+                {(s.dimensions || s.stone) && (<div className="text-xs text-stone-500 break-words">{[s.dimensions, s.stone].filter(Boolean).join(' · ')}</div>)}
+                {s.notes && (<div className="text-xs text-stone-500 mt-0.5 break-words">{s.notes}</div>)}
+              </div>
+              <div className="p-3 space-y-3">
+                {/* A) full price */}
+                <label className="block w-full">
+                  <span className="block text-xs font-semibold text-stone-700 mb-1">א. מחיר מלא ₪ (כולל מע"מ) *</span>
+                  <input type="number" inputMode="numeric" value={p.full || ''} onChange={(e) => setP(s.id, { full: Number(e.target.value) || 0 })} placeholder="0" className="w-full max-w-full box-border px-2 py-2 text-base border border-stone-300 rounded-md" dir="ltr" />
+                </label>
+
+                {/* B) installation */}
+                <div className="w-full">
+                  <span className="block text-xs font-semibold text-stone-700 mb-1">ב. התקנה</span>
+                  <select value={p.installMode} onChange={(e) => setP(s.id, { installMode: e.target.value as 'included' | 'extra' })} className="w-full max-w-full box-border px-2 py-2 text-sm border border-stone-300 rounded-md bg-white" dir="rtl">
+                    <option value="included">המחיר כולל התקנה</option>
+                    <option value="extra">תוספת התקנה (הזן מחיר)</option>
+                  </select>
+                  {p.installMode === 'extra' && (
+                    <input type="number" inputMode="numeric" value={p.installPrice || ''} onChange={(e) => setP(s.id, { installPrice: Number(e.target.value) || 0 })} placeholder="מחיר התקנה ₪" className="w-full max-w-full box-border px-2 py-2 text-sm border border-stone-300 rounded-md mt-2" dir="ltr" />
+                  )}
+                </div>
+
+                {/* C) misc */}
+                <div className="w-full">
+                  <span className="block text-xs font-semibold text-stone-700 mb-1">ג. שונות / הערה (לא חובה)</span>
+                  <input value={p.miscText} onChange={(e) => setP(s.id, { miscText: e.target.value })} placeholder="תיאור (לדוגמה: חיתוך מיוחד)" className="w-full max-w-full box-border px-2 py-2 text-sm border border-stone-300 rounded-md" dir="rtl" />
+                  <input type="number" inputMode="numeric" value={p.miscPrice || ''} onChange={(e) => setP(s.id, { miscPrice: Number(e.target.value) || 0 })} placeholder="תוספת מחיר ₪ (אם יש)" className="w-full max-w-full box-border px-2 py-2 text-sm border border-stone-300 rounded-md mt-2" dir="ltr" />
+                </div>
+
+                <div className="flex items-center justify-between bg-stone-50 rounded-md px-3 py-1.5">
+                  <span className="text-xs text-stone-500">סה"כ כיור זה</span>
+                  <span className="text-sm font-bold text-stone-900">₪{sinkTotal(p).toLocaleString()}</span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+
+        {/* add-ons */}
         {options.length > 0 && (
           <div className="mb-3 border border-stone-200 rounded-lg p-3">
             <div className="text-xs font-semibold text-stone-700 mb-2">תוספות — סמן ותמחר את הרלוונטיות</div>
             <div className="space-y-2">
               {options.map((o) => (
                 <div key={o.id} className="flex items-center gap-2">
-                  <input type="checkbox" checked={!!picked[o.id]} onChange={(e) => setPicked((p) => ({ ...p, [o.id]: e.target.checked }))} className="w-5 h-5 shrink-0" />
+                  <input type="checkbox" checked={!!picked[o.id]} onChange={(e) => setPicked((pp) => ({ ...pp, [o.id]: e.target.checked }))} className="w-5 h-5 shrink-0" />
                   <span className="flex-1 min-w-0 text-sm text-stone-700 break-words">{o.name_he}</span>
-                  {picked[o.id] && (<input type="number" inputMode="numeric" value={addonPrice[o.id] || ''} onChange={(e) => setAddonPrice((p) => ({ ...p, [o.id]: Number(e.target.value) || 0 }))} placeholder="₪" className="w-20 shrink-0 box-border px-2 py-1 text-sm border border-stone-300 rounded text-center" dir="ltr" />)}
+                  {picked[o.id] && (<input type="number" inputMode="numeric" value={addonPrice[o.id] || ''} onChange={(e) => setAddonPrice((pp) => ({ ...pp, [o.id]: Number(e.target.value) || 0 }))} placeholder="₪" className="w-20 shrink-0 box-border px-2 py-1 text-sm border border-stone-300 rounded text-center" dir="ltr" />)}
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        <div className="border border-stone-200 rounded-lg p-3 mb-3 space-y-2">
-          <div className="text-xs font-semibold text-stone-700">פירוט המחיר שלך (כולל מע"מ)</div>
-          {numInput('אבן / חומר ₪', stonePrice, setStonePrice)}
-          {numInput('עבודה / ייצור ₪', laborPrice, setLaborPrice)}
-          {numInput('התקנה / הובלה ₪', installPrice, setInstallPrice)}
-          <div className="flex items-center justify-between bg-stone-100 rounded-md px-3 py-2 mt-1">
-            <span className="text-xs text-stone-600">סה"כ כולל תוספות ומע"מ</span>
-            <span className="text-lg font-bold text-stone-900">₪{total.toLocaleString()}</span>
-          </div>
+        {/* grand total */}
+        <div className="flex items-center justify-between bg-stone-900 text-white rounded-md px-3 py-3 mb-3">
+          <span className="text-sm">סה"כ כללי (עלות אלס, כולל מע"מ)</span>
+          <span className="text-lg font-bold">₪{total.toLocaleString()}</span>
         </div>
 
         <label className="block w-full mb-3">
@@ -167,7 +255,7 @@ export default function AlesRfqForm({ rfq, options }: { rfq: RfqRow; options: Op
         </label>
 
         <label className="block w-full mb-3">
-          <span className="block text-xs font-medium text-stone-600 mb-1">הערה</span>
+          <span className="block text-xs font-medium text-stone-600 mb-1">הערה כללית</span>
           <textarea value={remark} onChange={(e) => setRemark(e.target.value)} rows={2} className="w-full max-w-full box-border px-2 py-2 text-sm border border-stone-300 rounded-md resize-y" dir="rtl" />
         </label>
 

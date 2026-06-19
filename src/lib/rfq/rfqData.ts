@@ -3,6 +3,11 @@
 // src/lib/rfq/rfqData.ts
 // Ales RFQ pipeline: create (Avshi), fetch by token (Ales page), submit response (Ales)
 // -> saves response + creates a /suppliers offer + emails Avshi an alert.
+//
+// v5: MULTI-SINK. An RFQ can hold several sinks (questions.sinks[]). Ales prices
+// each sink with A) full price (mandatory), B) installation (included or +price),
+// C) misc/remark (optional price + text). Old single-spec RFQs still render via
+// the spec fallback.
 
 import { createClient } from '@supabase/supabase-js';
 import { revalidatePath } from 'next/cache';
@@ -57,6 +62,16 @@ export interface RfqAsset {
   label?: string;
 }
 
+// One sink in a multi-sink RFQ.
+export interface RfqSink {
+  id: string;
+  name: string;        // e.g. "אמבט הורים 240 ס"מ"
+  dimensions?: string; // e.g. "240×50×25"
+  stone?: string;      // e.g. "קלקטה איטלקי"
+  notes?: string;      // free text per sink
+}
+
+// Legacy single-sink spec (kept for old RFQs created before multi-sink).
 export interface RfqSpec {
   modelName?: string;
   dimensions?: string;
@@ -73,18 +88,34 @@ export interface RfqRow {
   title_he: string;
   project_ref: string | null;
   customer_hint: string | null;
-  questions: { spec?: RfqSpec } | null;
+  questions: { spec?: RfqSpec; sinks?: RfqSink[] } | null;
   asset_urls: RfqAsset[] | null;
   status: string;
   created_at: string;
   updated_at: string;
 }
 
+// Normalise any RFQ (old or new) to a list of sinks for the Ales UI.
+export async function sinksFromRfq(rfq: RfqRow): Promise<RfqSink[]> {
+  const q = rfq.questions || {};
+  if (Array.isArray(q.sinks) && q.sinks.length > 0) return q.sinks;
+  // fallback: build a single sink from the legacy spec
+  const s = q.spec || {};
+  return [{
+    id: 'legacy-1',
+    name: s.modelName || rfq.title_he || 'כיור',
+    dimensions: s.dimensions,
+    stone: s.stone,
+    notes: s.notes,
+  }];
+}
+
 export interface CreateRfqInput {
   title_he: string;
   project_ref?: string | null;
   customer_hint?: string | null;
-  spec?: RfqSpec;
+  sinks?: RfqSink[];
+  spec?: RfqSpec; // still accepted for backward-compat
   assets?: RfqAsset[];
 }
 
@@ -101,12 +132,17 @@ export async function createRfq(input: CreateRfqInput): Promise<CreateRfqResult>
   if (!input.title_he?.trim()) return { ok: false, error: 'חסרה כותרת ל-RFQ' };
   const sb = getServerSupabase();
   const token = makeToken();
+
+  const questions: { spec?: RfqSpec; sinks?: RfqSink[] } = {};
+  if (Array.isArray(input.sinks) && input.sinks.length > 0) questions.sinks = input.sinks;
+  if (input.spec) questions.spec = input.spec;
+
   const res = await sb.from('rfqs').insert({
     token,
     title_he: input.title_he.trim(),
     project_ref: input.project_ref?.trim() || null,
     customer_hint: input.customer_hint?.trim() || null,
-    questions: input.spec ? { spec: input.spec } : {},
+    questions,
     asset_urls: input.assets || [],
     status: 'open',
   }).select('id, token').single();
