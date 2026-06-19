@@ -99,13 +99,13 @@ export async function pipelineSummary(): Promise<PipelineSummary> {
   const jobs = await listJobs();
   const byStage = {} as Record<JobStage, { count: number; value: number }>;
   STAGE_ORDER.forEach((s) => { byStage[s] = { count: 0, value: 0 }; });
-  let activeCount = 0, activeValue = 0, paidValueAll = 0, commissionPaidAll = 0;
+  let activeCount = 0, activeValue = 0, commissionActive = 0, paidValueAll = 0, commissionPaidAll = 0;
   for (const j of jobs) {
     const st = ((j.stage as JobStage) in byStage ? (j.stage as JobStage) : 'priced');
     byStage[st].count += 1;
     byStage[st].value += Number(j.customer_total) || 0;
-    if (STAGE_META[st]?.active) { activeCount += 1; activeValue += Number(j.customer_total) || 0; }
+    if (STAGE_META[st]?.active) { activeCount += 1; activeValue += Number(j.customer_total) || 0; commissionActive += Number(j.commission) || 0; }
     if (st === 'paid') { paidValueAll += Number(j.customer_total) || 0; commissionPaidAll += Number(j.commission) || 0; }
   }
-  return { byStage, activeCount, activeValue, paidValueAll, commissionPaidAll };
+  return { byStage, activeCount, activeValue, commissionActive, paidValueAll, commissionPaidAll };
 }

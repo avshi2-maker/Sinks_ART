@@ -30,11 +30,13 @@ export default function PipelineBoard({ jobs, summary }: { jobs: JobRow[]; summa
     return null;
   }
 
-  function advance(id: string, to: JobStage) {
+  function advance(id: string, to: JobStage, title: string) {
+    if (!confirm('להעביר את "' + title + '" לשלב: ' + STAGE_META[to].label + ' ?')) return;
     setBusyId(id);
     startTransition(async () => { await advanceJobStage(id, to); setBusyId(null); });
   }
-  function markLost(id: string) {
+  function markLost(id: string, title: string) {
+    if (!confirm('לסמן את "' + title + '" כאבוד?')) return;
     setBusyId(id);
     startTransition(async () => { await advanceJobStage(id, 'lost'); setBusyId(null); });
   }
@@ -47,7 +49,7 @@ export default function PipelineBoard({ jobs, summary }: { jobs: JobRow[]; summa
   return (
     <div dir="rtl">
       {/* headline money tiles */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-4">
         <div className="bg-white border border-stone-200 rounded-lg p-3">
           <div className="text-xs text-stone-500">עבודות פעילות</div>
           <div className="text-2xl font-bold text-stone-900">{summary.activeCount}</div>
@@ -55,6 +57,10 @@ export default function PipelineBoard({ jobs, summary }: { jobs: JobRow[]; summa
         <div className="bg-white border border-stone-200 rounded-lg p-3">
           <div className="text-xs text-stone-500">שווי פעיל (ללקוח)</div>
           <div className="text-2xl font-bold text-blue-700">{ils(summary.activeValue)}</div>
+        </div>
+        <div className="bg-white border border-stone-200 rounded-lg p-3">
+          <div className="text-xs text-stone-500">עמלה צפויה (פעיל)</div>
+          <div className="text-2xl font-bold text-purple-700">{ils(summary.commissionActive)}</div>
         </div>
         <div className="bg-white border border-stone-200 rounded-lg p-3">
           <div className="text-xs text-stone-500">שולם — סה"כ</div>
@@ -112,12 +118,12 @@ export default function PipelineBoard({ jobs, summary }: { jobs: JobRow[]; summa
                   </div>
                   <div className="flex items-center gap-1 flex-wrap">
                     {nxt && j.stage !== 'paid' && j.stage !== 'lost' && (
-                      <button onClick={() => advance(j.id, nxt)} disabled={isBusy} className="text-xs px-2.5 py-1 rounded-md bg-emerald-600 text-white font-medium hover:bg-emerald-700 disabled:opacity-50">
+                      <button onClick={() => advance(j.id, nxt, j.title_he)} disabled={isBusy} className="text-xs px-2.5 py-1 rounded-md bg-emerald-600 text-white font-medium hover:bg-emerald-700 disabled:opacity-50">
                         → {STAGE_META[nxt].short}
                       </button>
                     )}
                     {j.stage !== 'lost' && j.stage !== 'paid' && (
-                      <button onClick={() => markLost(j.id)} disabled={isBusy} className="text-xs px-2 py-1 rounded-md bg-stone-100 text-stone-500 hover:bg-red-50 hover:text-red-600 disabled:opacity-50">
+                      <button onClick={() => markLost(j.id, j.title_he)} disabled={isBusy} className="text-xs px-2 py-1 rounded-md bg-stone-100 text-stone-500 hover:bg-red-50 hover:text-red-600 disabled:opacity-50">
                         אבוד
                       </button>
                     )}

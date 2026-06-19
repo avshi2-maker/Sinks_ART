@@ -48,6 +48,7 @@ export interface PipelineSummary {
   byStage: Record<JobStage, { count: number; value: number }>;
   activeCount: number;
   activeValue: number;
+  commissionActive: number;   // forecast: commission on active (non-paid/lost) jobs
   paidValueAll: number;
   commissionPaidAll: number;
 }
