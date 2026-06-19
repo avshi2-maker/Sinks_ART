@@ -23,6 +23,7 @@ export const STAGES: NavStage[] = [
     { href: '/demos', label: 'גלריה', icon: '🎨' },
   ] },
   { id: 'sell', label: 'מכירה', tools: [
+    { href: '/pipeline', label: 'צנרת עבודות', icon: '🔧' },
     { href: '/quotes', label: 'הצעות', icon: '🧾' },
     { href: '/po', label: 'הזמנות', icon: '📋' },
     { href: '/rfq-create', label: 'RFQ לאלס', icon: '🏭' },

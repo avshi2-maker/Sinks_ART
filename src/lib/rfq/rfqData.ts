@@ -13,6 +13,7 @@ import { createClient } from '@supabase/supabase-js';
 import { revalidatePath } from 'next/cache';
 import { Resend } from 'resend';
 import { createSupplierOffer } from '@/lib/suppliers/suppliersData';
+import { createJob } from '@/lib/pipeline/jobPipelineData';
 
 function getServerSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -225,6 +226,20 @@ export async function submitRfqResponse(input: SubmitRfqInput): Promise<SubmitRf
 
   const updRes = await sb.from('rfqs').update({ status: 'answered', updated_at: new Date().toISOString() }).eq('id', rfqId);
   if (updRes.error) return { ok: false, error: updRes.error.message };
+
+  // auto-create a pipeline job at stage 'priced' (non-blocking)
+  try {
+    await createJob({
+      title_he: title,
+      customer_name: (rfqRes.data.customer_hint as string) || undefined,
+      rfq_id: rfqId,
+      supplier_offer_id: offerId || undefined,
+      stage: 'priced',
+      ales_cost: input.totalIls,
+    });
+  } catch (e) {
+    console.error('[submitRfqResponse] createJob threw (non-blocking):', e);
+  }
 
   // fire the alert email (non-blocking)
   await sendAlesAlertEmail({ title, total: input.totalIls, lineItems: input.lineItems, remark: input.remarkHe });
