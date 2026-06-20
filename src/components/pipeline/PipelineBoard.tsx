@@ -43,10 +43,10 @@ function EditFields({ st, set }: { st: EditState; set: (patch: Partial<EditState
       </div>
       <div className="grid grid-cols-3 gap-2">
         <label className="block"><span className="text-[11px] text-stone-500">עלות אלס ₪</span>
-          <input type="number" inputMode="numeric" value={st.ales_cost || ''} onChange={(e) => set({ ales_cost: Number(e.target.value) || 0 })} className={NUM_CLS} dir="ltr" /></label>
+          <input type="number" inputMode="numeric" value={st.ales_cost || ''} onChange={(e) => { const v = Number(e.target.value) || 0; set({ ales_cost: v, commission: Math.max(0, (Number(st.customer_total) || 0) - v) }); }} className={NUM_CLS} dir="ltr" /></label>
         <label className="block"><span className="text-[11px] text-stone-500">ללקוח ₪</span>
-          <input type="number" inputMode="numeric" value={st.customer_total || ''} onChange={(e) => set({ customer_total: Number(e.target.value) || 0 })} className={NUM_CLS} dir="ltr" /></label>
-        <label className="block"><span className="text-[11px] text-stone-500">עמלה ₪</span>
+          <input type="number" inputMode="numeric" value={st.customer_total || ''} onChange={(e) => { const v = Number(e.target.value) || 0; set({ customer_total: v, commission: Math.max(0, v - (Number(st.ales_cost) || 0)) }); }} className={NUM_CLS} dir="ltr" /></label>
+        <label className="block"><span className="text-[11px] text-stone-500">עמלה ₪ (אוטומטי)</span>
           <input type="number" inputMode="numeric" value={st.commission || ''} onChange={(e) => set({ commission: Number(e.target.value) || 0 })} className={NUM_CLS} dir="ltr" /></label>
       </div>
       <label className="block"><span className="text-[11px] text-stone-500">שלב</span>
