@@ -1050,3 +1050,37 @@ NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY (eyJ format), NEXT_PUBLI
 - IDEAS_PARKING now >1000 lines — consider archiving old entries to IDEAS_PARKING_ARCHIVE.md to keep it lean.
 
 ### Ziv hotel single-sink Nano prompt (saved, single uniform marble, 2950×450×250 wall-hung V-channel trough, hotel-lobby editorial). Calacatta vs Statuario distinction validated. Corner-triangle (isosceles right) Nano prompts saved.
+
+---
+## Session 20/06/2026 (cont.) — Add-ons showroom gallery (public site) + new product ideas parked
+
+### DONE: Customer-facing add-ons gallery enriched with AI renders (public site)
+- The website ALREADY had the add-ons section: src/components/AddOns.tsx ("השלימו את החלל — לא רק כיור, חלל שלם באבן"), 5 categories, all items pickable into SelectionContext cart (section "תוספות") -> flows into LeadForm + single WhatsApp message. It was just MISSING PICTURES (used a brass ◆ data-URI placeholder).
+- Rebuilt AddOns.tsx as a VISUAL showroom: photo-card grid (aspect 4:3), each add-on shows its AI render; same pick/cart/WhatsApp flow untouched. Items without img fall back to ◆.
+- Removed addon-italian-marble (Avshi deleted it) -> now 11 add-ons.
+- Generated 11 Nano render prompts (Calacatta family, editorial AD style). Saved full prompt sheet. addon-upper-shelves needed a shelf-forward reprompt (eye-level camera, shelf as explicit subject).
+- All 11 renders generated + uploaded to Cloudinary. LIVE and beautiful.
+
+### Cloudinary lesson (important for future image work)
+- Uploading without "use filename as public ID" adds a random suffix (e.g. addon-lower-shelf_busb2t) -> unpredictable URLs. Fix: rename each asset's Public ID to the clean id (remove _xxxxx suffix). "A media asset with this public ID already exists" on rename = the clean name is already there (often from an earlier upload) — that's fine, just delete the suffixed dup.
+- WINNING PATTERN: version-free Cloudinary URL works and is stable: https://res.cloudinary.com/dqdku88vv/image/upload/{public_id}.png (no /v123/ needed). AddOns.tsx uses IMG(id) = `.../image/upload/${id}.png`. To swap a render later: replace the asset at the same public id, no code change.
+- 11 add-on public ids (all at Cloudinary root, clean): addon-towel-rail, addon-soap-brush, addon-upper-shelves, addon-lower-shelf, addon-faucet-3way, addon-faucet-touchless, addon-led-strip, addon-marble-wall, addon-marble-floor, addon-siphon-cube, addon-grout-match.
+- NOTE: HEAD-method checks via Invoke-WebRequest gave false MISS for all (and prompted Y/N per request). Don't trust HEAD checks here — judge from the live page or a real GET.
+
+### STILL PENDING from the original "ferrari" add-ons scope (CRM side — next session)
+1. options_catalog.image_url column was added (SQL ran). NOT yet wired into optionsCatalog.ts types/save/add OR the /options editor. Goal: manage gallery images from CRM /options (paste render URL per add-on). [Note: public site currently uses hardcoded Cloudinary ids in AddOns.tsx, NOT the DB image_url — could later switch public site to read options_catalog so CRM controls images.]
+2. Add selected add-ons as LINE ITEMS in the offer builder, AFTER the sink lines, each with a price -> sink lines + chosen extras = final customer offer. This was the key business piece: customer's WhatsApp picks -> Avshi builds offer with those add-ons priced -> final ARVO offer.
+
+### NEW PRODUCT IDEAS — PARKED (build as own modules later)
+
+**A. FLUSH-TO-ZERO-LEVEL DOOR module (big business, popular)**
+- Unique product only Ales builds: a flush / zero-level door (דלת בגובה אפס), marble or marble-look stone mounted on a METAL STRUCTURE. Image showed a large dark stone-clad flush/pivot door.
+- Avshi says this is big, popular business — wants a STANDALONE configurator module with a COLOR/STONE OPTION PICKER: customer picks a color/stone, sees the door render in that finish (color-changing render tool). Like a car configurator for the door.
+- Build properly as its own module (door render set per stone/color + picker UI + likely Nano-generated color variants or a swatch overlay). Not a quick add — own session.
+
+**B. SIPHON / DRAIN FINISH add-on popup**
+- Add-on where customer picks the drain/pop-up siphon FINISH from options: brushed gold, chrome/polished, bronze/oil-rubbed, white, brass, matte black, etc. (Image showed a 6-finish drain grid, "פרט 1/7 · צבע".)
+- A finish-picker popup for the סיפון/drain cover — small configurator, pairs naturally with the add-ons gallery.
+
+### Housekeeping
+- IDEAS_PARKING now well over 1000 lines — archive older sessions to IDEAS_PARKING_ARCHIVE.md.
