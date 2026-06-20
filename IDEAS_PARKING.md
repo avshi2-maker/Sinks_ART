@@ -1012,3 +1012,41 @@ NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY (eyJ format), NEXT_PUBLI
 
 ### Ziv hotel single-sink Nano prompt (saved)
 - Single uniform marble, long narrow 2950×450×250 wall-hung, V-channel trough to one drain, hotel-lobby editorial Instagram-hero style. Corrected from earlier double-sink/countertop draft per כיור_רחב_295.pdf spec.
+
+---
+## Session 20/06/2026 — Pipeline polish, dashboard wiring, supplier-card media, lead auto-pull, sketch engineer
+
+### Pipeline command center — polished
+- offer_sent_at column now SHOWN on job cards: "הצעה נשלחה DD.MM · לפני X ימים" (daysAgo helper). Added offer_sent_at to JobRow type (was missing -> would've been undefined).
+- Manual "+ עבודה חדשה" button: create a job by hand (title/customer/₪values/stage/notes) for jobs not from an RFQ.
+- Full inline EDIT panel per card (✏️ ערוך): title, customer name/phone/city, ales_cost/customer_total/commission, stage dropdown, notes. New updateJob() in data layer (updateJobValues kept as alias).
+- "↗ פתח הצעת ספק" link on cards that have supplier_offer_id.
+- AUTO-CALC commission: typing ales_cost or customer_total auto-fills commission = max(0, customer - ales). Still editable.
+- BUG FIXED (important React lesson): EditFields was defined INSIDE the component -> inputs remounted every keystroke -> lost focus after 1 char ("can't type" bug). FIX: moved EditFields to a TOP-LEVEL component. Rule: never define a component inside another component's render.
+
+### Dashboard wiring
+- New DashboardPipelineStrip (server component) on main /dashboard after QuickActions: 4 compact money tiles (active count, active value, forecast commission, commission collected) + "דורש טיפול" list (priced/awaiting_ales/offer_sent jobs, clickable) + "לכל העבודות ←" link to /pipeline. Fails silently if pipeline empty.
+
+### Supplier card polish (/suppliers) — Ferrari join
+- fetchSupplierOffers now ENRICHES each offer from rfq_responses: attaches ales_photo_urls + rfq_token (via .select with rfqs(token) join, matched by supplier_offer_id). Added ales_photo_urls?/rfq_token? to SupplierOfferRow type. Non-blocking try/catch.
+- Card now shows: "מקור: RFQ · {token}" reference + "📷 תמונות אתר מאלס" clickable thumbnails. Timestamp (created_at) was already shown.
+- LESSON: PowerShell console squishes spaces in display — "gap-2 flex-wrap" looked like "gap-2flex-wrap". Verify real chars via .ToCharArray()|%{[int][char]$_} before assuming a typo. Files here use LF not CRLF — use `n not `r`n in replacements.
+
+### Lead media auto-pull + SVG filter (RFQ create)
+- RfqCreateForm now takes leads[] prop (rfq-create page fetches via fetchLeads()). New "⚡ טען מליד" picker: prefills title/project/customer-hint + first sink (stone=preferred_marble_family, notes=config+notes) + pulls inspiration_image_urls.
+- isRealMedia() filter drops data:image/svg+xml (and any data: URI) gallery placeholders, keeps only http(s) URLs. Runs on pull AND on submit (double safety). Shows "X מדיה אמיתית נטענה · Y תמונות גלריה סוננו".
+
+### Sketch "engineer" — sanity-check / auto-correct (the big sketch ask)
+- NEW sanitizeSpec(spec): SanitizeResult in sketchRenderer.ts. Auto-corrects ANY input to a buildable sink + returns Hebrew notes. renderSinkSketch now calls it first (renderSinkSketch(rawSpec) -> const spec = sanitizeSpec(rawSpec).spec).
+- Rules enforced: dims clamped to physical ranges (L 200-4000, W 150-1200, H 80-600); TRIANGLE = isosceles right triangle (forces width=length = equal wall-sides for true 90° corner) + forces wall-mount + round drain + single basin; basin depth < height-20; wall thickness 8..width/4; pitch clamped 1-5%.
+- Triangle geometry in topPolygon was [{0,0},{L,0},{0,W}] = right angle at top-left (correct for corner sink); sanitize makes it isosceles.
+- UI: SketchBuilder shows amber "🔧 התאמות הנדסיות אוטומטיות" panel above preview listing what was fixed (fixNotes = sanitizeSpec(spec).notes). No panel when input already valid.
+
+### PARKED — big future idea: ROOM-AWARE AI SINK PLACEMENT
+- Avshi's vision: user enters ROOM dimensions + door position + plumbing wall + window etc., and AI decides WHICH CORNER the sink goes in and what SIZE fits — accounting for door-swing path, traffic flow, plumbing constraints. "Maybe ask room position/sizes first, then AI generates corner + sink." This is a phase-2 product (room modeling + door-swing geometry + AI placement engine), NOT a quick add. Build properly in its own session, not half-way.
+
+### Still parked (older)
+- Customer-facing add-ons gallery with AI sample pics (Nano).
+- IDEAS_PARKING now >1000 lines — consider archiving old entries to IDEAS_PARKING_ARCHIVE.md to keep it lean.
+
+### Ziv hotel single-sink Nano prompt (saved, single uniform marble, 2950×450×250 wall-hung V-channel trough, hotel-lobby editorial). Calacatta vs Statuario distinction validated. Corner-triangle (isosceles right) Nano prompts saved.
