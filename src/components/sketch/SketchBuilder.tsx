@@ -8,7 +8,7 @@ import SaveSketchToGallery from '@/components/sketch/SaveSketchToGallery';
 import { useRouter } from 'next/navigation';
 import { createPO } from '@/lib/po/poData';
 import { MarbleSwatch } from '@/lib/marble/marbleData';
-import { renderSinkSketch, SketchSpec, SketchShape, SketchMount, SketchDrain } from '@/lib/sketch/sketchRenderer';
+import { renderSinkSketch, sanitizeSpec, SketchSpec, SketchShape, SketchMount, SketchDrain } from '@/lib/sketch/sketchRenderer';
 
 const SHAPES: { v: SketchShape; he: string }[] = [
   { v: 'rectangle', he: 'מלבן' },
@@ -34,6 +34,7 @@ export default function SketchBuilder({ initial, swatches = [] }: SketchBuilderP
   const [cmIn, setCmIn] = useState(0);
   const [spec, setSpec] = useState<SketchSpec>({ ...DEFAULTS, ...initial });
   const svg = useMemo(() => renderSinkSketch(spec), [spec]);
+  const fixNotes = useMemo(() => sanitizeSpec(spec).notes, [spec]);
 
   function set<K extends keyof SketchSpec>(key: K, val: SketchSpec[K]) {
     setSpec((p) => ({ ...p, [key]: val }));
@@ -223,6 +224,14 @@ export default function SketchBuilder({ initial, swatches = [] }: SketchBuilderP
             <SaveSketchToGallery svg={svg} spec={spec as unknown as Record<string, unknown>} defaultTitle={spec.modelName} />
         </div>
       </div>
+      {fixNotes.length > 0 && (
+        <div className="border border-amber-200 bg-amber-50 rounded-lg p-3 mb-2" dir="rtl">
+          <div className="text-xs font-semibold text-amber-800 mb-1">🔧 התאמות הנדסיות אוטומטיות</div>
+          <ul className="text-xs text-amber-700 space-y-0.5 list-disc pr-4">
+            {fixNotes.map((n, i) => (<li key={i}>{n}</li>))}
+          </ul>
+        </div>
+      )}
       <div className="border border-stone-200 rounded-lg p-2 bg-white" dangerouslySetInnerHTML={{ __html: svg }} />
     </div>
   );
