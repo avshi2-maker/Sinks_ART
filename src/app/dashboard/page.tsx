@@ -1,4 +1,4 @@
-﻿/**
+/**
  * src/app/dashboard/page.tsx
  *
  * Server Component — runs fetchDashboardData() at request time and passes
@@ -13,6 +13,7 @@
 import { fetchDashboardData } from './fetchDashboardData';
 import TodayActivityStrip from '@/components/dashboard/TodayActivityStrip';
 import QuickActions from '@/components/dashboard/QuickActions';
+import DashboardPipelineStrip from '@/components/dashboard/DashboardPipelineStrip';
 import TasksStrip from '@/components/dashboard/TasksStrip';
 import ActiveProjectsList from '@/components/dashboard/ActiveProjectsList';
 import RecentCommsFeed from '@/components/dashboard/RecentCommsFeed';
@@ -44,6 +45,7 @@ export default async function DashboardPage() {
       />
 
       <QuickActions />
+      <DashboardPipelineStrip />
 
       <TasksStrip />
 
