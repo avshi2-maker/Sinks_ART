@@ -1110,3 +1110,36 @@ NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY (eyJ format), NEXT_PUBLI
 
 ### Nano door prompt seed (Calacatta example; swap stone per render)
 Photorealistic architectural render of a luxury FLUSH-TO-ZERO-LEVEL door: a tall pivot door fully clad in Calacatta marble with continuous book-matched veining, mounted flush into a matching marble wall with NO visible frame and NO threshold/step at the floor (zero level), seamless continuous stone across wall-door-floor. Hidden hardware, minimal dark recessed handle line. Editorial Architectural Digest style, warm golden lighting, ultra-sharp 8K, no text, no watermark. (Swap "Calacatta" -> Statuario / Nero Marquina / Amperdor brown / Gold per variant.)
+
+---
+## Session 20/06/2026 (cont.) — CRM navigation reorg + sent-offers tracker + Outlook (all PARKED, build next)
+
+### AUDIT of current nav (WorkflowNav.tsx) — problems found
+Current = 4 stages, 17 tools: לכידה(שיחות,מדיה,פניות,לקוחות,ספקים) · עיצוב(שרטוט,הדמיה,גלריה) · מכירה(צנרת,הצעות,הזמנות,RFQ,ARVO) · קטלוגים(שיש,מחירון,אתרים,ROI).
+Problems: (1) THREE overlapping offer entry points (הצעות + RFQ לאלס + הצעת ARVO) — confusing which to use. (2) Offer flow scattered across 2 stages: ספקים(supplier pricing) sits under "capture" but feeds offers under "sell". (3) קטלוגים is a mixed bag — אתרים(projects) and ROI(analytics) aren't catalogs. (4) No daily-start anchor.
+
+### PROPOSED Ferrari nav (APPROVED by Avshi via mockup) — 6 logical areas, workflow-ordered, daily-core front:
+1. **לוח היום** (Today board / landing): pipeline+money summary, דורש טיפול, new leads, pending correspondence. True daily start page.
+2. **עבודות** (DAILY CORE, highlighted): צנרת עבודות 🔧 + שיחות 🎙️ + מדיה 📸 + פניות 📥. Where Avshi lives day-to-day.
+3. **לקוחות**: לקוחות 👥 + ספקים(אלס) 🏭 + אתרים/פרויקטים 🏨 + התכתבות 📧(Outlook). (ספקים + אתרים moved here — they're relationships, not capture/catalogs.)
+4. **עיצוב והדמיה**: שרטוט 📐 + הדמיית AI 🖼️ + גלריה 🎨.
+5. **הצעות וייצור**: RFQ לאלס 🏭 → הצעת ARVO 📄 → הצעות 🧾 → הזמנות ייצור 📋. ALL offer tools together in flow order (fixes the 3-scattered-entry-points problem).
+6. **קטלוגים ונתונים**: שיש 🪨 + מחירון ותוספות 📖 + ROI 📊. Pure reference now.
+Implementation: restructure STAGES array in WorkflowNav.tsx + add "לוח היום" landing concept. Low-risk (nav-only). Build next session.
+
+### SENT-OFFERS TRACKER — Ferrari, INTEGRATED INTO PIPELINE (not separate)
+- Need: when Avshi generates an ARVO-template offer and sends it (to customer, OR to Ales to forward), there's currently NO record. Wants a register of sent offer-templates as a DAILY FOLLOW-UP surface.
+- DECIDED: enhance the existing pipeline (job_pipeline) rather than build a separate silo — pipeline is already the daily command center.
+- Per sent offer track BOTH: recipient (ללקוח ישירות / לאלס להעברה) AND a manually-updatable status (e.g. נשלח / נצפה / אושר / נדחה / ממתין).
+- Report/table view: list finished+sent ARVO templates with options to VIEW / EDIT / DELETE + update status. Surface it on לוח היום as a daily follow-up block.
+- Likely needs: store generated ARVO offer (offer no, recipient, sent date, status, link/snapshot) linked to its job_pipeline row; a /offers-sent view or a tab inside pipeline; status dropdown; view/edit/delete actions.
+
+### OUTLOOK / 365 MAILBOX integration — PARKED (own build, NOT a nav change)
+- Avshi wants CRM connected to his Outlook 365 mailbox to follow up customer correspondence per project/offer. (Note: "Claude for Outlook" is a separate Anthropic product that works inside Outlook — different from wiring the CRM app to the mailbox.)
+- To connect CRM -> 365: Microsoft Graph API integration — Azure app registration, OAuth, Graph mail permissions, token handling. Real project. Nav already reserves a 📧 התכתבות slot under לקוחות so the structure is ready.
+- Goal UX: a customer/project page shows that customer's email thread; follow-ups tracked alongside their offer/pipeline status.
+
+### Build order suggestion (next sessions)
+1. Nav reorg (quick, low-risk, big daily-usability win).
+2. Sent-offers tracker in pipeline (recipient + status + view/edit/delete + לוח היום block).
+3. Outlook Graph integration (biggest, own session).
