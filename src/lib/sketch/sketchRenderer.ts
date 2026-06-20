@@ -41,6 +41,74 @@ function esc(s: string): string {
   return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+// --- Sanity-check "engineer": auto-correct a spec so it always yields a buildable
+// sink, even from non-expert input. Returns the fixed spec + Hebrew notes of what changed.
+export interface SanitizeResult { spec: SketchSpec; notes: string[]; }
+
+export function sanitizeSpec(input: SketchSpec): SanitizeResult {
+  const notes: string[] = [];
+  const s: SketchSpec = { ...input };
+  const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+
+  // 1) base dimensions must be positive + within sane physical limits (mm)
+  if (!(s.lengthMm > 0)) { s.lengthMm = 600; notes.push('אורך לא תקין — הוגדר 600 מ"מ'); }
+  if (!(s.widthMm > 0)) { s.widthMm = 450; notes.push('רוחב לא תקין — הוגדר 450 מ"מ'); }
+  if (!(s.heightMm > 0)) { s.heightMm = 250; notes.push('גובה לא תקין — הוגדר 250 מ"מ'); }
+  const L0 = s.lengthMm, W0 = s.widthMm, H0 = s.heightMm;
+  s.lengthMm = clamp(s.lengthMm, 200, 4000);
+  s.widthMm = clamp(s.widthMm, 150, 1200);
+  s.heightMm = clamp(s.heightMm, 80, 600);
+  if (s.lengthMm !== L0) notes.push('אורך תוקן לטווח תקין (200–4000 מ"מ)');
+  if (s.widthMm !== W0) notes.push('רוחב תוקן לטווח תקין (150–1200 מ"מ)');
+  if (s.heightMm !== H0) notes.push('גובה תוקן לטווח תקין (80–600 מ"מ)');
+
+  // 2) CORNER TRIANGLE rule: a corner sink is an isosceles right triangle —
+  // the two wall-sides must be equal so it sits flush in a 90° corner.
+  if (s.shape === 'triangle') {
+    if (Math.abs(s.lengthMm - s.widthMm) > 1) {
+      const side = Math.max(s.lengthMm, s.widthMm);
+      s.lengthMm = side; s.widthMm = side;
+      notes.push('משולש פינתי: שני הצדדים (לאורך הקירות) הושוו ל-' + side + ' מ"מ ליצירת זווית 90° תקנית');
+    }
+    // a corner sink hangs on the wall — it has no countertop under it
+    if (s.mount !== 'wall') { s.mount = 'wall'; notes.push('כיור פינתי תוקן ל"תלוי קיר"'); }
+    // drain should be round at the corner low-point
+    if (s.drain !== 'round') { s.drain = 'round'; notes.push('ניקוז פינתי תוקן לעגול'); }
+  }
+
+  // 3) basin depth cannot exceed the body height (leave >=20mm floor)
+  if (!(s.basinDepthMm > 0)) { s.basinDepthMm = Math.round(s.heightMm * 0.8); }
+  if (s.basinDepthMm > s.heightMm - 20) {
+    s.basinDepthMm = Math.max(20, s.heightMm - 20);
+    notes.push('עומק האגן תוקן כך שיישאר עובי תחתית מינימלי');
+  }
+
+  // 4) wall thickness sane (>=8mm, <= quarter of width)
+  if (!(s.wallThicknessMm > 0)) s.wallThicknessMm = 30;
+  const maxWall = Math.floor(s.widthMm / 4);
+  if (s.wallThicknessMm < 8) { s.wallThicknessMm = 8; notes.push('עובי דופן תוקן למינימום 8 מ"מ'); }
+  if (s.wallThicknessMm > maxWall) { s.wallThicknessMm = maxWall; notes.push('עובי דופן תוקן כך שלא יחרוג מרוחב הכיור'); }
+
+  // 5) pitch must drain (1%–5% is the practical buildable range)
+  const fixPitch = (p: number | undefined, label: string): number | undefined => {
+    if (p === undefined) return p;
+    const c = clamp(p, 1, 5);
+    if (c !== p) notes.push(label + ' תוקן לטווח שיפוע תקני (1%–5%)');
+    return c;
+  };
+  s.pitchPct = fixPitch(s.pitchPct, 'שיפוע');
+  s.pitchLeftPct = fixPitch(s.pitchLeftPct, 'שיפוע שמאל');
+  s.pitchRightPct = fixPitch(s.pitchRightPct, 'שיפוע ימין');
+
+  // 6) double-basin doesn't apply to a corner triangle (single basin only)
+  if (s.shape === 'triangle' && (s.basinCount ?? 1) > 1) {
+    s.basinCount = 1;
+    notes.push('משולש פינתי תומך באגן יחיד — תוקן לאגן אחד');
+  }
+
+  return { spec: s, notes };
+}
+
 function topPolygon(spec: SketchSpec): { x: number; y: number }[] {
   const L = spec.lengthMm, W = spec.widthMm;
   const back = spec.backLengthMm ?? L;
@@ -63,7 +131,8 @@ function dimLineV(y1: number, y2: number, x: number, label: string): string {
   return `<line x1="${x}" y1="${y1}" x2="${x}" y2="${y2}" stroke="${DIM}" stroke-width="1"/><line x1="${x - 4}" y1="${y1}" x2="${x + 4}" y2="${y1}" stroke="${DIM}" stroke-width="1"/><line x1="${x - 4}" y1="${y2}" x2="${x + 4}" y2="${y2}" stroke="${DIM}" stroke-width="1"/><text x="${x}" y="${(y1 + y2) / 2}" text-anchor="middle" font-size="12" fill="${DIM}" font-family="monospace" transform="rotate(-90 ${x} ${(y1 + y2) / 2})">${esc(label)}</text>`;
 }
 
-export function renderSinkSketch(spec: SketchSpec): string {
+export function renderSinkSketch(rawSpec: SketchSpec): string {
+  const spec = sanitizeSpec(rawSpec).spec;
   if (!(spec.lengthMm > 0) || !(spec.widthMm > 0) || !(spec.heightMm > 0)) {
     return `<svg viewBox="0 0 ${PAGE_W} ${PAGE_H}" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, sans-serif" style="direction:ltr"><rect x="0" y="0" width="${PAGE_W}" height="${PAGE_H}" fill="white"/><text x="${PAGE_W / 2}" y="${PAGE_H / 2 - 10}" text-anchor="middle" font-size="20" font-weight="600" fill="${DIM}">הזן מידות להצגת השרטוט</text><text x="${PAGE_W / 2}" y="${PAGE_H / 2 + 18}" text-anchor="middle" font-size="13" fill="${DIM}">אורך · רוחב · גובה (מ"מ)</text></svg>`;
   }
