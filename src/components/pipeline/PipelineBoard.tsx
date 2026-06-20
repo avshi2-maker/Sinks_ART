@@ -9,6 +9,14 @@ import { JobRow, JobStage, STAGE_META, STAGE_ORDER, PipelineSummary } from '@/li
 
 function ils(n: number): string { return '₪' + (Number(n) || 0).toLocaleString(); }
 function dateHe(iso: string | null): string { return iso ? new Date(iso).toLocaleDateString('he-IL') : '—'; }
+function daysAgo(iso: string | null): string {
+  if (!iso) return '';
+  const ms = Date.now() - new Date(iso).getTime();
+  const d = Math.floor(ms / 86400000);
+  if (d <= 0) return 'היום';
+  if (d === 1) return 'אתמול';
+  return 'לפני ' + d + ' ימים';
+}
 
 export default function PipelineBoard({ jobs, summary }: { jobs: JobRow[]; summary: PipelineSummary }) {
   const [filter, setFilter] = useState<JobStage | 'all' | 'active'>('active');
@@ -113,8 +121,14 @@ export default function PipelineBoard({ jobs, summary }: { jobs: JobRow[]; summa
                       {[j.customer_name, j.customer_phone, j.customer_city].filter(Boolean).join(' · ') || '—'}
                     </div>
                     <div className="text-xs text-stone-400 mt-0.5">
-                      עלות אלס {ils(j.ales_cost)} · ללקוח {ils(j.customer_total)} · עמלה {ils(j.commission)} · עודכן {dateHe(j.updated_at)}
+                      עלות אלס {ils(j.ales_cost)} · ללקוח {ils(j.customer_total)} · עמלה {ils(j.commission)}
                     </div>
+                    {j.offer_sent_at && (
+                      <div className="text-xs mt-0.5">
+                        <span className="text-stone-500">הצעה נשלחה {dateHe(j.offer_sent_at)}</span>
+                        <span className="text-amber-600 font-medium"> · {daysAgo(j.offer_sent_at)}</span>
+                      </div>
+                    )}
                   </div>
                   <div className="flex items-center gap-1 flex-wrap">
                     {nxt && j.stage !== 'paid' && j.stage !== 'lost' && (

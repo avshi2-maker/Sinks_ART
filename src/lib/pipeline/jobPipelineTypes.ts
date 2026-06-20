@@ -29,6 +29,7 @@ export interface JobRow {
   notes: string | null;
   ordered_at: string | null;
   paid_at: string | null;
+  offer_sent_at: string | null;
 }
 
 export const STAGE_META: Record<JobStage, { label: string; short: string; order: number; cls: string; active: boolean }> = {
