@@ -79,12 +79,35 @@ export async function advanceJobStage(id: string, stage: JobStage): Promise<JobR
   return { ok: true, id };
 }
 
-export async function updateJobValues(id: string, vals: { ales_cost?: number; customer_total?: number; commission?: number; notes?: string }): Promise<JobResult> {
+export interface UpdateJobInput {
+  title_he?: string;
+  customer_name?: string | null;
+  customer_phone?: string | null;
+  customer_city?: string | null;
+  stage?: JobStage;
+  ales_cost?: number;
+  customer_total?: number;
+  commission?: number;
+  notes?: string | null;
+}
+
+export async function updateJob(id: string, vals: UpdateJobInput): Promise<JobResult> {
   const sb = getServerSupabase();
-  const res = await sb.from('job_pipeline').update({ ...vals, updated_at: new Date().toISOString() }).eq('id', id);
+  const patch: Record<string, unknown> = { ...vals, updated_at: new Date().toISOString() };
+  // stamp dates when moving into those stages via edit too
+  if (vals.stage === 'ordered') patch.ordered_at = new Date().toISOString();
+  if (vals.stage === 'paid') patch.paid_at = new Date().toISOString();
+  if (vals.stage === 'offer_sent') patch.offer_sent_at = patch.offer_sent_at || new Date().toISOString();
+  const res = await sb.from('job_pipeline').update(patch).eq('id', id);
   if (res.error) return { ok: false, error: res.error.message };
   revalidatePath('/pipeline');
+  revalidatePath('/dashboard');
   return { ok: true, id };
+}
+
+// kept for backward-compat (older imports)
+export async function updateJobValues(id: string, vals: { ales_cost?: number; customer_total?: number; commission?: number; notes?: string }): Promise<JobResult> {
+  return updateJob(id, vals);
 }
 
 export async function deleteJob(id: string): Promise<JobResult> {
