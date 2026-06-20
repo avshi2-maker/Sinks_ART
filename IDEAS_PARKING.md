@@ -1084,3 +1084,29 @@ NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY (eyJ format), NEXT_PUBLI
 
 ### Housekeeping
 - IDEAS_PARKING now well over 1000 lines — archive older sessions to IDEAS_PARKING_ARCHIVE.md.
+
+---
+## Session 20/06/2026 (cont.) — Flush-to-Zero-Level Door MODULE (scoped + spec'd, build next)
+
+### Product
+- דלת בגובה אפס (Flush-to-Zero-Level Door): luxury marble door on a metal structure, aligned flush to floor+wall (zero step, no protruding frame), continuous stone cladding so it nearly disappears into the wall. Unique to Ales; Avshi says BIG, popular business.
+- Hebrew technical spec DOCX delivered this session: דלת_בגובה_אפס_מפרט_טכני_20062026.docx (14-component table, dims 2000×1500 adjustable, benefits, 5 stone options, all terms translated with English in parens). Use as spec foundation + customer/Ales handout.
+- 14 components (from Ales's sketch): inner steel cage (RHS), main galvanized sub-frame (150×50×4 RHS), PIR/mineral-wool insulating core, 3mm aluminum skin + tensioning cables (warp control), 15mm outer marble cladding (adhesive), polyamide thermal break, double-layer silicone perimeter seal, hidden multi-point electromechanical lock, hidden floor-spring closer, zero-level recessed drain+sill, X-bracing, zero-tolerance flush alignment point, flush cladding adapter profile, adjustable frame brackets + grout pocket.
+- Sketch had minor English typos to clean if reused (Materwton, Oute-Performanc, High-Performace).
+
+### Module architecture (DECIDED)
+- Public site configurator section (like AddOns): customer picks stone/color -> door render swaps -> "בקשת הצעה" feeds the SAME SelectionContext cart + WhatsApp pick flow.
+- Shared Supabase table door_catalog: stones, sizes, render URLs, price.
+- CRM: door catalog editor (manage stones/sizes/renders/price) + add door as an OFFER LINE ITEM (like add-ons) -> ARVO offer + spec PDF.
+
+### COLOR PICKER — DECIDED: Option 1 (pre-rendered swap, NOT live AI)
+- Generate 5 door renders with Nano, one per stone (e.g. door-flush-calacatta, door-flush-statuario, door-flush-nero, door-flush-amperdor, door-flush-gold). Upload to Cloudinary by clean id (version-free URL pattern, same as add-ons). Picker just swaps which image shows on swatch tap. Reliable, instant, quality-controlled. Avoided live AI recolor (slow, costs per click, unpredictable quality on a customer page).
+
+### BUILD ORDER (next session, own focused session — big module)
+1. Generate 5 Nano door renders -> Cloudinary by id.
+2. door_catalog table in Supabase.
+3. Public configurator section (swatch picker -> render swap -> WhatsApp picks).
+4. CRM door editor + door as offer line item.
+
+### Nano door prompt seed (Calacatta example; swap stone per render)
+Photorealistic architectural render of a luxury FLUSH-TO-ZERO-LEVEL door: a tall pivot door fully clad in Calacatta marble with continuous book-matched veining, mounted flush into a matching marble wall with NO visible frame and NO threshold/step at the floor (zero level), seamless continuous stone across wall-door-floor. Hidden hardware, minimal dark recessed handle line. Editorial Architectural Digest style, warm golden lighting, ultra-sharp 8K, no text, no watermark. (Swap "Calacatta" -> Statuario / Nero Marquina / Amperdor brown / Gold per variant.)
