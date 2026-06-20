@@ -29,6 +29,36 @@ function editFromJob(j: JobRow): EditState {
   };
 }
 
+const INPUT_CLS = 'w-full px-2 py-1.5 text-sm border border-stone-300 rounded-md';
+const NUM_CLS = 'w-full px-2 py-1.5 text-sm border border-stone-300 rounded-md text-center';
+
+function EditFields({ st, set }: { st: EditState; set: (patch: Partial<EditState>) => void }) {
+  return (
+    <div className="space-y-2 mt-2">
+      <input value={st.title_he} onChange={(e) => set({ title_he: e.target.value })} placeholder="שם העבודה" className={INPUT_CLS} dir="rtl" />
+      <div className="grid grid-cols-3 gap-2">
+        <input value={st.customer_name} onChange={(e) => set({ customer_name: e.target.value })} placeholder="שם לקוח" className={INPUT_CLS} dir="rtl" />
+        <input value={st.customer_phone} onChange={(e) => set({ customer_phone: e.target.value })} placeholder="טלפון" className={INPUT_CLS} dir="ltr" />
+        <input value={st.customer_city} onChange={(e) => set({ customer_city: e.target.value })} placeholder="עיר" className={INPUT_CLS} dir="rtl" />
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        <label className="block"><span className="text-[11px] text-stone-500">עלות אלס ₪</span>
+          <input type="number" inputMode="numeric" value={st.ales_cost || ''} onChange={(e) => set({ ales_cost: Number(e.target.value) || 0 })} className={NUM_CLS} dir="ltr" /></label>
+        <label className="block"><span className="text-[11px] text-stone-500">ללקוח ₪</span>
+          <input type="number" inputMode="numeric" value={st.customer_total || ''} onChange={(e) => set({ customer_total: Number(e.target.value) || 0 })} className={NUM_CLS} dir="ltr" /></label>
+        <label className="block"><span className="text-[11px] text-stone-500">עמלה ₪</span>
+          <input type="number" inputMode="numeric" value={st.commission || ''} onChange={(e) => set({ commission: Number(e.target.value) || 0 })} className={NUM_CLS} dir="ltr" /></label>
+      </div>
+      <label className="block"><span className="text-[11px] text-stone-500">שלב</span>
+        <select value={st.stage} onChange={(e) => set({ stage: e.target.value as JobStage })} className={INPUT_CLS + ' bg-white'} dir="rtl">
+          {STAGE_ORDER.map((s) => (<option key={s} value={s}>{STAGE_META[s].label}</option>))}
+        </select>
+      </label>
+      <textarea value={st.notes} onChange={(e) => set({ notes: e.target.value })} rows={2} placeholder="הערות" className={INPUT_CLS + ' resize-y'} dir="rtl" />
+    </div>
+  );
+}
+
 export default function PipelineBoard({ jobs, summary }: { jobs: JobRow[]; summary: PipelineSummary }) {
   const [filter, setFilter] = useState<JobStage | 'all' | 'active'>('active');
   const [pending, startTransition] = useTransition();
@@ -85,36 +115,6 @@ export default function PipelineBoard({ jobs, summary }: { jobs: JobRow[]; summa
       setBusyId(null); setShowAdd(false);
       setAdd({ title_he: '', customer_name: '', customer_phone: '', customer_city: '', stage: 'priced', ales_cost: 0, customer_total: 0, commission: 0, notes: '' });
     });
-  }
-
-  const inputCls = 'w-full px-2 py-1.5 text-sm border border-stone-300 rounded-md';
-  const numCls = 'w-full px-2 py-1.5 text-sm border border-stone-300 rounded-md text-center';
-
-  function EditFields({ st, set }: { st: EditState; set: (patch: Partial<EditState>) => void }) {
-    return (
-      <div className="space-y-2 mt-2">
-        <input value={st.title_he} onChange={(e) => set({ title_he: e.target.value })} placeholder="שם העבודה" className={inputCls} dir="rtl" />
-        <div className="grid grid-cols-3 gap-2">
-          <input value={st.customer_name} onChange={(e) => set({ customer_name: e.target.value })} placeholder="שם לקוח" className={inputCls} dir="rtl" />
-          <input value={st.customer_phone} onChange={(e) => set({ customer_phone: e.target.value })} placeholder="טלפון" className={inputCls} dir="ltr" />
-          <input value={st.customer_city} onChange={(e) => set({ customer_city: e.target.value })} placeholder="עיר" className={inputCls} dir="rtl" />
-        </div>
-        <div className="grid grid-cols-3 gap-2">
-          <label className="block"><span className="text-[11px] text-stone-500">עלות אלס ₪</span>
-            <input type="number" inputMode="numeric" value={st.ales_cost || ''} onChange={(e) => set({ ales_cost: Number(e.target.value) || 0 })} className={numCls} dir="ltr" /></label>
-          <label className="block"><span className="text-[11px] text-stone-500">ללקוח ₪</span>
-            <input type="number" inputMode="numeric" value={st.customer_total || ''} onChange={(e) => set({ customer_total: Number(e.target.value) || 0 })} className={numCls} dir="ltr" /></label>
-          <label className="block"><span className="text-[11px] text-stone-500">עמלה ₪</span>
-            <input type="number" inputMode="numeric" value={st.commission || ''} onChange={(e) => set({ commission: Number(e.target.value) || 0 })} className={numCls} dir="ltr" /></label>
-        </div>
-        <label className="block"><span className="text-[11px] text-stone-500">שלב</span>
-          <select value={st.stage} onChange={(e) => set({ stage: e.target.value as JobStage })} className={inputCls + ' bg-white'} dir="rtl">
-            {STAGE_ORDER.map((s) => (<option key={s} value={s}>{STAGE_META[s].label}</option>))}
-          </select>
-        </label>
-        <textarea value={st.notes} onChange={(e) => set({ notes: e.target.value })} rows={2} placeholder="הערות" className={inputCls + ' resize-y'} dir="rtl" />
-      </div>
-    );
   }
 
   return (
