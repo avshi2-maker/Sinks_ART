@@ -3,12 +3,13 @@
 import Link from 'next/link';
 import RfqCreateForm from '@/components/rfq/RfqCreateForm';
 import { listRecentRfqs } from '@/lib/rfq/rfqData';
+import { fetchLeads } from '@/lib/leads/leadsData';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export default async function RfqCreatePage() {
-  const recent = await listRecentRfqs(10);
+  const [recent, leads] = await Promise.all([listRecentRfqs(10), fetchLeads()]);
   return (
     <div className="max-w-3xl mx-auto px-4 py-6" dir="rtl">
       <div className="flex items-center justify-between pb-4 mb-6 border-b border-stone-200">
@@ -22,7 +23,7 @@ export default async function RfqCreatePage() {
         <Link href="/dashboard" className="text-sm text-blue-600 no-underline hover:underline">← חזרה ללוח הבקרה</Link>
       </div>
 
-      <RfqCreateForm />
+      <RfqCreateForm leads={leads} />
 
       {recent.length > 0 && (
         <div className="mt-8">

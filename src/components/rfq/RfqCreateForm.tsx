@@ -1,17 +1,26 @@
 'use client';
 
 // src/components/rfq/RfqCreateForm.tsx
-// Build a MULTI-SINK RFQ for Ales: title, project, one-or-more sinks, asset URLs
-// -> create -> shareable link. Each sink carries name/dimensions/stone/notes; Ales
-// prices each one separately on his page.
+// Build a MULTI-SINK RFQ for Ales. Now with "load from lead" — pick a lead to
+// prefill title/customer + pull its real inspiration media (SVG placeholders filtered out).
 import { useState } from 'react';
 import { createRfq, RfqAsset, RfqSink } from '@/lib/rfq/rfqData';
+import type { LeadRow } from '@/lib/leads/leadsData';
 
 function newSink(): RfqSink {
   return { id: 's_' + Math.random().toString(36).slice(2, 9), name: '', dimensions: '', stone: '', notes: '' };
 }
 
-export default function RfqCreateForm() {
+// Keep only real media URLs — drop gallery-pick SVG placeholders (data:image/svg+xml...).
+function isRealMedia(u: string): boolean {
+  if (!u) return false;
+  const s = u.trim().toLowerCase();
+  if (s.startsWith('data:image/svg')) return false;
+  if (s.startsWith('data:')) return false; // any inline data URI is a placeholder, not a real upload
+  return s.startsWith('http://') || s.startsWith('https://');
+}
+
+export default function RfqCreateForm({ leads = [] }: { leads?: LeadRow[] }) {
   const [title, setTitle] = useState('');
   const [projectRef, setProjectRef] = useState('');
   const [customerHint, setCustomerHint] = useState('');
@@ -21,12 +30,35 @@ export default function RfqCreateForm() {
   const [error, setError] = useState<string | null>(null);
   const [link, setLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [leadPicked, setLeadPicked] = useState('');
+  const [pulledNote, setPulledNote] = useState<string | null>(null);
 
   function setSinkField(id: string, field: keyof RfqSink, value: string) {
     setSinks((prev) => prev.map((s) => (s.id === id ? { ...s, [field]: value } : s)));
   }
   function addSink() { setSinks((prev) => [...prev, newSink()]); }
   function removeSink(id: string) { setSinks((prev) => (prev.length > 1 ? prev.filter((s) => s.id !== id) : prev)); }
+
+  function loadFromLead(leadId: string) {
+    setLeadPicked(leadId);
+    setPulledNote(null);
+    if (!leadId) return;
+    const lead = leads.find((l) => l.id === leadId);
+    if (!lead) return;
+    const name = lead.full_name || 'לקוח';
+    setTitle('כיור - ' + name);
+    setProjectRef(name);
+    setCustomerHint([name, lead.city_he].filter(Boolean).join(' · '));
+    // first sink prefilled from lead preferences
+    const noteParts = [lead.preferred_sink_config, lead.notes_he].filter(Boolean).join(' · ');
+    setSinks([{ id: 's_' + Math.random().toString(36).slice(2, 9), name: '', dimensions: '', stone: lead.preferred_marble_family || '', notes: noteParts }]);
+    // pull media, filter out SVG placeholders
+    const all = Array.isArray(lead.inspiration_image_urls) ? lead.inspiration_image_urls : [];
+    const real = all.filter(isRealMedia);
+    const dropped = all.length - real.length;
+    setAssetText(real.join('\n'));
+    setPulledNote(real.length + ' מדיה אמיתית נטענה' + (dropped > 0 ? ' · ' + dropped + ' תמונות גלריה (placeholder) סוננו' : ''));
+  }
 
   function guessKind(url: string): RfqAsset['kind'] {
     const u = url.toLowerCase();
@@ -38,7 +70,7 @@ export default function RfqCreateForm() {
 
   function resetAll() {
     setLink(null); setTitle(''); setProjectRef(''); setCustomerHint('');
-    setSinks([newSink()]); setAssetText('');
+    setSinks([newSink()]); setAssetText(''); setLeadPicked(''); setPulledNote(null);
   }
 
   async function create() {
@@ -48,11 +80,10 @@ export default function RfqCreateForm() {
       .map((s) => ({ ...s, name: s.name.trim(), dimensions: (s.dimensions || '').trim(), stone: (s.stone || '').trim(), notes: (s.notes || '').trim() }))
       .filter((s) => s.name || s.dimensions || s.stone || s.notes);
     if (cleanSinks.length === 0) { setError('הוסף לפחות כיור אחד עם שם'); return; }
-    // ensure each sink has a name (fallback to a number)
     cleanSinks.forEach((s, i) => { if (!s.name) s.name = 'כיור ' + (i + 1); });
 
     setBusy(true);
-    const assets: RfqAsset[] = assetText.split(/\s+/).map((s) => s.trim()).filter(Boolean).map((url) => ({ url, kind: guessKind(url) }));
+    const assets: RfqAsset[] = assetText.split(/\s+/).map((s) => s.trim()).filter(Boolean).filter(isRealMedia).map((url) => ({ url, kind: guessKind(url) }));
     const res = await createRfq({
       title_he: title,
       project_ref: projectRef,
@@ -95,6 +126,20 @@ export default function RfqCreateForm() {
 
   return (
     <div className="bg-white border border-stone-200 rounded-lg p-4 space-y-3" dir="rtl">
+      {/* Load from lead */}
+      {leads.length > 0 && (
+        <div className="bg-blue-50/60 border border-blue-200 rounded-lg p-3">
+          <label className="block">
+            <span className="block text-xs font-semibold text-blue-800 mb-1">⚡ טען מליד (מילוי אוטומטי + משיכת מדיה)</span>
+            <select value={leadPicked} onChange={(e) => loadFromLead(e.target.value)} className="w-full px-2 py-1.5 text-sm border border-stone-300 rounded-md bg-white" dir="rtl">
+              <option value="">— בחר ליד —</option>
+              {leads.map((l) => (<option key={l.id} value={l.id}>{l.full_name || 'ללא שם'}{l.city_he ? ' · ' + l.city_he : ''}{l.preferred_marble_family ? ' · ' + l.preferred_marble_family : ''}</option>))}
+            </select>
+          </label>
+          {pulledNote && (<div className="text-[11px] text-emerald-700 mt-1.5">✓ {pulledNote}</div>)}
+        </div>
+      )}
+
       <div className="grid grid-cols-2 gap-2">
         <label className="block col-span-2">
           <span className="block text-xs font-medium text-stone-600 mb-1">כותרת ה-RFQ *</span>
@@ -126,7 +171,7 @@ export default function RfqCreateForm() {
               <div className="grid grid-cols-2 gap-2">
                 <label className="block col-span-2">
                   <span className="block text-xs font-medium text-stone-600 mb-1">שם / תיאור הכיור</span>
-                  <input value={s.name} onChange={(e) => setSinkField(s.id, 'name', e.target.value)} placeholder="למשל: כיור אמבט הורים 240 ס\u0022מ" className="w-full px-2 py-1.5 text-sm border border-stone-300 rounded-md" dir="rtl" />
+                  <input value={s.name} onChange={(e) => setSinkField(s.id, 'name', e.target.value)} placeholder="למשל: כיור אמבט הורים 240 ס&quot;מ" className="w-full px-2 py-1.5 text-sm border border-stone-300 rounded-md" dir="rtl" />
                 </label>
                 <label className="block">
                   <span className="block text-xs font-medium text-stone-600 mb-1">מידות</span>
@@ -150,7 +195,7 @@ export default function RfqCreateForm() {
         <label className="block">
           <span className="block text-xs font-medium text-stone-600 mb-1">קישורי מדיה (תמונות/וידאו/קול של הלקוח + שרטוט)</span>
           <textarea value={assetText} onChange={(e) => setAssetText(e.target.value)} rows={3} placeholder="הדבק כתובות URL, אחת בכל שורה" className="w-full px-2 py-1.5 text-sm border border-stone-300 rounded-md resize-y" dir="ltr" />
-          <span className="text-[11px] text-stone-400">כל כתובת בשורה נפרדת. סוג הקובץ מזוהה אוטומטית.</span>
+          <span className="text-[11px] text-stone-400">כל כתובת בשורה נפרדת. תמונות placeholder מהגלריה מסוננות אוטומטית.</span>
         </label>
       </div>
 
