@@ -1,4 +1,4 @@
-﻿'use server';
+'use server';
 
 // src/lib/suppliers/suppliersData.ts
 // Suppliers directory + captured supplier price offers (+ customer/commission finalize for the turnkey offer).
@@ -49,6 +49,8 @@ export interface SupplierOfferRow {
   cust_phone: string | null;
   cust_address: string | null;
   cust_notes: string | null;
+  ales_photo_urls?: string[] | null;
+  rfq_token?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -196,7 +198,22 @@ export async function fetchSupplierOffers(): Promise<SupplierOfferRow[]> {
   const sb = getServerSupabase();
   const res = await sb.from('supplier_offers').select('*').order('created_at', { ascending: false });
   if (res.error) { console.error('[fetchSupplierOffers]', res.error.message); return []; }
-  return (res.data || []) as SupplierOfferRow[];
+  const offers = (res.data || []) as SupplierOfferRow[];
+  try {
+    const ids = offers.map((o) => o.id).filter(Boolean);
+    if (ids.length > 0) {
+      const respRes = await sb.from('rfq_responses').select('supplier_offer_id, ales_photo_urls, rfq_id, rfqs(token)').in('supplier_offer_id', ids);
+      if (!respRes.error && respRes.data) {
+        const byOffer: Record<string, { photos: string[]; token: string | null }> = {};
+        for (const r of respRes.data as Array<{ supplier_offer_id: string; ales_photo_urls: string[] | null; rfqs: { token: string } | { token: string }[] | null }>) {
+          const rfqObj = Array.isArray(r.rfqs) ? r.rfqs[0] : r.rfqs;
+          byOffer[r.supplier_offer_id] = { photos: Array.isArray(r.ales_photo_urls) ? r.ales_photo_urls : [], token: rfqObj?.token || null };
+        }
+        for (const o of offers) { const extra = byOffer[o.id]; if (extra) { o.ales_photo_urls = extra.photos; o.rfq_token = extra.token; } }
+      }
+    }
+  } catch (e) { console.error('[fetchSupplierOffers] enrichment failed (non-blocking):', e); }
+  return offers;
 }
 
 export async function fetchSupplierOffer(id: string): Promise<SupplierOfferRow | null> {

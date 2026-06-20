@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 // src/components/suppliers/SuppliersReport.tsx
 // Offers: edit line-items, delete, Word draft, RTL copy-text (Ales confirm + customer turnkey),
@@ -239,6 +239,18 @@ export default function SuppliersReport({ suppliers, offers, customers = [] }: {
                         </div>
                       ))}
                     </div>
+                    {o.rfq_token && (<div className="text-[11px] text-stone-400 mb-1">מקור: RFQ · <span className="font-mono">{o.rfq_token.slice(0,8)}</span></div>)}
+                    {o.ales_photo_urls && o.ales_photo_urls.length > 0 && (
+                      <div className="mb-2">
+                        <div className="text-[11px] font-semibold text-stone-500 mb-1">📷 תמונות אתר מאלס ({o.ales_photo_urls.length})</div>
+                        <div className="flex flex-wrap gap-2">
+                          {o.ales_photo_urls.map((u, i) => (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <a key={i} href={u} target="_blank" rel="noopener noreferrer"><img src={u} alt={'אתר ' + (i+1)} className="w-16 h-16 object-cover rounded-md border border-stone-200" /></a>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-semibold text-stone-800">עלות אלס (כולל מע"מ): {ils(o.total_ils)}</span>
                       <div className="flex gap-1 mr-auto flex-wrap">
