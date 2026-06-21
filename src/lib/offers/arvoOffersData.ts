@@ -41,6 +41,7 @@ export interface SaveArvoOfferInput {
   total_ils?: number;
   commission?: number;
   body_html?: string;
+  document_url?: string | null;
   notes?: string;
   sent_at?: string | null;
 }
@@ -58,6 +59,7 @@ export async function saveArvoOffer(input: SaveArvoOfferInput): Promise<OfferRes
     total_ils: input.total_ils || 0,
     commission: input.commission || 0,
     body_html: input.body_html || null,
+    document_url: input.document_url || null,
     notes: input.notes || null,
     sent_at: input.sent_at || new Date().toISOString(),
   }).select('id').single();

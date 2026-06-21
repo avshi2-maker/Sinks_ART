@@ -15,6 +15,7 @@ export interface ArvoOfferRow {
   total_ils: number;
   commission: number;
   body_html: string | null;
+  document_url: string | null;
   notes: string | null;
   sent_at: string | null;
   created_at: string;

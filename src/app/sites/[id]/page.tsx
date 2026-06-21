@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { fetchSite, fetchLinkableProjects, fetchCustomersMini } from '@/lib/sites/sitesData';
 import SiteProjects from '@/components/sites/SiteProjects';
+import SiteDocuments from '@/components/sites/SiteDocuments';
 import SiteContacts from '@/components/sites/SiteContacts';
 import SiteTasks from '@/components/sites/SiteTasks';
 import SiteVisits from '@/components/sites/SiteVisits';
@@ -49,6 +50,7 @@ export default async function SitePage({ params }: { params: Promise<{ id: strin
       </div>
 
       <SiteProjects siteId={site.id} linked={site.projects} candidates={linkableProjects} />
+      <SiteDocuments siteId={site.id} documents={site.documents} projects={site.projects} contacts={site.contacts} />
       <SiteContacts siteId={site.id} contacts={site.contacts} customers={customersMini} />
       <SiteTasks siteId={site.id} tasks={site.tasks} />
       <SiteVisits siteId={site.id} visits={site.visits} />

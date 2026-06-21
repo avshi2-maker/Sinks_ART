@@ -5,6 +5,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { revalidatePath } from 'next/cache';
+import type { SiteDocument } from '@/lib/sites/siteDocumentsTypes';
 
 function getServerSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -43,6 +44,7 @@ export interface SiteFull extends SiteRow {
   tasks: SiteTask[];
   visits: SiteVisit[];
   projects: SiteProject[];
+  documents: SiteDocument[];
 }
 
 export async function fetchSites(): Promise<SiteRow[]> {
@@ -58,11 +60,12 @@ export async function fetchSite(id: string): Promise<SiteFull | null> {
   if (siteRes.error || !siteRes.data) return null;
   const site = siteRes.data as SiteRow;
 
-  const [contacts, tasks, visits, projects] = await Promise.all([
+  const [contacts, tasks, visits, projects, documents] = await Promise.all([
     sb.from('site_contacts').select('*').eq('site_id', id),
     sb.from('site_tasks').select('*').eq('site_id', id).order('sort_order', { ascending: true }),
     sb.from('site_visits').select('*').eq('site_id', id).order('visit_date', { ascending: false }),
     sb.from('projects').select('id, title_he, status, quoted_price_ils').eq('site_id', id),
+    sb.from('site_documents').select('*').eq('site_id', id).order('created_at', { ascending: false }),
   ]);
 
   return {
@@ -71,6 +74,7 @@ export async function fetchSite(id: string): Promise<SiteFull | null> {
     tasks: (tasks.data || []) as SiteTask[],
     visits: (visits.data || []) as SiteVisit[],
     projects: (projects.data || []) as SiteProject[],
+    documents: (documents.data || []) as SiteDocument[],
   };
 }
 
