@@ -1,25 +1,19 @@
 /**
  * src/app/dashboard/page.tsx
  *
- * Server Component — runs fetchDashboardData() at request time and passes
- * the result down into all dashboard components. No client JS, no state,
- * no useEffect. Pure server-side render with cached Supabase JOIN queries.
- *
- * If Supabase fails, renders a friendly error message rather than crashing.
- *
- * Phase 17 — /dashboard build, Path Y (Session 21, 08/05/2026)
+ * "לוח היום" — today's follow-ups landing. Server Component.
+ * Order: follow-ups first (offers waiting + jobs needing a step), then the pipeline
+ * money summary, then today's activity, quick actions, tasks, projects, comms.
  */
-
 import { fetchDashboardData } from './fetchDashboardData';
+import TodayFollowups from '@/components/dashboard/TodayFollowups';
 import TodayActivityStrip from '@/components/dashboard/TodayActivityStrip';
 import QuickActions from '@/components/dashboard/QuickActions';
 import DashboardPipelineStrip from '@/components/dashboard/DashboardPipelineStrip';
 import TasksStrip from '@/components/dashboard/TasksStrip';
 import ActiveProjectsList from '@/components/dashboard/ActiveProjectsList';
 import RecentCommsFeed from '@/components/dashboard/RecentCommsFeed';
-
 export const dynamic = 'force-dynamic';  // Always fetch fresh; no caching at build time
-
 export default async function DashboardPage() {
   let data;
   try {
@@ -34,25 +28,23 @@ export default async function DashboardPage() {
       </div>
     );
   }
-
   return (
     <>
+      {/* Follow-ups first — what needs action today */}
+      <TodayFollowups />
+      {/* Money + pipeline snapshot */}
+      <DashboardPipelineStrip />
+      {/* Today's activity counters */}
       <TodayActivityStrip
         callCount={data.today.callCount}
         photoCount={data.today.photoCount}
         videoCount={data.today.videoCount}
         totalCostUsd={data.today.totalCostUsd}
       />
-
       <QuickActions />
-      <DashboardPipelineStrip />
-
       <TasksStrip />
-
       <ActiveProjectsList projects={data.activeProjects} />
-
       <RecentCommsFeed comms={data.recentComms} />
-
       <div className="bg-gray-100 border border-gray-200 rounded-md px-3 py-2 text-xs text-gray-500 text-center">
         Phase 17 · Path Y · נתונים חיים מ-Supabase · רצועת המשימות עוד מציגה נתונים מודגמים (Phase 17.5 יחבר אותה)
       </div>
