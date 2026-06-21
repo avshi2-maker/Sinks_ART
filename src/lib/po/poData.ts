@@ -1,4 +1,4 @@
-﻿'use server';
+'use server';
 
 // src/lib/po/poData.ts
 // Production Order engine: numbering (PO-YYYY-####), create, fetch, issue, log appends.
@@ -162,5 +162,12 @@ export async function updatePOShipTo(id: string, fields: { ship_to_name?: string
   }).eq('id', id);
   if (res.error) return { ok: false, error: res.error.message };
   revalidatePath('/po/' + id);
+  return { ok: true, id };
+}
+export async function deletePO(id: string): Promise<POResult> {
+  if (!id) return { ok: false, error: 'missing id' };
+  const res = await sb().from('production_orders').delete().eq('id', id);
+  if (res.error) return { ok: false, error: res.error.message };
+  revalidatePath('/po');
   return { ok: true, id };
 }

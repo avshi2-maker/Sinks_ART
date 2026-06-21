@@ -31,7 +31,6 @@ export const STAGES: NavStage[] = [
     { href: '/rfq-create', label: 'RFQ לאלס', icon: '🏭' },
     { href: '/arvo-offer', label: 'הצעת ARVO', icon: '📄' },
     { href: '/offers-sent', label: 'הצעות שנשלחו', icon: '📌' },
-    { href: '/offers-sent', label: 'הצעות שנשלחו', icon: '📌' },
     { href: '/quotes', label: 'הצעות', icon: '🧾' },
     { href: '/po', label: 'הזמנות ייצור', icon: '📋' },
   ] },
