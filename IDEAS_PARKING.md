@@ -1143,3 +1143,41 @@ Implementation: restructure STAGES array in WorkflowNav.tsx + add "לוח היו
 1. Nav reorg (quick, low-risk, big daily-usability win).
 2. Sent-offers tracker in pipeline (recipient + status + view/edit/delete + לוח היום block).
 3. Outlook Graph integration (biggest, own session).
+
+---
+## Session 21/06/2026 — CRM nav reorg + dashboard follow-ups + sent-offers tracker (ALL BUILT)
+
+### DONE: CRM nav reorganization (WorkflowNav.tsx) — 6 logical areas
+Replaced the old 4-stage STAGES array with 6 workflow-ordered areas:
+1. 🏠 לוח היום (-> /dashboard, relabeled from דשבורד)
+2. עבודות (DAILY CORE): /pipeline 🔧, /sinc שיחות, /intake מדיה, /leads פניות
+3. לקוחות: /customers, /suppliers (אלס), /sites אתרים  [moved suppliers+sites here from capture/catalogs]
+4. עיצוב והדמיה: /sketch, /prompt-builder, /demos
+5. הצעות וייצור: /rfq-create, /arvo-offer, /offers-sent 📌, /quotes, /po הזמנות ייצור  [all offer tools together in flow order]
+6. קטלוגים ונתונים: /marble, /options, /roi
+Same 2-level render logic kept. Fixed a latent bug: leads badge had squished "text-whitetext-[10px]" -> "text-white text-[10px]".
+
+### DONE: Dashboard = "today's follow-ups" landing
+- New component src/components/dashboard/TodayFollowups.tsx (server): "📌 מעקב היום" block. Surfaces (a) offers sent & WAITING for answer (stage offer_sent), sorted OLDEST-FIRST, with 4+ days flagged RED as overdue; (b) jobs needing next step (priced/awaiting_ales/new_lead). Fails silently if empty.
+- Reordered dashboard/page.tsx: TodayFollowups FIRST, then DashboardPipelineStrip (money), then TodayActivityStrip, QuickActions, Tasks, Projects, Comms.
+
+### DONE: SENT-OFFERS TRACKER (full 3-step Ferrari build)
+Decision recap: integrated with pipeline conceptually, but implemented as its own arvo_offers table + /offers-sent register. Stores BOTH structured fields AND full HTML snapshot (re-opens exactly as sent).
+- STEP 1: Supabase table arvo_offers (offer_no, job_id FK, customer_name/phone, recipient, status, total_ils, commission, body_html, notes, sent_at, timestamps; RLS all=true; indexes). Data layer split: src/lib/offers/arvoOffersTypes.ts (OfferRecipient: customer|ales|none; OfferStatus: draft|sent|viewed|approved|declined|followup; RECIPIENT_META, STATUS_META with .open flag, orders) + src/lib/offers/arvoOffersData.ts (server actions: listArvoOffers, getArvoOffer, saveArvoOffer, updateArvoOffer, setOfferStatus, deleteArvoOffer).
+- STEP 2: wired "💾 שמור הצעה ל-CRM" button + save panel (customer name, sum ₪, recipient ללקוח/לאלס) into src/app/arvo-offer/page.tsx. Captures offer_no (from offnoRef), body innerHTML snapshot, calls saveArvoOffer. THIS CLOSES THE GAP — previously sent ARVO offers were saved only as PDF to disk, never recorded in CRM.
+- STEP 3: /offers-sent register. src/components/offers/OffersSentTracker.tsx (client): list with inline STATUS dropdown, RECIPIENT dropdown, 👁️ צפה (re-opens body_html snapshot in new window), ✏️ הערה (edit notes), 🗑️ delete; filters פתוחות/הכל/by-status. src/app/offers-sent/page.tsx (server, lists). Nav link added under הצעות וייצור (📌).
+
+### FIXES
+- Duplicate "הצעות שנשלחו" nav tab (nav-add command ran twice) -> removed one, now single.
+- הזמנות ייצור (/po) PoList: was one big <button> per row (couldn't nest actions). Restructured to div with clickable info + 👁️ פתח (-> /po/[id] = view+edit) + 🗑️ delete. Added deletePO() to src/lib/po/poData.ts (was missing). Note: Avshi has ~8 POs, many empty drafts (PO-2026-0003..0008) he can now clean up.
+
+### STILL PENDING (next sessions)
+- Outlook 365 Graph integration (parked, own build) — 📧 correspondence slot reserved under לקוחות in nav.
+- Flush-to-zero-level door module (5 Nano renders + configurator + CRM) — fully scoped, Hebrew spec delivered.
+- CRM add-on offer line-items (add selected add-ons after sink lines in offer builder).
+- Room-aware AI sink placement (long-term).
+- Siphon/drain finish picker popup.
+- Archive old IDEAS_PARKING entries (file now ~1200+ lines).
+
+### Last pushes this session
+nav reorg (4defdce) -> dashboard followups (13aac97) -> arvo_offers table+data (bc01337) -> save button (9c80913) -> /offers-sent register (1170ff3) -> fixes dup tab + PO actions (39ea6a3).
