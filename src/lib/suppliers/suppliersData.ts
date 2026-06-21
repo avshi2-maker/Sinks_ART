@@ -29,6 +29,7 @@ export interface SupplierRow {
   updated_at: string;
 }
 
+export interface AddonLine { name: string; price: number; }
 export interface SupplierOfferRow {
   id: string;
   supplier_id: string | null;
@@ -51,6 +52,7 @@ export interface SupplierOfferRow {
   cust_notes: string | null;
   ales_photo_urls?: string[] | null;
   rfq_token?: string | null;
+  addon_lines?: AddonLine[] | null;
   created_at: string;
   updated_at: string;
 }
@@ -257,6 +259,7 @@ export interface FinalizeInput {
   commission_type: string;   // 'pct' | 'fixed'
   commission_value: number;
   customer_total_ils: number;
+  addon_lines?: AddonLine[];
 }
 
 export async function finalizeOfferCustomer(id: string, input: FinalizeInput): Promise<SupplierResult> {
@@ -271,6 +274,7 @@ export async function finalizeOfferCustomer(id: string, input: FinalizeInput): P
     commission_type: input.commission_type,
     commission_value: Number(input.commission_value) || 0,
     customer_total_ils: Number(input.customer_total_ils) || 0,
+    addon_lines: input.addon_lines || [],
     status: 'drafted',
     updated_at: new Date().toISOString(),
   }).eq('id', id);
