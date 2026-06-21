@@ -95,3 +95,52 @@ export async function createSite(input: CreateSiteInput): Promise<CreateSiteResu
   revalidatePath('/sites');
   return { ok: true, siteId: res.data?.id as string };
 }
+
+// ── Phase 35e — picker data sources ──
+
+export interface LinkableProject {
+  id: string;
+  title_he: string;
+  status: string;
+  quoted_price_ils: number | null;
+  site_id: string | null;
+  customer_name: string | null;
+}
+
+// All projects with their current site_id + owning customer name.
+// The site page filters: already-on-this-site are hidden, on-another-site are shown disabled.
+export async function fetchLinkableProjects(): Promise<LinkableProject[]> {
+  const sb = getServerSupabase();
+  const [projRes, custRes] = await Promise.all([
+    sb.from('projects').select('id, title_he, status, quoted_price_ils, site_id, customer_id').order('created_at', { ascending: false }),
+    sb.from('customers').select('id, name_he'),
+  ]);
+  if (projRes.error) { console.error('[fetchLinkableProjects]', projRes.error.message); return []; }
+  const customers = (custRes.data || []) as { id: string; name_he: string }[];
+  const nameById = new Map<string, string>();
+  for (const c of customers) nameById.set(c.id, c.name_he);
+  const rows = (projRes.data || []) as { id: string; title_he: string; status: string; quoted_price_ils: number | null; site_id: string | null; customer_id: string | null }[];
+  return rows.map((p) => ({
+    id: p.id,
+    title_he: p.title_he,
+    status: p.status,
+    quoted_price_ils: p.quoted_price_ils,
+    site_id: p.site_id,
+    customer_name: p.customer_id ? (nameById.get(p.customer_id) || null) : null,
+  }));
+}
+
+export interface CustomerMini {
+  id: string;
+  name_he: string;
+  phone: string | null;
+  email: string | null;
+}
+
+// Active customers for the "add existing customer as site contact" picker.
+export async function fetchCustomersMini(): Promise<CustomerMini[]> {
+  const sb = getServerSupabase();
+  const res = await sb.from('customers').select('id, name_he, phone, email').is('archived_at', null).order('name_he', { ascending: true });
+  if (res.error) { console.error('[fetchCustomersMini]', res.error.message); return []; }
+  return (res.data || []) as CustomerMini[];
+}

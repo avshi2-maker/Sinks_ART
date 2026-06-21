@@ -26,7 +26,7 @@ interface Props {
   saveLabel?: string;
 }
 
-const DEFAULT_PROFESSIONS = ['אדריכל', 'מעצב/ת פנים', 'קבלן', 'מנהל פרויקט', 'רכש', 'לקוח פרטי', 'אחר'];
+const DEFAULT_PROFESSIONS = ['אדריכל', 'מעצב/ת פנים', 'קבלן', 'מנהל פרויקט', 'פיקוח', 'רכש', 'לקוח פרטי', 'אחר'];
 
 export default function ContactForm({ initial = {}, professionOptions = DEFAULT_PROFESSIONS, onSave, onCancel, saveLabel = 'שמור' }: Props) {
   const [name, setName] = useState(initial.name_he || '');

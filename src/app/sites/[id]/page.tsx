@@ -1,9 +1,11 @@
-﻿// src/app/sites/[id]/page.tsx
+// src/app/sites/[id]/page.tsx
 // Phase 34 — site detail: header, projects roll-up, + interactive contacts/tasks/visits.
+// Phase 35e — projects roll-up + contacts now support linking existing projects/customers.
 
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { fetchSite } from '@/lib/sites/sitesData';
+import { fetchSite, fetchLinkableProjects, fetchCustomersMini } from '@/lib/sites/sitesData';
+import SiteProjects from '@/components/sites/SiteProjects';
 import SiteContacts from '@/components/sites/SiteContacts';
 import SiteTasks from '@/components/sites/SiteTasks';
 import SiteVisits from '@/components/sites/SiteVisits';
@@ -17,6 +19,11 @@ export default async function SitePage({ params }: { params: Promise<{ id: strin
   const { id } = await params;
   const site = await fetchSite(id);
   if (!site) notFound();
+
+  const [linkableProjects, customersMini] = await Promise.all([
+    fetchLinkableProjects(),
+    fetchCustomersMini(),
+  ]);
 
   const projectsTotal = site.projects.reduce((s, p) => s + (Number(p.quoted_price_ils) || 0), 0);
   const openTasks = site.tasks.filter((t) => !t.done).length;
@@ -41,23 +48,8 @@ export default async function SitePage({ params }: { params: Promise<{ id: strin
         <div className="bg-white border border-stone-200 rounded-lg p-3"><div className="text-xs text-stone-500">ביקורים</div><div className="text-xl font-semibold text-stone-900">{site.visits.length}</div></div>
       </div>
 
-      <section className="mb-6">
-        <h2 className="text-sm font-semibold text-stone-700 mb-2">פרויקטים באתר ({site.projects.length})</h2>
-        {site.projects.length === 0 ? (
-          <div className="bg-stone-50 border border-stone-200 rounded-lg px-4 py-4 text-center text-sm text-stone-500">אין פרויקטים מקושרים עדיין.</div>
-        ) : (
-          <div className="space-y-1.5">
-            {site.projects.map((p) => (
-              <div key={p.id} className="bg-white border border-stone-200 rounded-lg p-3 flex items-center justify-between">
-                <span className="text-sm text-stone-800">{p.title_he}</span>
-                <span className="text-xs text-stone-500">{p.status} · {ils(p.quoted_price_ils)}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-
-      <SiteContacts siteId={site.id} contacts={site.contacts} />
+      <SiteProjects siteId={site.id} linked={site.projects} candidates={linkableProjects} />
+      <SiteContacts siteId={site.id} contacts={site.contacts} customers={customersMini} />
       <SiteTasks siteId={site.id} tasks={site.tasks} />
       <SiteVisits siteId={site.id} visits={site.visits} />
     </div>
