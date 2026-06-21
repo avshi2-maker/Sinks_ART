@@ -1,50 +1,52 @@
 'use client';
-
 // src/components/shared/WorkflowNav.tsx
-// Two-level nav: top bar = workflow stages, second row = tools in the active stage.
-
+// Two-level nav: top bar = workflow areas, second row = tools in the active area.
+// Reorganized into 6 logical areas (workflow-ordered, daily-core first).
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-
 export interface NavTool { href: string; label: string; icon: string; }
 export interface NavStage { id: string; label: string; tools: NavTool[]; }
-
 export const STAGES: NavStage[] = [
-  { id: 'capture', label: 'לכידה', tools: [
+  // DAILY CORE — where Avshi lives day-to-day
+  { id: 'jobs', label: 'עבודות', tools: [
+    { href: '/pipeline', label: 'צנרת עבודות', icon: '🔧' },
     { href: '/sinc', label: 'שיחות', icon: '🎙️' },
     { href: '/intake', label: 'מדיה', icon: '📸' },
     { href: '/leads', label: 'פניות', icon: '📥' },
+  ] },
+  // RELATIONSHIPS
+  { id: 'people', label: 'לקוחות', tools: [
     { href: '/customers', label: 'לקוחות', icon: '👥' },
     { href: '/suppliers', label: 'ספקים', icon: '🏭' },
+    { href: '/sites', label: 'אתרים', icon: '🏨' },
   ] },
-  { id: 'design', label: 'עיצוב', tools: [
+  // DESIGN / VISUALIZE
+  { id: 'design', label: 'עיצוב והדמיה', tools: [
     { href: '/sketch', label: 'שרטוט', icon: '📐' },
     { href: '/prompt-builder', label: 'הדמיה', icon: '🖼️' },
     { href: '/demos', label: 'גלריה', icon: '🎨' },
   ] },
-  { id: 'sell', label: 'מכירה', tools: [
-    { href: '/pipeline', label: 'צנרת עבודות', icon: '🔧' },
-    { href: '/quotes', label: 'הצעות', icon: '🧾' },
-    { href: '/po', label: 'הזמנות', icon: '📋' },
+  // OFFERS & PRODUCTION — all offer tools together, in flow order
+  { id: 'offers', label: 'הצעות וייצור', tools: [
     { href: '/rfq-create', label: 'RFQ לאלס', icon: '🏭' },
     { href: '/arvo-offer', label: 'הצעת ARVO', icon: '📄' },
+    { href: '/quotes', label: 'הצעות', icon: '🧾' },
+    { href: '/po', label: 'הזמנות ייצור', icon: '📋' },
   ] },
-  { id: 'catalogs', label: 'קטלוגים', tools: [
+  // REFERENCE DATA
+  { id: 'catalogs', label: 'קטלוגים ונתונים', tools: [
     { href: '/marble', label: 'שיש', icon: '🪨' },
-    { href: '/options', label: 'מחירון', icon: '📖' },
-    { href: '/sites', label: 'אתרים', icon: '🏨' },
+    { href: '/options', label: 'מחירון ותוספות', icon: '📖' },
     { href: '/roi', label: 'ROI', icon: '📊' },
   ] },
 ];
-
 export default function WorkflowNav({ newLeads = 0 }: { newLeads?: number }) {
   const pathname = usePathname();
   const activeStage = STAGES.find((s) => s.tools.some((t) => pathname.startsWith(t.href))) || null;
-
   return (
     <div className="flex flex-col gap-1">
-      <div className="flex gap-1 items-center">
-        <Link href="/dashboard" className={'px-3 py-1.5 rounded-md text-sm no-underline ' + (pathname.startsWith('/dashboard') ? 'bg-indigo-600 text-white' : 'text-gray-700 hover:bg-gray-100')}>🏠 דשבורד</Link>
+      <div className="flex gap-1 items-center flex-wrap">
+        <Link href="/dashboard" className={'px-3 py-1.5 rounded-md text-sm no-underline ' + (pathname.startsWith('/dashboard') ? 'bg-indigo-600 text-white' : 'text-gray-700 hover:bg-gray-100')}>🏠 לוח היום</Link>
         {STAGES.map((s) => {
           const isActive = activeStage?.id === s.id;
           const firstHref = s.tools[0].href;
@@ -69,4 +71,3 @@ export default function WorkflowNav({ newLeads = 0 }: { newLeads?: number }) {
     </div>
   );
 }
-
