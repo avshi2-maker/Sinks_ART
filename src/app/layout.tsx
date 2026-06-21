@@ -46,7 +46,7 @@ export default async function RootLayout({
             {children}
           </div>
         ) : (
-          <div className="min-h-screen bg-gray-50" dir="rtl">
+          <div className="min-h-screen bg-amber-50" dir="rtl">
             <TopNav />
             {children}
           </div>
