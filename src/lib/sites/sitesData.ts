@@ -148,3 +148,33 @@ export async function fetchCustomersMini(): Promise<CustomerMini[]> {
   if (res.error) { console.error('[fetchCustomersMini]', res.error.message); return []; }
   return (res.data || []) as CustomerMini[];
 }
+
+// ── Phase 36b — due/overdue site tasks for the dashboard "מעקב היום" ──
+
+export interface DueSiteTask {
+  id: string;
+  title_he: string;
+  due_date: string;
+  site_id: string;
+  site_name: string;
+}
+
+// Open site tasks whose due date is today (Jerusalem) or earlier, most-overdue first.
+export async function fetchDueSiteTasks(): Promise<DueSiteTask[]> {
+  const sb = getServerSupabase();
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jerusalem' });
+  const res = await sb
+    .from('site_tasks')
+    .select('id, title_he, due_date, site_id, sites!inner(name_he)')
+    .eq('done', false)
+    .not('due_date', 'is', null)
+    .lte('due_date', today)
+    .order('due_date', { ascending: true });
+  if (res.error) { console.error('[fetchDueSiteTasks]', res.error.message); return []; }
+  type Row = { id: string; title_he: string; due_date: string; site_id: string; sites: { name_he: string } | { name_he: string }[] };
+  const rows = (res.data || []) as unknown as Row[];
+  return rows.map((r) => {
+    const site = Array.isArray(r.sites) ? r.sites[0] : r.sites;
+    return { id: r.id, title_he: r.title_he, due_date: r.due_date, site_id: r.site_id, site_name: site?.name_he || '' };
+  });
+}

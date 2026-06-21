@@ -1181,3 +1181,14 @@ Decision recap: integrated with pipeline conceptually, but implemented as its ow
 
 ### Last pushes this session
 nav reorg (4defdce) -> dashboard followups (13aac97) -> arvo_offers table+data (bc01337) -> save button (9c80913) -> /offers-sent register (1170ff3) -> fixes dup tab + PO actions (39ea6a3).
+
+---
+
+## 🅿️ PARKED — Follow-up reminders (PUSH notifications) · 21/06/2026
+
+Phase 36 shipped site documents + auto follow-up tasks + dashboard "מעקב היום" due-day surfacing. That is PULL-based (items appear when the CRM is opened). True PUSH reminders parked here:
+
+- [ ] Option 2 — Daily email digest (push, ~free). Vercel Cron (~07:00 Asia/Jerusalem) hits an internal route that runs fetchDueSiteTasks() + offers-waiting, formats a Hebrew "מעקב היום" summary, emails it to Avshi. Reuses the Outlook / Microsoft Graph mail integration already scoped (Mail.Send). Cost ~$0. Build: one cron route + one email formatter. Do this in the Outlook session.
+- [ ] Option 3 — WhatsApp self-reminder (push, small cost). Same daily digest pushed to Avshi's own WhatsApp via WhatsApp Business Cloud API. Higher setup (WABA approval + message template for scheduled sends). Per-conversation pricing. Build after Option 2 proves the digest content.
+
+Both depend on the same digest builder — build it once for Option 2, reuse for Option 3.
