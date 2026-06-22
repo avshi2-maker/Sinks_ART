@@ -38,6 +38,7 @@ export const STAGES: NavStage[] = [
   { id: 'catalogs', label: 'קטלוגים ונתונים', tools: [
     { href: '/marble', label: 'שיש', icon: '🪨' },
     { href: '/options', label: 'מחירון ותוספות', icon: '📖' },
+    { href: '/door-catalog', label: 'דלתות', icon: '🚪' },
     { href: '/roi', label: 'ROI', icon: '📊' },
   ] },
 ];
