@@ -13,6 +13,7 @@
 
 import Link from 'next/link';
 import type { DashboardProject } from '@/app/dashboard/fetchDashboardData';
+import ArchiveButton from '@/components/dashboard/ArchiveButton';
 
 interface Props {
   projects: DashboardProject[];
@@ -79,13 +80,16 @@ export default function ActiveProjectsList({ projects }: Props) {
                 </td>
                 <td className="px-3 py-3 text-gray-500 text-xs">{formatIsraeliDate(p.project_created_at)}</td>
                 <td className="px-3 py-3 text-left">
-                  <Link
-                    href={`/customers/${p.customer_id}`}
-                    className="text-blue-600 hover:underline no-underline"
-                    aria-label={`פתח את פרויקט ${p.project_title}`}
-                  >
-                    ←
-                  </Link>
+                  <div className="flex items-center justify-start gap-2.5">
+                    <ArchiveButton kind="project" id={p.project_id} />
+                    <Link
+                      href={`/customers/${p.customer_id}`}
+                      className="text-blue-600 hover:underline no-underline"
+                      aria-label={`פתח את פרויקט ${p.project_title}`}
+                    >
+                      ←
+                    </Link>
+                  </div>
                 </td>
               </tr>
             ))}

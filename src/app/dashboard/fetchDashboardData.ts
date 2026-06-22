@@ -92,6 +92,7 @@ export async function fetchDashboardData(): Promise<DashboardData> {
       .select('id, title_he, status, created_at, customer_id, customers!inner(name_he, archived_at)')
       .in('status', ACTIVE_PROJECT_STATUSES)
       .is('customers.archived_at', null)
+      .is('archived_at', null)
       .order('created_at', { ascending: false })
       .limit(10),
 
@@ -103,6 +104,7 @@ export async function fetchDashboardData(): Promise<DashboardData> {
         media_analyses(cloudinary_url)
       `)
       .is('customers.archived_at', null)
+      .is('archived_at', null)
       .order('created_at', { ascending: false })
       .limit(10),
 

@@ -13,6 +13,7 @@
 
 import Link from 'next/link';
 import type { DashboardComm } from '@/app/dashboard/fetchDashboardData';
+import ArchiveButton from '@/components/dashboard/ArchiveButton';
 
 interface Props {
   comms: DashboardComm[];
@@ -74,7 +75,7 @@ export default function RecentCommsFeed({ comms }: Props) {
                 'grid items-center gap-3 px-3 py-3 hover:bg-gray-50 ' +
                 (idx > 0 ? 'border-t border-gray-100 ' : '')
               }
-              style={{ gridTemplateColumns: '36px 1fr 130px 24px' }}
+              style={{ gridTemplateColumns: '36px 1fr 130px 52px' }}
             >
               <div className="w-8 h-8 rounded-md bg-gray-50 flex items-center justify-center text-base" aria-hidden="true">
                 {commTypeEmoji(c.comm_type)}
@@ -91,13 +92,16 @@ export default function RecentCommsFeed({ comms }: Props) {
                 </div>
               </div>
               <div className="text-xs text-gray-500 text-left">{formatIsraeliDateTime(c.created_at)}</div>
-              <Link
-                href={`/customers/${c.customer_id}`}
-                className="text-blue-600 hover:underline no-underline text-base"
-                aria-label="פתח לקוח"
-              >
-                ←
-              </Link>
+              <div className="flex items-center justify-end gap-2.5">
+                <ArchiveButton kind="comm" id={c.comm_id} />
+                <Link
+                  href={`/customers/${c.customer_id}`}
+                  className="text-blue-600 hover:underline no-underline text-base"
+                  aria-label="פתח לקוח"
+                >
+                  ←
+                </Link>
+              </div>
             </div>
           );
         })}
