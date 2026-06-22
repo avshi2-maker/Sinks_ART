@@ -6,6 +6,7 @@
  * money summary, then today's activity, quick actions, tasks, projects, comms.
  */
 import { fetchDashboardData } from './fetchDashboardData';
+import FlowLauncher from '@/components/dashboard/FlowLauncher';
 import TodayFollowups from '@/components/dashboard/TodayFollowups';
 import TodayActivityStrip from '@/components/dashboard/TodayActivityStrip';
 import QuickActions from '@/components/dashboard/QuickActions';
@@ -30,6 +31,8 @@ export default async function DashboardPage() {
   }
   return (
     <>
+      {/* Pinned guided launcher — what now? */}
+      <FlowLauncher />
       {/* Follow-ups first — what needs action today */}
       <TodayFollowups />
       {/* Money + pipeline snapshot */}
