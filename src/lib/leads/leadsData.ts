@@ -46,6 +46,30 @@ export async function fetchLeads(): Promise<LeadRow[]> {
   return (res.data || []) as LeadRow[];
 }
 
+export interface NewLeadLite { id: string; full_name: string | null; phone: string | null; city_he: string | null; is_door: boolean; created_at: string; }
+
+// New (unconverted, unarchived) leads for the dashboard, newest first. Flags door
+// leads by the 🚪 marker the website door form writes into notes_he.
+export async function fetchNewLeads(limit = 6): Promise<NewLeadLite[]> {
+  const sb = getServerSupabase();
+  const res = await sb
+    .from('leads')
+    .select('id, full_name, phone, city_he, notes_he, created_at')
+    .eq('is_archived', false)
+    .is('converted_to_customer_id', null)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (res.error) { console.error('[fetchNewLeads]', res.error.message); return []; }
+  return (res.data || []).map((r) => ({
+    id: r.id as string,
+    full_name: (r.full_name as string) ?? null,
+    phone: (r.phone as string) ?? null,
+    city_he: (r.city_he as string) ?? null,
+    is_door: typeof r.notes_he === 'string' && (r.notes_he as string).startsWith('🚪'),
+    created_at: r.created_at as string,
+  }));
+}
+
 export interface ConvertResult { ok: boolean; error?: string; customerId?: string; projectId?: string; }
 
 // One-click convert: lead -> customer + project, then stamp the lead as converted.

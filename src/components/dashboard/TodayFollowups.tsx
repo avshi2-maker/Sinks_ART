@@ -7,6 +7,8 @@ import { listJobs } from '@/lib/pipeline/jobPipelineData';
 import { STAGE_META, JobStage } from '@/lib/pipeline/jobPipelineTypes';
 import { fetchDueSiteTasks } from '@/lib/sites/sitesData';
 import type { DueSiteTask } from '@/lib/sites/sitesData';
+import { fetchNewLeads } from '@/lib/leads/leadsData';
+import type { NewLeadLite } from '@/lib/leads/leadsData';
 
 function ils(n: number): string { return '₪' + (Number(n) || 0).toLocaleString(); }
 function daysAgo(iso: string | null): { n: number; label: string } {
@@ -28,6 +30,8 @@ export default async function TodayFollowups() {
   try { jobs = await listJobs(); } catch { jobs = []; }
   let dueTasks: DueSiteTask[] = [];
   try { dueTasks = await fetchDueSiteTasks(); } catch { dueTasks = []; }
+  let newLeads: NewLeadLite[] = [];
+  try { newLeads = await fetchNewLeads(); } catch { newLeads = []; }
 
   // Offers sent & waiting — sorted oldest-waiting first.
   const waiting = jobs
@@ -40,7 +44,7 @@ export default async function TodayFollowups() {
 
   const needStep = jobs.filter((j) => j.stage === 'priced' || j.stage === 'awaiting_ales' || j.stage === 'new_lead');
 
-  if (waiting.length === 0 && needStep.length === 0 && dueTasks.length === 0) return null;
+  if (waiting.length === 0 && needStep.length === 0 && dueTasks.length === 0 && newLeads.length === 0) return null;
 
   return (
     <div className="bg-white border border-stone-200 rounded-lg p-4 mb-3" dir="rtl">
@@ -48,6 +52,29 @@ export default async function TodayFollowups() {
         <h2 className="text-sm font-semibold text-stone-800">📌 מעקב היום</h2>
         <Link href="/pipeline" className="text-xs text-blue-600 hover:underline">לצנרת המלאה ←</Link>
       </div>
+
+      {newLeads.length > 0 && (
+        <div className="mb-3">
+          <div className="text-[11px] font-semibold text-blue-700 mb-1.5">פניות חדשות ({newLeads.length})</div>
+          <div className="space-y-1">
+            {newLeads.slice(0, 6).map((l) => {
+              const ago = daysAgo(l.created_at);
+              return (
+                <Link key={l.id} href="/leads" className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-md px-2.5 py-1.5 no-underline hover:bg-blue-100">
+                  <div className="text-xs text-stone-800 truncate">
+                    {l.is_door && <span className="ml-1">🚪</span>}
+                    {l.full_name || 'ללא שם'}
+                    {l.city_he && <span className="text-stone-400"> · {l.city_he}</span>}
+                    {l.phone && <span className="text-stone-400" dir="ltr"> · {l.phone}</span>}
+                  </div>
+                  <span className="text-[11px] text-blue-600 shrink-0">{ago.label}</span>
+                </Link>
+              );
+            })}
+            {newLeads.length > 6 && (<div className="text-[11px] text-stone-400 px-1.5">+ עוד {newLeads.length - 6}…</div>)}
+          </div>
+        </div>
+      )}
 
       {dueTasks.length > 0 && (
         <div className="mb-3">
