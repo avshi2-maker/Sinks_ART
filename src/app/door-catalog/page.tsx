@@ -4,6 +4,7 @@
 import Link from 'next/link';
 import { fetchAllDoorStones } from '@/lib/doors/doorCatalogData';
 import DoorsManager from '@/components/doors/DoorsManager';
+import DoorOfferLine from '@/components/doors/DoorOfferLine';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -23,6 +24,9 @@ export default async function DoorCatalogPage() {
         <Link href="/dashboard" className="text-sm text-blue-600 no-underline hover:underline">← חזרה ללוח הבקרה</Link>
       </div>
       <DoorsManager stones={stones} />
+      <div className="mt-6 pt-5 border-t border-stone-200">
+        <DoorOfferLine stones={stones} />
+      </div>
     </div>
   );
 }
