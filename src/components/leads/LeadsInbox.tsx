@@ -10,6 +10,19 @@ import { convertLead, archiveLead, linkLeadToExisting, LeadRow, CustomerLite } f
 
 function fmtDate(iso: string) { return new Date(iso).toLocaleDateString('he-IL'); }
 
+// Door leads carry "🚪 ... אבן: X | פתח: Y | ידית: Z" in notes. Pull stone+handle
+// into a link that opens the offer-line builder pre-selected.
+function doorOfferHref(notes: string | null | undefined): string | null {
+  if (!notes || !notes.startsWith('🚪')) return null;
+  const stone = notes.match(/אבן:\s*([^|\n]+)/)?.[1]?.trim();
+  const handle = notes.match(/ידית:\s*([^|\n]+)/)?.[1]?.trim();
+  const p = new URLSearchParams();
+  if (stone) p.set('stone', stone);
+  if (handle) p.set('handle', handle);
+  const qs = p.toString();
+  return '/door-catalog' + (qs ? '?' + qs : '');
+}
+
 function isVideo(url: string) { return url.includes('/video/upload/'); }
 
 export default function LeadsInbox({ leads, customers }: { leads: LeadRow[]; customers: CustomerLite[] }) {
@@ -94,6 +107,7 @@ export default function LeadsInbox({ leads, customers }: { leads: LeadRow[]; cus
                 <div className="text-xs text-stone-400 mt-1">{fmtDate(l.created_at)}</div>
               </div>
               <div className="flex flex-col items-end gap-2 shrink-0">
+                {doorOfferHref(l.notes_he) && (<Link href={doorOfferHref(l.notes_he) as string} className="text-xs px-3 py-1.5 bg-amber-500 text-white rounded-md no-underline hover:bg-amber-600">🚪 בנה הצעת דלת ←</Link>)}
                 {converted ? (
                   <Link href={'/customers/' + l.converted_to_customer_id} className="text-xs text-blue-600 hover:underline">פתח לקוח →</Link>
                 ) : (

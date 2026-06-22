@@ -5,7 +5,7 @@
 // computeDoorPrice (size-aware), produce a ready-to-paste Hebrew offer line for the
 // ARVO offer, with an optional spec-PDF link appended.
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { DoorStone } from '@/lib/doors/doorCatalogTypes';
 import { HANDLE_OPTIONS, computeDoorPrice } from '@/lib/doors/doorCatalogTypes';
 
@@ -20,6 +20,22 @@ export default function DoorOfferLine({ stones }: { stones: DoorStone[] }) {
   const [qty, setQty] = useState('1');
   const [specUrl, setSpecUrl] = useState('');
   const [copied, setCopied] = useState(false);
+
+  // Pre-fill from a door lead: /door-catalog?stone=<name_he>&handle=<name_he>
+  useEffect(() => {
+    const sp = new URLSearchParams(window.location.search);
+    const stoneParam = sp.get('stone');
+    const handleParam = sp.get('handle');
+    if (stoneParam) {
+      const m = active.find((s) => s.name_he === stoneParam || s.name_he.includes(stoneParam) || stoneParam.includes(s.name_he));
+      if (m) setStoneId(m.id);
+    }
+    if (handleParam) {
+      const m = HANDLE_OPTIONS.find((x) => x.name_he === handleParam || x.name_he.includes(handleParam) || handleParam.includes(x.name_he));
+      if (m) setHandleId(m.id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (active.length === 0) {
     return (<div className="bg-white border border-stone-200 rounded-lg p-4 text-sm text-stone-500" dir="rtl">אין אבנים פעילות בקטלוג. הוסיפו או הפעילו אבן למעלה כדי לבנות שורת הצעה.</div>);
