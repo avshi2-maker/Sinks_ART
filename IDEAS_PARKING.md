@@ -705,6 +705,20 @@ When each of these gets built, the binding rule is: media to Cloudinary, metadat
 
 -
 
+### Added Session 23 (22/06/2026)
+
+**Slab-Verification Module (PARKED — GATED, do not build yet).**
+*Dependency: build only AFTER the Trabelsi warehouse visit establishes the real sourcing / data-sheet procedure, AND the Ales partnership is stabilized (Avshi estimates >90% resolved post-visit). If Ales shuts the partnership down, this is likely moot.*
+When unblocked: per project, store the supplier technical data sheet (PDF) + slab photos + origin/grade to Cloudinary; a "physically verified ✓" stamp (date + who checked); surface it on the customer/project page; allow attaching it to an offer. Turns the recurring "prove the marble is real / right grade" friction (Ziv Altshuler on the Dudu project 22/06; Ales materials-split earlier) into a repeatable credibility asset shown to every serious buyer. Follows the Architectural Rule (media→Cloudinary, metadata→Supabase, `customer_id` + `project_id`).
+
+**Outlook 365 integration (PARKED — defined phase).**
+Microsoft Graph API (Azure app registration / OAuth; secrets in Vercel env, never in repo). Scope, in stages: (1) daily due-task digest email to Avshi's inbox; (2) read/log email correspondence into the customer timeline; (3) send offers from Avshi's real address instead of paste. Backbone for the reminder/digest items already parked. Medium build, high payoff.
+
+**Google Ads rescue (DIAGNOSTIC, not a build — high priority, bleeding money now).**
+Symptom: spend with very few WhatsApp clicks. Likely causes: bidding set to Maximize Clicks (optimizes for clicks, not leads); `whatsapp_click` not wired as a real Google Ads *conversion* (only GA4); broad keywords → wasted clicks (need negatives + tighter match); ads pointing at the old homepage instead of the relevant page (now also `/doors`). Next-session flow: Avshi pulls search-terms report + conversions column + current bidding strategy + each ad's destination URL → Claude pinpoints the leak and fixes (switch bidding, wire WhatsApp conversion, add negatives, retarget door ads to `/doors`).
+
+**Door module — small finishers (open).** Real door prices in `/door-catalog` editor (still placeholders); confirm `#door-lead-form` anchor scrolls inside WhatsApp in-app browser on mobile (add scroll-on-load fallback if not); homepage button linking to `/doors` (gold-button snippet → marketing repo hero/nav).
+
 ---
 ---
 
