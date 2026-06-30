@@ -1223,3 +1223,6 @@ Model: SOURCING (RFQ) → OFFER (builder → ARVO → sent) → PRODUCTION (PO).
 
 **Offer builder Phase C (PARKED — next).**
 Plain-doc draft export for the two-phase ARVO flow: builder → downloadable/clean draft doc → edit → paste into ARVO empty template → PDF. (Copy-text already works as interim.) Also future: visual asset picker (attach Cloudinary sketches/marble/Nano renders to offer); pull component lines from /options price book.
+
+**Fix messy עיצוב והדמיה — sketch builder (PARKED — after break).**
+The /sketch tool (שרטוט) in the עיצוב והדמיה group needs cleanup/rework — flagged as messy. Review what's broken/confusing in the sketch builder and clean it up. (Group: שרטוט /sketch · הדמיה /prompt-builder · גלריה /demos.) Detail to be defined when we open it — Avshi will point at the specific pain.
