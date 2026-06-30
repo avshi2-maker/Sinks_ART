@@ -19,6 +19,25 @@ function blankContact(primary = false): IntakeContact {
   return { name: '', title: 'איש קשר ראשי', phone: '', email: '', isPrimary: primary };
 }
 
+// --- validation ---------------------------------------------------------
+// Israeli phone: 9-10 digits, allows spaces/dashes/+972. Mobile 05x or landline 0x.
+function normalizePhone(raw: string): string { return (raw || '').replace(/[\s-()]/g, ''); }
+function isValidPhone(raw: string): boolean {
+  const p = normalizePhone(raw).replace(/^\+972/, '0');
+  return /^0\d{8,9}$/.test(p);
+}
+function isValidEmail(raw: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test((raw || '').trim());
+}
+// A contact's phone/email are OPTIONAL, but if filled they must be valid.
+function phoneState(v?: string): 'empty' | 'ok' | 'bad' { return !(v || '').trim() ? 'empty' : (isValidPhone(v || '') ? 'ok' : 'bad'); }
+function emailState(v?: string): 'empty' | 'ok' | 'bad' { return !(v || '').trim() ? 'empty' : (isValidEmail(v || '') ? 'ok' : 'bad'); }
+function fieldClass(base: string, state: 'empty' | 'ok' | 'bad'): string {
+  if (state === 'ok')  return base + ' border-green-400 bg-green-50 focus:border-green-500';
+  if (state === 'bad') return base + ' border-red-400 bg-red-50 focus:border-red-500';
+  return base;
+}
+
 export default function AddCustomerForm() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -56,6 +75,8 @@ export default function AddCustomerForm() {
 
   function submit() {
     setErr(null);
+    const bad = contacts.find((c) => phoneState(c.phone) === 'bad' || emailState(c.email) === 'bad');
+    if (bad) { setErr('יש לתקן טלפון/אימייל לא תקין לפני שמירה'); return; }
     startTransition(async () => {
       const res = await createIntake({
         accountName, city, source,
@@ -85,6 +106,7 @@ export default function AddCustomerForm() {
 
       <div className="space-y-2 mb-4">
         <div className="text-xs font-semibold text-blue-700">פרטי החשבון</div>
+        <div className="text-[11px] text-red-500 bg-red-50 border border-red-100 rounded-md px-2 py-1.5">מי הלקוח — החברה / האדם / העבודה ואנשי הקשר (לדוגמה: "מלון דודו"). חשבון אחד, שנשאר קבוע.</div>
         <input value={accountName} onChange={(e) => setAccountName(e.target.value)} placeholder="שם הלקוח / החשבון (לדוגמה: מלון דודו)" className={inp} dir="rtl" disabled={isPending} />
         <div className="flex gap-2">
           <input value={city} onChange={(e) => setCity(e.target.value)} placeholder="עיר" className={inp} dir="rtl" disabled={isPending} />
@@ -113,8 +135,8 @@ export default function AddCustomerForm() {
               {contacts.length > 1 && (<button onClick={() => removeContact(i)} disabled={isPending} className="text-stone-400 hover:text-red-600 text-sm shrink-0" title="הסר">✕</button>)}
             </div>
             <div className="flex gap-2">
-              <input value={c.phone} onChange={(e) => setContact(i, { phone: e.target.value })} placeholder="טלפון" className={inp} dir="rtl" disabled={isPending} />
-              <input value={c.email} onChange={(e) => setContact(i, { email: e.target.value })} placeholder="אימייל" className={inp} dir="ltr" disabled={isPending} />
+              <input value={c.phone} onChange={(e) => setContact(i, { phone: e.target.value })} placeholder="טלפון (לדוגמה 0501234567)" className={fieldClass(inp, phoneState(c.phone))} dir="rtl" disabled={isPending} />
+              <input value={c.email} onChange={(e) => setContact(i, { email: e.target.value })} placeholder="אימייל" className={fieldClass(inp, emailState(c.email))} dir="ltr" disabled={isPending} />
             </div>
           </div>
         ))}
@@ -123,6 +145,7 @@ export default function AddCustomerForm() {
 
       <div className="space-y-2 mb-4">
         <div className="text-xs font-semibold text-blue-700">פרויקט (חובה)</div>
+        <div className="text-[11px] text-red-500 bg-red-50 border border-red-100 rounded-md px-2 py-1.5">מה בונים עבורו — עבודה ספציפית (לדוגמה: "כיור 270"). לחשבון אחד יכולים להיות כמה פרויקטים לאורך זמן.</div>
         <input value={projectTitle} onChange={(e) => setProjectTitle(e.target.value)} placeholder="כותרת הפרויקט (לדוגמה: כיור 270 — מלון דודו)" className={inp} dir="rtl" disabled={isPending} />
         <div className="flex gap-2">
           <input value={projectStone} onChange={(e) => setProjectStone(e.target.value)} placeholder="סוג אבן (אופציונלי)" className={inp} dir="rtl" disabled={isPending} />
@@ -134,7 +157,7 @@ export default function AddCustomerForm() {
 
       <div className="flex gap-2 justify-end">
         <button onClick={() => { reset(); setOpen(false); }} disabled={isPending} className="text-sm px-3 py-1.5 text-stone-600 hover:bg-stone-100 rounded-md">ביטול</button>
-        <button onClick={submit} disabled={isPending} className="text-sm px-4 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50">{isPending ? 'שומר...' : 'צור לקוח + פרויקט'}</button>
+        <button onClick={submit} disabled={isPending || contacts.some((c) => phoneState(c.phone) === 'bad' || emailState(c.email) === 'bad')} className="text-sm px-4 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50">{isPending ? 'שומר...' : 'צור לקוח + פרויקט'}</button>
       </div>
     </div>
   );
