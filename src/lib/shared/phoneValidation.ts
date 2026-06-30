@@ -28,3 +28,8 @@ export function formatIlPhone(raw: string): string {
   if (/^0[2-46-9]\d{7}$/.test(s)) return s.slice(0, 2) + '-' + s.slice(2);
   return raw;
 }
+
+// Basic email shape check: something@something.tld (tld >= 2 chars).
+export function isValidEmail(raw: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test((raw || '').trim());
+}

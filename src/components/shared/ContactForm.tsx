@@ -7,7 +7,7 @@
 
 import { useState } from 'react';
 import PhoneInput from './PhoneInput';
-import { isValidIlPhone } from '@/lib/shared/phoneValidation';
+import { isValidIlPhone, isValidEmail } from '@/lib/shared/phoneValidation';
 
 export interface ContactFormData {
   name_he: string;
@@ -47,6 +47,7 @@ export default function ContactForm({ initial = {}, professionOptions = DEFAULT_
     setError(null);
     if (!nameOk) { setError('שם חובה'); return; }
     if (!phoneOk) { setError('טלפון תקין חובה (נייד או קווי)'); return; }
+    if (email.trim() && !isValidEmail(email)) { setError('כתובת אימייל לא תקינה'); return; }
     setBusy(true);
     const res = await onSave({ name_he: name.trim(), phone: phone.trim(), profession, email: email.trim(), city: city.trim(), notes: notes.trim() });
     setBusy(false);
@@ -76,7 +77,7 @@ export default function ContactForm({ initial = {}, professionOptions = DEFAULT_
         </div>
         <div>
           <label className="text-xs text-stone-500">אימייל</label>
-          <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@email.com" dir="ltr" className="w-full px-2 py-1.5 text-sm border border-stone-300 rounded-md" />
+          <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@email.com" dir="ltr" className={'w-full px-2 py-1.5 text-sm rounded-md focus:outline-none border ' + (!email.trim() ? 'border-stone-300' : isValidEmail(email) ? 'border-green-400 bg-green-50' : 'border-red-400 bg-red-50')} />
         </div>
         <div>
           <label className="text-xs text-stone-500">עיר</label>
