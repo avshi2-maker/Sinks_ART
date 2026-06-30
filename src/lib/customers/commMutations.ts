@@ -14,7 +14,7 @@ function getServerSupabase() {
   return createClient(url, key, { auth: { persistSession: false } });
 }
 
-export type NoteParty = 'customer' | 'ales' | 'general';
+export type NoteParty = 'customer' | 'ales' | 'general' | 'email';
 
 export interface CreateNoteInput {
   customerId:  string;
@@ -32,6 +32,7 @@ export interface MutationResult {
 function partyToComm(party?: NoteParty): { comm_type: string; subject: string } {
   if (party === 'customer') return { comm_type: 'note_customer', subject: 'תכתובת עם הלקוח' };
   if (party === 'ales')     return { comm_type: 'note_ales',     subject: 'תכתובת עם אלס' };
+  if (party === 'email')    return { comm_type: 'email',         subject: '📧 התכתבות מייל' };
   return { comm_type: 'other', subject: 'הערה' };
 }
 

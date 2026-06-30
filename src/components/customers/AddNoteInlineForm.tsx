@@ -89,16 +89,17 @@ export default function AddNoteInlineForm({ customerId, projects }: Props) {
 
   return (
     <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 space-y-2">
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
         <button type="button" onClick={() => setParty('customer')} disabled={isPending} className={party === 'customer' ? 'text-sm px-3 py-1.5 rounded-md bg-green-600 text-white' : 'text-sm px-3 py-1.5 rounded-md bg-white border border-stone-300 text-stone-700'}>💬 לקוח</button>
         <button type="button" onClick={() => setParty('ales')} disabled={isPending} className={party === 'ales' ? 'text-sm px-3 py-1.5 rounded-md bg-amber-600 text-white' : 'text-sm px-3 py-1.5 rounded-md bg-white border border-stone-300 text-stone-700'}>🔨 אלס</button>
+        <button type="button" onClick={() => setParty('email')} disabled={isPending} className={party === 'email' ? 'text-sm px-3 py-1.5 rounded-md bg-blue-600 text-white' : 'text-sm px-3 py-1.5 rounded-md bg-white border border-stone-300 text-stone-700'}>📧 מייל</button>
         <button type="button" onClick={() => setParty('general')} disabled={isPending} className={party === 'general' ? 'text-sm px-3 py-1.5 rounded-md bg-stone-600 text-white' : 'text-sm px-3 py-1.5 rounded-md bg-white border border-stone-300 text-stone-700'}>הערה כללית</button>
       </div>
       <textarea
         ref={taRef}
         value={text}
         onChange={(e) => setText(e.target.value)}
-        placeholder="הדבק כאן הודעות וואטסאפ..."
+        placeholder={party === 'email' ? 'נושא ההתכתבות (לדוגמה: הצעת מחיר 270 — נשלח, ממתין לתשובה)' : 'הדבק כאן הודעות וואטסאפ...'}
         rows={6}
         className="w-full px-3 py-2 text-sm border border-stone-300 rounded-md focus:outline-none focus:border-blue-400 bg-white resize-y whitespace-pre-wrap"
         dir="rtl"
