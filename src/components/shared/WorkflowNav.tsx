@@ -28,6 +28,7 @@ export const STAGES: NavStage[] = [
   ] },
   // OFFERS & PRODUCTION — all offer tools together, in flow order
   { id: 'offers', label: 'הצעות וייצור', tools: [
+    { href: '/price-breaks', label: 'מחירון אלס', icon: '🏷️' },
     { href: '/rfq-create', label: 'RFQ לאלס', icon: '🏭' },
     { href: '/arvo-offer', label: 'הצעת ARVO', icon: '📄' },
     { href: '/offers-sent', label: 'הצעות שנשלחו', icon: '📌' },
