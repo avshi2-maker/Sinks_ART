@@ -705,6 +705,11 @@ When each of these gets built, the binding rule is: media to Cloudinary, metadat
 
 -
 
+### Added Session 24 (30/06/2026)
+
+**Image attachments on correspondence notes (PARKED — own build, ~1 session).**
+Today the הערה/תכתובת note box is plain text — it cannot hold a picture (e.g. the Nano render that was part of a WhatsApp price offer to Vered). Workaround in use: paste the Cloudinary URL into the note text. Proper build: add a "📎 צרף תמונה" control to AddNoteInlineForm that uploads the image to Cloudinary (preset `marble_lead_uploads`), stores the URL + metadata on the `customer_communications` row (follows the Architectural Rule: media→Cloudinary, metadata→Supabase, customer_id + project_id), and renders a thumbnail beside the note text in CommsTimeline. Result: full "text + picture" correspondence record per customer/project.
+
 ### Added Session 23 (22/06/2026)
 
 **Slab-Verification Module (PARKED — GATED, do not build yet).**
