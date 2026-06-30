@@ -1,25 +1,18 @@
-﻿/**
+/**
  * src/components/dashboard/ActiveProjectsList.tsx
  *
- * Table of active projects (statuses: ליד / שיחת בירור / הצעת מחיר נשלחה /
- * אושר / שולמה מקדמה / תשלום מלא). Sorted by most recent first (sort
- * happens in fetchDashboardData query, this component just renders).
- *
- * Each row links to /customers/[customer_id] so clicking jumps to the
- * customer detail page (Phase 16) where full project context lives.
- *
- * Phase 17 — /dashboard build, Path Y (Session 21, 08/05/2026)
+ * Phase 3 command-center: each active project shows its customer, the PRIMARY
+ * contact (who to follow up — name · title · click-to-call/email), the project
+ * status, and the correspondence status (last contact type + how long ago).
+ * Clicking a row jumps to /customers/[customer_id] for the full picture.
  */
 
 import Link from 'next/link';
 import type { DashboardProject } from '@/app/dashboard/fetchDashboardData';
 import ArchiveButton from '@/components/dashboard/ArchiveButton';
 
-interface Props {
-  projects: DashboardProject[];
-}
+interface Props { projects: DashboardProject[]; }
 
-// Status badge colors matching Mockup v2
 function statusBadgeClasses(status: string): string {
   if (status === 'ליד')               return 'bg-amber-50 text-amber-800';
   if (status === 'שיחת בירור')         return 'bg-blue-50 text-blue-800';
@@ -30,20 +23,39 @@ function statusBadgeClasses(status: string): string {
   return                                      'bg-gray-50 text-gray-700';
 }
 
-// Israeli short date format: "8.5.2026"
-function formatIsraeliDate(iso: string): string {
-  const d = new Date(iso);
-  return `${d.getDate()}.${d.getMonth() + 1}.${d.getFullYear()}`;
+const COMM_LABEL: Record<string, string> = {
+  call: '🎙️ שיחה', email: '📧 מייל', whatsapp: '💬 וואטסאפ', photo: '📸 תמונה', mp4: '🎥 וידאו',
+  note_customer: '💬 לקוח', note_ales: '🔨 אלס', other: '📋 הערה',
+};
+
+function commLabel(type: string | null): string {
+  if (!type) return '—';
+  return COMM_LABEL[type] || '📋 ' + type;
+}
+
+// "היום" / "אתמול" / "לפני N ימים" / "לפני N שבועות"
+function agoHe(iso: string | null): string {
+  if (!iso) return '';
+  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+  if (days <= 0) return 'היום';
+  if (days === 1) return 'אתמול';
+  if (days < 7) return `לפני ${days} ימים`;
+  const w = Math.floor(days / 7);
+  return w === 1 ? 'לפני שבוע' : `לפני ${w} שבועות`;
+}
+
+// Older than 7 days with an active status = needs a nudge.
+function isStale(iso: string | null): boolean {
+  if (!iso) return true;
+  return (Date.now() - new Date(iso).getTime()) / 86400000 > 7;
 }
 
 export default function ActiveProjectsList({ projects }: Props) {
   if (projects.length === 0) {
     return (
       <div className="mb-6" dir="rtl">
-        <div className="text-sm font-medium text-gray-600 mb-2">פרויקטים פעילים</div>
-        <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-6 text-center text-sm text-gray-500">
-          אין פרויקטים פעילים כרגע
-        </div>
+        <div className="text-sm font-medium text-gray-600 mb-2">לוח פרויקטים פעילים</div>
+        <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-6 text-center text-sm text-gray-500">אין פרויקטים פעילים כרגע</div>
       </div>
     );
   }
@@ -51,50 +63,50 @@ export default function ActiveProjectsList({ projects }: Props) {
   return (
     <div className="mb-6" dir="rtl">
       <div className="flex items-baseline justify-between mb-2">
-        <div className="text-sm font-medium text-gray-600">
-          פרויקטים פעילים <span className="text-gray-400 font-normal">({projects.length})</span>
-        </div>
-        <span className="text-xs text-gray-400">מסודר לפי פעילות אחרונה</span>
+        <div className="text-sm font-medium text-gray-600">לוח פרויקטים פעילים <span className="text-gray-400 font-normal">({projects.length})</span></div>
+        <span className="text-xs text-gray-400">לקוח · איש קשר ראשי · סטטוס · תקשורת אחרונה</span>
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-        <table className="w-full text-sm" style={{ tableLayout: 'fixed' }}>
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="text-right px-3 py-2 font-medium text-gray-600" style={{ width: '26%' }}>לקוח</th>
-              <th className="text-right px-3 py-2 font-medium text-gray-600" style={{ width: '32%' }}>פרויקט</th>
-              <th className="text-right px-3 py-2 font-medium text-gray-600" style={{ width: '22%' }}>סטטוס</th>
-              <th className="text-right px-3 py-2 font-medium text-gray-600" style={{ width: '14%' }}>נוצר</th>
-              <th style={{ width: '6%' }}></th>
-            </tr>
-          </thead>
-          <tbody>
-            {projects.map((p) => (
-              <tr key={p.project_id} className="border-t border-gray-100 hover:bg-gray-50">
-                <td className="px-3 py-3 text-gray-900">{p.customer_name}</td>
-                <td className="px-3 py-3 text-gray-600 truncate" title={p.project_title}>{p.project_title}</td>
-                <td className="px-3 py-3">
-                  <span className={'inline-block text-xs px-2.5 py-0.5 rounded-full ' + statusBadgeClasses(p.project_status)}>
-                    {p.project_status}
-                  </span>
-                </td>
-                <td className="px-3 py-3 text-gray-500 text-xs">{formatIsraeliDate(p.project_created_at)}</td>
-                <td className="px-3 py-3 text-left">
-                  <div className="flex items-center justify-start gap-2.5">
-                    <ArchiveButton kind="project" id={p.project_id} />
-                    <Link
-                      href={`/customers/${p.customer_id}`}
-                      className="text-blue-600 hover:underline no-underline"
-                      aria-label={`פתח את פרויקט ${p.project_title}`}
-                    >
-                      ←
-                    </Link>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="space-y-2">
+        {projects.map((p) => (
+          <div key={p.project_id} className="bg-white border border-gray-200 rounded-lg p-3 hover:border-blue-300 transition-colors">
+            <div className="flex items-start justify-between gap-3">
+              {/* Right: customer + project + contact */}
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Link href={`/customers/${p.customer_id}`} className="font-semibold text-gray-900 hover:text-blue-700 no-underline truncate">{p.customer_name}</Link>
+                  <span className={'inline-block text-xs px-2 py-0.5 rounded-full ' + statusBadgeClasses(p.project_status)}>{p.project_status}</span>
+                </div>
+                <div className="text-sm text-gray-600 truncate mt-0.5" title={p.project_title}>{p.project_title}</div>
+
+                {/* Primary contact */}
+                <div className="flex items-center gap-2 mt-1.5 text-xs flex-wrap">
+                  {p.primary_contact_name ? (
+                    <>
+                      <span className="px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-800">★ {p.primary_contact_name}{p.primary_contact_title ? ' · ' + p.primary_contact_title : ''}</span>
+                      {p.primary_contact_phone && <a href={'tel:' + p.primary_contact_phone} className="text-blue-600 hover:underline no-underline" dir="ltr">📞 {p.primary_contact_phone}</a>}
+                      {p.primary_contact_email && <a href={'mailto:' + p.primary_contact_email} className="text-blue-600 hover:underline no-underline" dir="ltr">📧</a>}
+                    </>
+                  ) : (
+                    <span className="text-gray-400">אין איש קשר ראשי</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Left: correspondence status + actions */}
+              <div className="flex flex-col items-end gap-1.5 shrink-0">
+                <div className="text-xs text-gray-600 whitespace-nowrap">{commLabel(p.last_comm_type)}</div>
+                <div className={'text-xs whitespace-nowrap ' + (isStale(p.last_comm_at) ? 'text-red-600 font-medium' : 'text-gray-400')}>
+                  {p.last_comm_at ? agoHe(p.last_comm_at) : 'אין תקשורת'}
+                </div>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <ArchiveButton kind="project" id={p.project_id} />
+                  <Link href={`/customers/${p.customer_id}`} className="text-blue-600 hover:underline no-underline" aria-label={`פתח ${p.project_title}`}>←</Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

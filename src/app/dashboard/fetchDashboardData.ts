@@ -38,6 +38,13 @@ export interface DashboardProject {
   project_created_at: string;
   customer_id:        string;
   customer_name:      string;
+  // Phase 3 command-center enrichment:
+  primary_contact_name:  string | null;
+  primary_contact_title: string | null;
+  primary_contact_phone: string | null;
+  primary_contact_email: string | null;
+  last_comm_type:        string | null;
+  last_comm_at:          string | null;
 }
 
 export interface DashboardComm {
@@ -127,7 +134,7 @@ export async function fetchDashboardData(): Promise<DashboardData> {
     totalCostUsd: todayRows.reduce((sum: number, r: { api_cost_usd: number | null }) => sum + (Number(r.api_cost_usd) || 0), 0),
   };
 
-  const activeProjects: DashboardProject[] = (projectsRes.data || []).map((p: {
+  const baseProjects = (projectsRes.data || []).map((p: {
     id: string;
     title_he: string;
     status: string;
@@ -143,6 +150,46 @@ export async function fetchDashboardData(): Promise<DashboardData> {
       project_created_at: p.created_at,
       customer_id:        p.customer_id,
       customer_name:      cust?.name_he || 'לקוח לא ידוע',
+    };
+  });
+
+  // Phase 3 — enrich each project with its account's primary contact + last correspondence.
+  const custIds = Array.from(new Set(baseProjects.map((p) => p.customer_id)));
+  const primaryByCustomer = new Map<string, { name: string; title: string; phone: string | null; email: string | null }>();
+  const lastCommByCustomer = new Map<string, { type: string; at: string }>();
+
+  if (custIds.length > 0) {
+    const [contactsRes, lastCommsRes] = await Promise.all([
+      sb.from('customer_contacts')
+        .select('customer_id, name, title, phone, email, is_primary')
+        .in('customer_id', custIds)
+        .eq('is_primary', true)
+        .is('archived_at', null),
+      sb.from('customer_communications')
+        .select('customer_id, comm_type, created_at')
+        .in('customer_id', custIds)
+        .is('archived_at', null)
+        .order('created_at', { ascending: false }),
+    ]);
+    for (const c of (contactsRes.data || []) as { customer_id: string; name: string; title: string; phone: string | null; email: string | null }[]) {
+      if (!primaryByCustomer.has(c.customer_id)) primaryByCustomer.set(c.customer_id, { name: c.name, title: c.title, phone: c.phone, email: c.email });
+    }
+    for (const m of (lastCommsRes.data || []) as { customer_id: string; comm_type: string; created_at: string }[]) {
+      if (!lastCommByCustomer.has(m.customer_id)) lastCommByCustomer.set(m.customer_id, { type: m.comm_type, at: m.created_at });
+    }
+  }
+
+  const activeProjects: DashboardProject[] = baseProjects.map((p) => {
+    const pc = primaryByCustomer.get(p.customer_id);
+    const lc = lastCommByCustomer.get(p.customer_id);
+    return {
+      ...p,
+      primary_contact_name:  pc?.name  ?? null,
+      primary_contact_title: pc?.title ?? null,
+      primary_contact_phone: pc?.phone ?? null,
+      primary_contact_email: pc?.email ?? null,
+      last_comm_type:        lc?.type  ?? null,
+      last_comm_at:          lc?.at    ?? null,
     };
   });
 
