@@ -1,66 +1,141 @@
-﻿'use client';
+'use client';
 
 // src/components/customers/AddCustomerForm.tsx
-// Phase 35 — uses shared ContactForm (validated name+phone, green-on-valid, profession).
-// Keeps the lead-source picker above the shared form.
+// Ferrari intake: account + several contacts (one primary, with title) + a linked
+// first project — all created in one save via createIntake.
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { createCustomer } from '@/lib/customers/customerMutations';
-import ContactForm, { ContactFormData } from '@/components/shared/ContactForm';
+import { createIntake } from '@/lib/customers/intakeMutations';
+import { CONTACT_TITLES, type ContactTitle, type IntakeContact } from '@/lib/customers/intakeTypes';
 
-const SOURCE_OPTIONS: { value: string; label: string }[] = [
-  { value: 'phone', label: 'טלפון' },
-  { value: 'whatsapp', label: 'וואטסאפ' },
-  { value: 'instagram', label: 'אינסטגרם' },
-  { value: 'website', label: 'אתר' },
-  { value: 'referral', label: 'המלצה' },
-  { value: 'walk-in', label: 'הגעה ישירה' },
-  { value: 'pinterest', label: 'פינטרסט' },
-  { value: 'other', label: 'אחר' },
+const SOURCES: { v: string; l: string }[] = [
+  { v: 'referral', l: 'הפניה' }, { v: 'whatsapp', l: 'וואטסאפ' }, { v: 'instagram', l: 'אינסטגרם' },
+  { v: 'website', l: 'אתר' }, { v: 'pinterest', l: 'פינטרסט' }, { v: 'walk-in', l: 'הגעה' },
+  { v: 'phone', l: 'טלפון' }, { v: 'other', l: 'אחר' },
 ];
+
+function blankContact(primary = false): IntakeContact {
+  return { name: '', title: 'איש קשר ראשי', phone: '', email: '', isPrimary: primary };
+}
 
 export default function AddCustomerForm() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [source, setSource] = useState('phone');
+  const [isPending, startTransition] = useTransition();
+  const [err, setErr] = useState<string | null>(null);
 
-  async function handleSave(data: ContactFormData) {
-    const res = await createCustomer({
-      name_he: data.name_he,
-      phone: data.phone,
-      city: data.city,
-      email: data.email,
-      profession: data.profession,
-      notes: data.notes,
-      source,
+  const [accountName, setAccountName] = useState('');
+  const [city, setCity] = useState('');
+  const [source, setSource] = useState('referral');
+  const [contacts, setContacts] = useState<IntakeContact[]>([blankContact(true)]);
+  const [projectTitle, setProjectTitle] = useState('');
+  const [projectStone, setProjectStone] = useState('');
+  const [projectDims, setProjectDims] = useState('');
+
+  function reset() {
+    setAccountName(''); setCity(''); setSource('referral');
+    setContacts([blankContact(true)]); setProjectTitle(''); setProjectStone(''); setProjectDims('');
+    setErr(null);
+  }
+
+  function setContact(i: number, patch: Partial<IntakeContact>) {
+    setContacts((cs) => cs.map((c, idx) => (idx === i ? { ...c, ...patch } : c)));
+  }
+  function setPrimary(i: number) {
+    setContacts((cs) => cs.map((c, idx) => ({ ...c, isPrimary: idx === i })));
+  }
+  function addContact() { setContacts((cs) => [...cs, blankContact(false)]); }
+  function removeContact(i: number) {
+    setContacts((cs) => {
+      const next = cs.filter((_, idx) => idx !== i);
+      if (next.length && !next.some((c) => c.isPrimary)) next[0].isPrimary = true;
+      return next.length ? next : [blankContact(true)];
     });
-    if (res.ok) {
-      setOpen(false);
-      setSource('phone');
-      router.refresh();
-    }
-    return res;
+  }
+
+  function submit() {
+    setErr(null);
+    startTransition(async () => {
+      const res = await createIntake({
+        accountName, city, source,
+        contacts,
+        projectTitle, projectStone, projectDimensions: projectDims,
+      });
+      if (!res.ok) { setErr(res.error || 'שגיאה'); return; }
+      reset(); setOpen(false);
+      if (res.customerId) router.push('/customers/' + res.customerId);
+    });
   }
 
   if (!open) {
     return (
-      <button onClick={() => setOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">
-        <span>➕</span><span>לקוח חדש</span>
-      </button>
+      <button onClick={() => setOpen(true)} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700">+ לקוח חדש</button>
     );
   }
 
+  const inp = 'w-full px-3 py-2 text-sm border border-stone-300 rounded-md focus:outline-none focus:border-blue-400 bg-white';
+
   return (
-    <div className="bg-white border border-blue-200 rounded-lg p-4 shadow-sm mb-4" dir="rtl">
-      <div className="text-sm font-medium text-stone-800 mb-3">לקוח חדש</div>
-      <div className="mb-2">
-        <label className="text-xs text-stone-500">מקור הליד</label>
-        <select value={source} onChange={(e) => setSource(e.target.value)} className="w-full px-3 py-2 text-sm border border-stone-300 rounded-md focus:outline-none focus:border-blue-400 bg-white" dir="rtl">
-          {SOURCE_OPTIONS.map((o) => (<option key={o.value} value={o.value}>{o.label}</option>))}
-        </select>
+    <div className="bg-white border border-stone-200 rounded-xl p-5 shadow-sm text-right" dir="rtl" style={{ minWidth: 340 }}>
+      <div className="flex items-center justify-between mb-4">
+        <span className="text-base font-semibold text-stone-800">לקוח / פרויקט חדש</span>
+        <button onClick={() => { reset(); setOpen(false); }} className="text-stone-400 hover:text-stone-600 text-sm">✕</button>
       </div>
-      <ContactForm onSave={handleSave} onCancel={() => setOpen(false)} saveLabel="שמור לקוח" />
+
+      <div className="space-y-2 mb-4">
+        <div className="text-xs font-semibold text-blue-700">פרטי החשבון</div>
+        <input value={accountName} onChange={(e) => setAccountName(e.target.value)} placeholder="שם הלקוח / החשבון (לדוגמה: מלון דודו)" className={inp} dir="rtl" disabled={isPending} />
+        <div className="flex gap-2">
+          <input value={city} onChange={(e) => setCity(e.target.value)} placeholder="עיר" className={inp} dir="rtl" disabled={isPending} />
+          <select value={source} onChange={(e) => setSource(e.target.value)} className={inp} dir="rtl" disabled={isPending}>
+            {SOURCES.map((s) => <option key={s.v} value={s.v}>{s.l}</option>)}
+          </select>
+        </div>
+      </div>
+
+      <div className="space-y-2 mb-4">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-semibold text-blue-700">אנשי קשר</span>
+          <button onClick={addContact} disabled={isPending} className="text-xs text-blue-600 hover:underline">+ הוסף איש קשר</button>
+        </div>
+        {contacts.map((c, i) => (
+          <div key={i} className="border border-stone-200 rounded-lg p-2.5 bg-stone-50 space-y-2">
+            <div className="flex items-center gap-2">
+              <label className="flex items-center gap-1 text-xs text-stone-700 shrink-0">
+                <input type="radio" name="primary" checked={c.isPrimary} onChange={() => setPrimary(i)} disabled={isPending} />
+                ראשי
+              </label>
+              <input value={c.name} onChange={(e) => setContact(i, { name: e.target.value })} placeholder="שם איש הקשר" className={inp} dir="rtl" disabled={isPending} />
+              <select value={c.title} onChange={(e) => setContact(i, { title: e.target.value as ContactTitle })} className={inp + ' max-w-[130px]'} dir="rtl" disabled={isPending}>
+                {CONTACT_TITLES.map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
+              {contacts.length > 1 && (<button onClick={() => removeContact(i)} disabled={isPending} className="text-stone-400 hover:text-red-600 text-sm shrink-0" title="הסר">✕</button>)}
+            </div>
+            <div className="flex gap-2">
+              <input value={c.phone} onChange={(e) => setContact(i, { phone: e.target.value })} placeholder="טלפון" className={inp} dir="rtl" disabled={isPending} />
+              <input value={c.email} onChange={(e) => setContact(i, { email: e.target.value })} placeholder="אימייל" className={inp} dir="ltr" disabled={isPending} />
+            </div>
+          </div>
+        ))}
+        <div className="text-[11px] text-stone-400">איש הקשר הראשי הוא מי שתעקוב אחריו ביומן היומי.</div>
+      </div>
+
+      <div className="space-y-2 mb-4">
+        <div className="text-xs font-semibold text-blue-700">פרויקט (חובה)</div>
+        <input value={projectTitle} onChange={(e) => setProjectTitle(e.target.value)} placeholder="כותרת הפרויקט (לדוגמה: כיור 270 — מלון דודו)" className={inp} dir="rtl" disabled={isPending} />
+        <div className="flex gap-2">
+          <input value={projectStone} onChange={(e) => setProjectStone(e.target.value)} placeholder="סוג אבן (אופציונלי)" className={inp} dir="rtl" disabled={isPending} />
+          <input value={projectDims} onChange={(e) => setProjectDims(e.target.value)} placeholder="מידות (אופציונלי)" className={inp} dir="rtl" disabled={isPending} />
+        </div>
+      </div>
+
+      {err && <div className="text-xs text-red-600 mb-2">{err}</div>}
+
+      <div className="flex gap-2 justify-end">
+        <button onClick={() => { reset(); setOpen(false); }} disabled={isPending} className="text-sm px-3 py-1.5 text-stone-600 hover:bg-stone-100 rounded-md">ביטול</button>
+        <button onClick={submit} disabled={isPending} className="text-sm px-4 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50">{isPending ? 'שומר...' : 'צור לקוח + פרויקט'}</button>
+      </div>
     </div>
   );
 }
