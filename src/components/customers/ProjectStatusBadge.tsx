@@ -9,17 +9,18 @@ import { useState, useTransition, useRef, useEffect } from 'react';
 import { updateProjectStatus } from '@/lib/customers/projectMutations';
 
 // These belong in the client file - 'use server' files can only export async functions in Next.js
-const PROJECT_STATUSES = ['ליד', 'הצעה נשלחה', 'מאושר', 'בייצור', 'נמסר', 'הושלם', 'בוטל'] as const;
+const PROJECT_STATUSES = ['ליד', 'שיחת בירור', 'הצעת מחיר נשלחה', 'אושר', 'שולמה מקדמה', 'תשלום מלא', 'הסתיים', 'אבוד'] as const;
 type ProjectStatus = typeof PROJECT_STATUSES[number];
 
 const STATUS_COLORS: Record<string, string> = {
-  'ליד':         'bg-amber-100 text-amber-800 border-amber-300',
-  'הצעה נשלחה':  'bg-blue-100 text-blue-800 border-blue-300',
-  'מאושר':        'bg-indigo-100 text-indigo-800 border-indigo-300',
-  'בייצור':       'bg-purple-100 text-purple-800 border-purple-300',
-  'נמסר':         'bg-teal-100 text-teal-800 border-teal-300',
-  'הושלם':        'bg-green-100 text-green-800 border-green-300',
-  'בוטל':         'bg-red-100 text-red-800 border-red-300',
+  'ליד':              'bg-amber-100 text-amber-800 border-amber-300',
+  'שיחת בירור':       'bg-sky-100 text-sky-800 border-sky-300',
+  'הצעת מחיר נשלחה':  'bg-blue-100 text-blue-800 border-blue-300',
+  'אושר':             'bg-indigo-100 text-indigo-800 border-indigo-300',
+  'שולמה מקדמה':      'bg-purple-100 text-purple-800 border-purple-300',
+  'תשלום מלא':        'bg-teal-100 text-teal-800 border-teal-300',
+  'הסתיים':           'bg-green-100 text-green-800 border-green-300',
+  'אבוד':             'bg-red-100 text-red-800 border-red-300',
 };
 
 interface Props {

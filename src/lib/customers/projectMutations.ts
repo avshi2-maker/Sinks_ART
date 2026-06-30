@@ -16,12 +16,13 @@ function getServerSupabase() {
 
 const PROJECT_STATUSES = [
   'ליד',
-  'הצעה נשלחה',
-  'מאושר',
-  'בייצור',
-  'נמסר',
-  'הושלם',
-  'בוטל',
+  'שיחת בירור',
+  'הצעת מחיר נשלחה',
+  'אושר',
+  'שולמה מקדמה',
+  'תשלום מלא',
+  'הסתיים',
+  'אבוד',
 ] as const;
 type ProjectStatus = typeof PROJECT_STATUSES[number];
 
@@ -47,11 +48,10 @@ export async function updateProjectStatus(input: UpdateProjectStatusInput): Prom
     updated_at: new Date().toISOString(),
   };
   const today = new Date().toISOString().slice(0, 10);
-  if (input.newStatus === 'הצעה נשלחה') patch.quote_sent_date      = today;
-  if (input.newStatus === 'מאושר')      patch.approved_date         = today;
-  if (input.newStatus === 'בייצור')     patch.production_start_date = today;
-  if (input.newStatus === 'נמסר')       patch.delivery_date         = today;
-  if (input.newStatus === 'הושלם')      patch.done_date             = today;
+  if (input.newStatus === 'הצעת מחיר נשלחה') patch.quote_sent_date      = today;
+  if (input.newStatus === 'אושר')            patch.approved_date         = today;
+  if (input.newStatus === 'שולמה מקדמה')     patch.production_start_date = today;
+  if (input.newStatus === 'הסתיים')          patch.done_date             = today;
   const res = await sb.from('projects').update(patch).eq('id', input.projectId);
   if (res.error) return { ok: false, error: res.error.message };
   revalidatePath('/customers/' + input.customerId);
