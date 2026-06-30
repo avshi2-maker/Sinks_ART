@@ -105,8 +105,8 @@ export default function CustomersTable({ customers }: Props) {
                       )}
                     </td>
                     <td className="py-3 px-3 text-center">
-                      <button onClick={() => handleArchive(c.id, c.name_he)} disabled={busyId === c.id} className="text-stone-400 hover:text-red-600 disabled:opacity-40" title="הסר מהרשימה">
-                        {busyId === c.id ? '…' : '🗑️'}
+                      <button onClick={() => handleArchive(c.id, c.name_he)} disabled={busyId === c.id} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs border border-stone-200 text-stone-500 hover:border-amber-300 hover:text-amber-700 hover:bg-amber-50 disabled:opacity-40 transition-colors" title="העברה לארכיון — מוסתר מהרשימה הפעילה, ניתן לשחזר">
+                        {busyId === c.id ? '…' : '📥 ארכב'}
                       </button>
                     </td>
                   </tr>
