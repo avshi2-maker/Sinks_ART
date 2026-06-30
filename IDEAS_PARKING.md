@@ -1213,3 +1213,13 @@ Phase 36 shipped site documents + auto follow-up tasks + dashboard "מעקב ה�
 Both depend on the same digest builder — build it once for Option 2, reuse for Option 3.
 **Editable project rows (PARKED — small build).**
 Project rows on the customer page (ProjectsList.tsx) show title_he as display-only — no way to rename a project or edit its stone/dimensions from the UI. Had to rename "כיור רחב 2.70" -> "נחום גולדמן — כיור 2.70" via raw SQL during the Goldman/MassadOZ account restructure. Build: add a small ✏️ on each project row → inline edit of title_he (+ optionally stone_type_he, dimensions), server action updateProjectFields, revalidate. Status already editable via ProjectStatusBadge; this is the missing title/details edit.
+
+**Clean up הצעות וייצור tab + nav rearrange (PARKED — after break).**
+The offers area is still messy and needs the reorg we mapped:
+(1) retire הצעת מחיר מהירה (old quick-offer) from the dashboard — OLD version, replaced by the new offer-builder.
+(2) move /quotes (הצעות, old report) OUT of the nav group → make it an "open offers follow-up" view on the dashboard (it's the table ROI + follow-up read, not a builder).
+(3) rearrange offers nav into clean flow: מחירון אלס → בונה הצעה → הצעת ARVO → הצעות שנשלחו → הזמנות ייצור (remove old /quotes link from nav).
+Model: SOURCING (RFQ) → OFFER (builder → ARVO → sent) → PRODUCTION (PO). Mockup already designed.
+
+**Offer builder Phase C (PARKED — next).**
+Plain-doc draft export for the two-phase ARVO flow: builder → downloadable/clean draft doc → edit → paste into ARVO empty template → PDF. (Copy-text already works as interim.) Also future: visual asset picker (attach Cloudinary sketches/marble/Nano renders to offer); pull component lines from /options price book.
