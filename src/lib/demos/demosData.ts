@@ -30,6 +30,7 @@ export interface DemoTrial {
   sketch_svg: string | null;    // inline SVG when kind === 'sketch'
   is_archived: boolean;
   created_at: string;
+  project_title?: string | null; // enrichment (not a DB column): filled by fetchDemos for linked projects
 }
 
 export interface DemoResult { ok: boolean; error?: string; id?: string; }
@@ -38,7 +39,21 @@ export async function fetchDemos(): Promise<DemoTrial[]> {
   const sb = getServerSupabase();
   const res = await sb.from('demo_trials').select('*').eq('is_archived', false).order('created_at', { ascending: false });
   if (res.error) { console.error('[fetchDemos]', res.error.message); return []; }
-  return (res.data || []) as DemoTrial[];
+  const demos = (res.data || []) as DemoTrial[];
+
+  // Enrich linked demos with their project title (for the card stamp). No FK dependency — separate query.
+  const projectIds = Array.from(new Set(demos.map((d) => d.project_id).filter((x): x is string => !!x)));
+  if (projectIds.length > 0) {
+    const pr = await sb.from('projects').select('id, title_he').in('id', projectIds);
+    if (!pr.error && pr.data) {
+      const map = new Map<string, string | null>();
+      for (const p of pr.data as { id: string; title_he: string | null }[]) map.set(p.id, p.title_he);
+      for (const d of demos) {
+        if (d.project_id) d.project_title = map.get(d.project_id) ?? null;
+      }
+    }
+  }
+  return demos;
 }
 
 export interface SaveDemoInput {
@@ -151,6 +166,7 @@ export async function fetchSketchSpec(id: string): Promise<SketchLoad | null> {
   if (res.error || !res.data) { console.error('[fetchSketchSpec]', res.error?.message); return null; }
   return { spec: (res.data.inputs_jsonb || {}) as Record<string, unknown>, title_he: res.data.title_he };
 }
+
 // ---- pickers for the save-to-gallery panel ----
 
 export interface CustomerPickLite { id: string; name_he: string; }
@@ -161,6 +177,7 @@ export async function fetchCustomersForPicker(): Promise<CustomerPickLite[]> {
   return (res.data || []) as CustomerPickLite[];
 }
 
+// Customer-scoped project list (kept for any callers that still use it).
 export interface ProjectPickLite { id: string; title_he: string | null; }
 export async function fetchProjectsForCustomer(customerId: string): Promise<ProjectPickLite[]> {
   if (!customerId) return [];
@@ -168,4 +185,28 @@ export async function fetchProjectsForCustomer(customerId: string): Promise<Proj
   const res = await sb.from('projects').select('id, title_he').eq('customer_id', customerId).order('created_at', { ascending: false });
   if (res.error) { console.error('[fetchProjectsForCustomer]', res.error.message); return []; }
   return (res.data || []) as ProjectPickLite[];
+}
+
+// Free picker: EVERY project, any customer, each labeled with its customer name.
+export interface ProjectPickFull { id: string; title_he: string | null; customer_id: string | null; customer_name: string | null; }
+export async function fetchAllProjectsForPicker(): Promise<ProjectPickFull[]> {
+  const sb = getServerSupabase();
+  const res = await sb.from('projects').select('id, title_he, customer_id').order('created_at', { ascending: false });
+  if (res.error) { console.error('[fetchAllProjectsForPicker]', res.error.message); return []; }
+  const rows = (res.data || []) as { id: string; title_he: string | null; customer_id: string | null }[];
+
+  const custIds = Array.from(new Set(rows.map((r) => r.customer_id).filter((x): x is string => !!x)));
+  const nameMap = new Map<string, string>();
+  if (custIds.length > 0) {
+    const cr = await sb.from('customers').select('id, name_he').in('id', custIds);
+    if (!cr.error && cr.data) {
+      for (const c of cr.data as { id: string; name_he: string }[]) nameMap.set(c.id, c.name_he);
+    }
+  }
+  return rows.map((r) => ({
+    id: r.id,
+    title_he: r.title_he,
+    customer_id: r.customer_id,
+    customer_name: r.customer_id ? (nameMap.get(r.customer_id) || null) : null,
+  }));
 }

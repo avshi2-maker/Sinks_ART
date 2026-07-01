@@ -2,11 +2,12 @@
 
 // src/components/demos/DemoCard.tsx
 // Single gallery card: AI demo (image/video) OR saved sketch (inline SVG).
-// Sketch cards: edit / delete / PNG download / PNG-to-Cloudinary / PDF (customer-ready) / whatsapp.
+// Sketch cards: edit / delete / PNG download / PNG-to-Cloudinary / PDF (customer-ready) / whatsapp / work-order.
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { updateDemo, deleteDemo, setDemoImage, DemoTrial } from '@/lib/demos/demosData';
+import { createWorkOrderFromSketch } from '@/lib/po/createWorkOrderFromSketch';
 import { uploadToCloudinary, isCloudinaryConfigured } from '@/lib/intake/cloudinary';
 import { getVideoFrameUrl } from '@/lib/intake/cloudinary';
 
@@ -39,6 +40,14 @@ async function svgToPngBlob(svg: string, scale: number): Promise<Blob> {
   } finally {
     URL.revokeObjectURL(svgUrl);
   }
+}
+
+// --- helper: format an ISO timestamp as DD/MM/YYYY · HH:MM (Israel-friendly, no locale surprises) ---
+function fmtStamp(iso: string): string {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  const p = (n: number) => String(n).padStart(2, '0');
+  return p(d.getDate()) + '/' + p(d.getMonth() + 1) + '/' + d.getFullYear() + ' · ' + p(d.getHours()) + ':' + p(d.getMinutes());
 }
 
 export default function DemoCard({ demo }: { demo: DemoTrial }) {
@@ -106,7 +115,7 @@ export default function DemoCard({ demo }: { demo: DemoTrial }) {
     setExporting('');
   }
 
-  // Render PNG and upload it to Cloudinary (Demo-Trials folder), then attach to this row.
+  // Render PNG and upload it to Cloudinary (sketches bank), then attach to this row.
   async function pngToCloudinary() {
     if (!demo.sketch_svg) return;
     if (!isCloudinaryConfigured()) { window.alert('Cloudinary לא מוגדר'); return; }
@@ -162,6 +171,20 @@ export default function DemoCard({ demo }: { demo: DemoTrial }) {
     window.open('https://api.whatsapp.com/send?text=' + txt, '_blank');
   }
 
+  async function makeWorkOrder() {
+    setExporting('wo');
+    try {
+      const res = await createWorkOrderFromSketch(demo.id);
+      if (!res.ok || !res.poId) { window.alert('יצירת הוראת עבודה נכשלה: ' + (res.error || '')); setExporting(''); return; }
+      router.push('/po/' + res.poId + '/ales');
+    } catch (e) {
+      window.alert('שגיאה: ' + (e instanceof Error ? e.message : String(e)));
+      setExporting('');
+    }
+  }
+
+  const stamp = fmtStamp(demo.created_at);
+
   return (
     <div className="bg-white border border-stone-200 rounded-lg overflow-hidden shadow-sm" dir="rtl">
       {isSketch ? (
@@ -201,6 +224,10 @@ export default function DemoCard({ demo }: { demo: DemoTrial }) {
               {isSketch && (<span className="text-[10px] px-1.5 py-0.5 rounded-full bg-pink-100 text-pink-700 font-semibold">📐 שרטוט</span>)}
               <div className="text-sm font-medium text-stone-800">{demo.title_he || (isSketch ? 'שרטוט' : 'הדמיה')}</div>
             </div>
+            <div className="flex items-center gap-2 flex-wrap text-[11px] text-stone-500">
+              {stamp && (<span title="נשמר בתאריך">📅 {stamp}</span>)}
+              {demo.project_title && (<span className="px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200" title="פרויקט מקושר">🏗️ {demo.project_title}</span>)}
+            </div>
             {demo.marble_family && (<div className="text-xs text-stone-500">🪨 {demo.marble_family}</div>)}
             {demo.notes_he && (<div className="text-xs text-stone-500">{demo.notes_he}</div>)}
             <div className="flex items-center gap-3 pt-1 text-stone-400 flex-wrap">
@@ -210,6 +237,7 @@ export default function DemoCard({ demo }: { demo: DemoTrial }) {
                   <button onClick={downloadPng} disabled={!!exporting} title="הורד PNG" className="hover:text-blue-600 text-sm disabled:opacity-40">{exporting === 'png' ? '⏳' : '🖼️ PNG'}</button>
                   <button onClick={pngToCloudinary} disabled={!!exporting} title="העלה PNG ל-Cloudinary" className="hover:text-blue-600 text-sm disabled:opacity-40">{exporting === 'cloud' ? '⏳' : '☁️'}</button>
                   <button onClick={exportPdf} disabled={!!exporting} title="ייצא PDF ללקוח" className="hover:text-blue-600 text-sm disabled:opacity-40">{exporting === 'pdf' ? '⏳' : '📄 PDF'}</button>
+                  <button onClick={makeWorkOrder} disabled={!!exporting} title="צור הוראת עבודה לאלס" className="hover:text-blue-600 text-sm disabled:opacity-40">{exporting === 'wo' ? '⏳' : '🔧 אלס'}</button>
                 </>
               ) : demo.cloudinary_url ? (
                 <a href={demo.cloudinary_url} download title="הורד" className="hover:text-blue-600 text-sm">⬇️</a>
