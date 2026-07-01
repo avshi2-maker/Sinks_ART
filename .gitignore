@@ -54,3 +54,25 @@ marble-art-sinks.zip
 scripts/tag_assets/node_modules/
 scripts/*/node_modules/
 
+
+# ---- Marble Art: keep build/download clutter out of git (added 01/07/2026) ----
+*.b64.txt
+/files/
+files.zip
+*_CORRECT.*
+*_backup_*.tsx
+*_backup_*.ts
+/*.sql
+/DemoCard.tsx
+/DemoCard_b64.txt
+/MaterialCalculator.tsx
+/OfferBuilder.tsx
+/PriceBreaksManager.tsx
+/WorkflowNav.tsx
+/materialCalc.ts
+/materialSettings.ts
+/offer-builder-page.tsx
+/offerTypes.ts
+/page.tsx
+/priceBreaksData.ts
+/saveOffer.ts
