@@ -31,3 +31,12 @@ export interface IntakeResult {
   customerId?: string;
   projectId?:  string;
 }
+
+export interface ContactRow {
+  id:         string;
+  name:       string;
+  title:      string;
+  phone:      string | null;
+  email:      string | null;
+  is_primary: boolean;
+}

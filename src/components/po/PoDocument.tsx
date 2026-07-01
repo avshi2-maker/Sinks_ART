@@ -66,6 +66,7 @@ export default function PoDocument({ po, addonNames = [], customers = [] }: { po
     <div dir="rtl" className="space-y-5">
       <div className="flex items-center justify-between">
         <button onClick={() => router.push('/po')} className="text-sm text-blue-600 hover:underline">← כל ההזמנות</button>
+        <a href={`/po/${po.id}/ales`} className="text-sm px-3 py-1.5 bg-stone-800 text-white rounded-md hover:bg-stone-900 no-underline">📋 הוראת עבודה לאלס</a>
         <span className={issued ? 'text-xs bg-green-100 text-green-700 px-3 py-1 rounded-full' : 'text-xs bg-amber-100 text-amber-700 px-3 py-1 rounded-full'}>
           {issued ? 'הונפק · ' + fmtDate(po.issued_at) : 'טיוטה'}
         </span>

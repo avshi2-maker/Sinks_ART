@@ -4,6 +4,8 @@
 // Phase 27 — Quick Quote panel (הצעה מהירה).
 import { notFound } from 'next/navigation';
 import { fetchCustomerPage } from '@/lib/customers/fetchCustomerPage';
+import { fetchContacts } from '@/lib/customers/fetchContacts';
+import ContactsPanel from '@/components/customers/ContactsPanel';
 import { CustomerHeader } from '@/components/customers/CustomerHeader';
 import EditableCustomerHeader from '@/components/customers/EditableCustomerHeader';
 import { ProjectsList } from '@/components/customers/ProjectsList';
@@ -27,10 +29,10 @@ export default async function CustomerPage({ params, searchParams }: PageProps) 
   const { id } = await params;
   const sp = await searchParams;
   const filter = (sp.type || 'all') as CommFilterValue;
-  const data = await fetchCustomerPage(id);
-  const catalogOptions = await fetchActiveOptions();
+  const data = await fetchCustomerPage(id);  const catalogOptions = await fetchActiveOptions();
   const sites = await fetchSites();
   const media = await fetchCustomerMedia(id);
+  const contacts = await fetchContacts(id);
   if (!data) {
     notFound();
   }
@@ -48,6 +50,7 @@ export default async function CustomerPage({ params, searchParams }: PageProps) 
           </a>
         </nav>
         <EditableCustomerHeader customer={data.customer} />
+        <ContactsPanel customerId={data.customer.id} contacts={contacts} />
         <ProjectsList projects={data.projects} customerId={data.customer.id} sites={sites.map(s => ({ id: s.id, name_he: s.name_he }))} />
         <MediaBoard customerId={data.customer.id} media={media} projects={data.projects.map(p => ({ id: p.id, title_he: p.title_he }))} />
         <QuickQuotePanel customerId={data.customer.id} customerName={data.customer.name_he} customerPhone={data.customer.phone} projects={data.projects.map(p => ({ id: p.id, title_he: p.title_he }))} catalogOptions={catalogOptions} />
