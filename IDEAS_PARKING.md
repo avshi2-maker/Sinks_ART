@@ -1226,3 +1226,9 @@ Plain-doc draft export for the two-phase ARVO flow: builder → downloadable/cle
 
 **Fix messy עיצוב והדמיה — sketch builder (PARKED — after break).**
 The /sketch tool (שרטוט) in the עיצוב והדמיה group needs cleanup/rework — flagged as messy. Review what's broken/confusing in the sketch builder and clean it up. (Group: שרטוט /sketch · הדמיה /prompt-builder · גלריה /demos.) Detail to be defined when we open it — Avshi will point at the specific pain.
+
+**Material calculator — option B: sketch-linked dimensions (PARKED — after option A).**
+The material calculator (option A) uses manual dimension entry. Phase 2: pull dimensions straight from a saved שרטוט (sketch builder) so Avshi doesn't re-type length/width/height/basin-depth/end-walls/slope. Needs: check how the sketch builder persists its dimensions to Supabase, then read them into the calculator by project. Tighter integration, removes double entry.
+
+**Metal hanger / wall-support design module (PARKED — next module after material calc).**
+Engineering tool: from the sink's porcelain weight (finished area × 12mm × sintered-porcelain SG ~2400 kg/m3, ~15 kg/m2 per 6mm) + water load in basin → total design load + safety factor → design the steel L-bracket / channel support geometry (leg lengths, thickness, count + spacing along span, cantilever moment from basin depth) + wall-anchor spec (bolt type/size/count for pull-out + shear). Output: clean support-system sketch + spec (like the sink drawing) for the customer presentation. MUST carry 'engineering proposal — verify with licensed structural engineer/installer against the real wall' note (hotel, ~170kg over users). Wall type (concrete/masonry vs block vs drywall) is the key unknown — design for masonry, flag others. Pairs with material calc (weight feeds hanger load). For Ziv/Goldman presentation: shows מסד עוז the mounting is engineered.
