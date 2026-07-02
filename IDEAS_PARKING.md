@@ -1259,3 +1259,28 @@ existing remnants before buying new sheets.
 current task (wiring the cut list into the Ales work order). Cut list ships first; this builds on top of it
 later — the `leftoverM2` value is already produced, so the data source is ready when we build this.
 
+
+---
+
+## 💡 TRABELSI MATERIAL CATALOG — few-hundred-sheet price list  (parked 02/07/2026 — coming in ~weeks)
+
+**What's coming:** Avshi is building a gallery/price list of Trabelsi's few HUNDRED marble & porcelain
+sheets — each with its own color/type, sheet size, and price per m². Today the pricing engine uses ONE
+constant (₪199/m² for a generic 120×270 porcelain sheet). Soon it must PULL the right price per selected
+sheet from this catalog.
+
+**Design implication for the pricing engine (build catalog-ready NOW):**
+- The material calc already takes a `MaterialSettings` object with `pricePerM2` + sheet dims. Keep that
+  seam. When the catalog lands, the "from sketch to price offer" tab gets a SHEET PICKER (choose the
+  Trabelsi sheet by color/type) that swaps in that sheet's price + dims — the calc doesn't change.
+- Future table (e.g. `trabelsi_catalog`): id, sheet name/color, material type (marble/porcelain),
+  thickness mm, sheet_len_cm, sheet_wid_cm, price_per_m2, supplier, photo (Cloudinary), in_stock,
+  updated_at. The current single-row `trabelsi_material_settings` becomes the DEFAULT / fallback.
+- The work order + offer should STORE which catalog sheet was used (sheet id + price snapshot) so a later
+  price change doesn't alter an already-issued offer (same freeze principle as the finance snapshot).
+- Ties into the parked LEFTOVER INVENTORY idea: a leftover is a remnant OF a specific catalog sheet, so
+  it should reference the catalog id + carry that sheet's color/cost.
+
+**Why parked:** the catalog itself is a separate build (~weeks out). The engine is being built now with the
+`pricePerM2` seam intact so integration later = add a sheet picker + read catalog, not a rewrite.
+

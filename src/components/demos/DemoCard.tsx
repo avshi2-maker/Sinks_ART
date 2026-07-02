@@ -2,14 +2,13 @@
 
 // src/components/demos/DemoCard.tsx
 // Single gallery card: AI demo (image/video) OR saved sketch (inline SVG).
-// Sketch cards: edit / delete / PNG download / PNG-to-Cloudinary / PDF (customer-ready) / whatsapp / Ales work order.
+// Sketch cards: edit / delete / PNG download / PNG-to-Cloudinary / PDF (customer-ready) / whatsapp / pricing engine.
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { updateDemo, deleteDemo, setDemoImage, DemoTrial } from '@/lib/demos/demosData';
 import { uploadToCloudinary, isCloudinaryConfigured } from '@/lib/intake/cloudinary';
 import { getVideoFrameUrl } from '@/lib/intake/cloudinary';
-import AlesFinalizePanel from './AlesFinalizePanel';
 
 // --- helper: rasterize an SVG string to a PNG blob via canvas (no libraries) ---
 async function svgToPngBlob(svg: string, scale: number): Promise<Blob> {
@@ -60,7 +59,6 @@ export default function DemoCard({ demo }: { demo: DemoTrial }) {
   const [notes, setNotes] = useState(demo.notes_he || '');
   const [busy, setBusy] = useState(false);
   const [exporting, setExporting] = useState('');
-  const [finalizing, setFinalizing] = useState(false);
 
   async function save() {
     setBusy(true);
@@ -223,7 +221,7 @@ export default function DemoCard({ demo }: { demo: DemoTrial }) {
                   <button onClick={downloadPng} disabled={!!exporting} title="הורד PNG" className="hover:text-blue-600 text-sm disabled:opacity-40">{exporting === 'png' ? '⏳' : '🖼️ PNG'}</button>
                   <button onClick={pngToCloudinary} disabled={!!exporting} title="העלה PNG ל-Cloudinary" className="hover:text-blue-600 text-sm disabled:opacity-40">{exporting === 'cloud' ? '⏳' : '☁️'}</button>
                   <button onClick={exportPdf} disabled={!!exporting} title="ייצא PDF ללקוח" className="hover:text-blue-600 text-sm disabled:opacity-40">{exporting === 'pdf' ? '⏳' : '📄 PDF'}</button>
-                  <button onClick={() => setFinalizing((v) => !v)} title="צור הוראת עבודה לאלס" className="hover:text-blue-600 text-sm">🔧 אלס</button>
+                  <button onClick={() => router.push('/sketch-to-offer?sketch=' + demo.id)} title="תמחור — משרטוט להצעת מחיר" className="hover:text-blue-600 text-sm">🧮 תמחור</button>
                 </>
               ) : demo.cloudinary_url ? (
                 <a href={demo.cloudinary_url} download title="הורד" className="hover:text-blue-600 text-sm">⬇️</a>
@@ -232,9 +230,6 @@ export default function DemoCard({ demo }: { demo: DemoTrial }) {
               <button onClick={() => { if (isSketch) { router.push('/sketch?load=' + demo.id); } else { setEditing(true); } }} title={isSketch ? 'ערוך מידות' : 'ערוך'} className="hover:text-blue-600 text-sm">✏️</button>
               <button onClick={remove} disabled={busy} title="מחק" className="hover:text-red-600 text-sm">🗑️</button>
             </div>
-            {isSketch && finalizing && (
-              <AlesFinalizePanel sketchId={demo.id} spec={demo.inputs_jsonb} onClose={() => setFinalizing(false)} />
-            )}
           </>
         )}
       </div>
