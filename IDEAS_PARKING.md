@@ -1232,3 +1232,30 @@ The material calculator (option A) uses manual dimension entry. Phase 2: pull di
 
 **Metal hanger / wall-support design module (PARKED — next module after material calc).**
 Engineering tool: from the sink's porcelain weight (finished area × 12mm × sintered-porcelain SG ~2400 kg/m3, ~15 kg/m2 per 6mm) + water load in basin → total design load + safety factor → design the steel L-bracket / channel support geometry (leg lengths, thickness, count + spacing along span, cantilever moment from basin depth) + wall-anchor spec (bolt type/size/count for pull-out + shear). Output: clean support-system sketch + spec (like the sink drawing) for the customer presentation. MUST carry 'engineering proposal — verify with licensed structural engineer/installer against the real wall' note (hotel, ~170kg over users). Wall type (concrete/masonry vs block vs drywall) is the key unknown — design for masonry, flag others. Pairs with material calc (weight feeds hanger load). For Ziv/Goldman presentation: shows מסד עוז the mounting is engineered.
+
+---
+
+## 💡 LEFTOVER / REMNANT INVENTORY MODULE  (parked 02/07/2026 — future development)
+
+**Idea:** Every fabrication job rounds material UP to whole porcelain sheets, leaving offcut m² (the
+material-calc already returns `leftoverM2`). Those offcuts are money sitting in the workshop. Instead of
+discarding the number, store each job's leftover as a reusable stock record so future jobs can pull from
+existing remnants before buying new sheets.
+
+**Data to capture per leftover record (own table, e.g. `material_leftovers`):**
+- reference to source job / PO (`po_id`, `po_number`) and project
+- leftover m² (from `cut_list.leftoverM2`)
+- full slab description: stone/color name, sheet dimensions, price per m², supplier (Trabelsi etc.)
+- date created, status (available / reserved / used)
+- optional: photo of the physical offcut, shelf/location note
+
+**Flow:**
+- On work-order creation, auto-write a leftover record from the computed cut list.
+- New tab "שאריות / מלאי עודפים" — browsable table of available remnants with full description + cost.
+- On a new job, both Avshi and Ales can check existing leftovers and reserve/consume a remnant instead
+  of ordering a fresh sheet — reducing material cost on the next offer.
+
+**Why parked:** This is a full module (new table + tab + auto-save + browse/reserve UI), separate from the
+current task (wiring the cut list into the Ales work order). Cut list ships first; this builds on top of it
+later — the `leftoverM2` value is already produced, so the data source is ready when we build this.
+

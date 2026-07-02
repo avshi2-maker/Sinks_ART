@@ -2,14 +2,14 @@
 
 // src/components/demos/DemoCard.tsx
 // Single gallery card: AI demo (image/video) OR saved sketch (inline SVG).
-// Sketch cards: edit / delete / PNG download / PNG-to-Cloudinary / PDF (customer-ready) / whatsapp / work-order.
+// Sketch cards: edit / delete / PNG download / PNG-to-Cloudinary / PDF (customer-ready) / whatsapp / Ales work order.
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { updateDemo, deleteDemo, setDemoImage, DemoTrial } from '@/lib/demos/demosData';
-import { createWorkOrderFromSketch } from '@/lib/po/createWorkOrderFromSketch';
 import { uploadToCloudinary, isCloudinaryConfigured } from '@/lib/intake/cloudinary';
 import { getVideoFrameUrl } from '@/lib/intake/cloudinary';
+import AlesFinalizePanel from './AlesFinalizePanel';
 
 // --- helper: rasterize an SVG string to a PNG blob via canvas (no libraries) ---
 async function svgToPngBlob(svg: string, scale: number): Promise<Blob> {
@@ -42,7 +42,7 @@ async function svgToPngBlob(svg: string, scale: number): Promise<Blob> {
   }
 }
 
-// --- helper: format an ISO timestamp as DD/MM/YYYY · HH:MM (Israel-friendly, no locale surprises) ---
+// --- helper: format an ISO timestamp as DD/MM/YYYY · HH:MM ---
 function fmtStamp(iso: string): string {
   const d = new Date(iso);
   if (isNaN(d.getTime())) return '';
@@ -60,6 +60,7 @@ export default function DemoCard({ demo }: { demo: DemoTrial }) {
   const [notes, setNotes] = useState(demo.notes_he || '');
   const [busy, setBusy] = useState(false);
   const [exporting, setExporting] = useState('');
+  const [finalizing, setFinalizing] = useState(false);
 
   async function save() {
     setBusy(true);
@@ -97,7 +98,6 @@ export default function DemoCard({ demo }: { demo: DemoTrial }) {
 
   const baseName = (demo.title_he || 'sketch').replace(/\s+/g, '_');
 
-  // Download a high-resolution PNG of the sketch (opens on any device).
   async function downloadPng() {
     if (!demo.sketch_svg) return;
     setExporting('png');
@@ -115,7 +115,6 @@ export default function DemoCard({ demo }: { demo: DemoTrial }) {
     setExporting('');
   }
 
-  // Render PNG and upload it to Cloudinary (sketches bank), then attach to this row.
   async function pngToCloudinary() {
     if (!demo.sketch_svg) return;
     if (!isCloudinaryConfigured()) { window.alert('Cloudinary לא מוגדר'); return; }
@@ -134,7 +133,6 @@ export default function DemoCard({ demo }: { demo: DemoTrial }) {
     setExporting('');
   }
 
-  // Customer-ready PDF: open a clean print window with the sketch as a sharp image, trigger print-to-PDF.
   async function exportPdf() {
     if (!demo.sketch_svg) return;
     setExporting('pdf');
@@ -169,18 +167,6 @@ export default function DemoCard({ demo }: { demo: DemoTrial }) {
   function sendWhatsApp() {
     const txt = encodeURIComponent((demo.title_he || 'פריט') + (demo.cloudinary_url ? '\n' + demo.cloudinary_url : ''));
     window.open('https://api.whatsapp.com/send?text=' + txt, '_blank');
-  }
-
-  async function makeWorkOrder() {
-    setExporting('wo');
-    try {
-      const res = await createWorkOrderFromSketch(demo.id);
-      if (!res.ok || !res.poId) { window.alert('יצירת הוראת עבודה נכשלה: ' + (res.error || '')); setExporting(''); return; }
-      router.push('/po/' + res.poId + '/ales');
-    } catch (e) {
-      window.alert('שגיאה: ' + (e instanceof Error ? e.message : String(e)));
-      setExporting('');
-    }
   }
 
   const stamp = fmtStamp(demo.created_at);
@@ -237,7 +223,7 @@ export default function DemoCard({ demo }: { demo: DemoTrial }) {
                   <button onClick={downloadPng} disabled={!!exporting} title="הורד PNG" className="hover:text-blue-600 text-sm disabled:opacity-40">{exporting === 'png' ? '⏳' : '🖼️ PNG'}</button>
                   <button onClick={pngToCloudinary} disabled={!!exporting} title="העלה PNG ל-Cloudinary" className="hover:text-blue-600 text-sm disabled:opacity-40">{exporting === 'cloud' ? '⏳' : '☁️'}</button>
                   <button onClick={exportPdf} disabled={!!exporting} title="ייצא PDF ללקוח" className="hover:text-blue-600 text-sm disabled:opacity-40">{exporting === 'pdf' ? '⏳' : '📄 PDF'}</button>
-                  <button onClick={makeWorkOrder} disabled={!!exporting} title="צור הוראת עבודה לאלס" className="hover:text-blue-600 text-sm disabled:opacity-40">{exporting === 'wo' ? '⏳' : '🔧 אלס'}</button>
+                  <button onClick={() => setFinalizing((v) => !v)} title="צור הוראת עבודה לאלס" className="hover:text-blue-600 text-sm">🔧 אלס</button>
                 </>
               ) : demo.cloudinary_url ? (
                 <a href={demo.cloudinary_url} download title="הורד" className="hover:text-blue-600 text-sm">⬇️</a>
@@ -246,6 +232,9 @@ export default function DemoCard({ demo }: { demo: DemoTrial }) {
               <button onClick={() => { if (isSketch) { router.push('/sketch?load=' + demo.id); } else { setEditing(true); } }} title={isSketch ? 'ערוך מידות' : 'ערוך'} className="hover:text-blue-600 text-sm">✏️</button>
               <button onClick={remove} disabled={busy} title="מחק" className="hover:text-red-600 text-sm">🗑️</button>
             </div>
+            {isSketch && finalizing && (
+              <AlesFinalizePanel sketchId={demo.id} spec={demo.inputs_jsonb} onClose={() => setFinalizing(false)} />
+            )}
           </>
         )}
       </div>
