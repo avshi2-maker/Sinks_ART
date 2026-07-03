@@ -1321,3 +1321,25 @@ Good candidate for a dedicated session. Start point: WorkflowNav.tsx + the full 
 - Known loose ends already noted: retire הצעת מחיר מהירה (OLD); move old /quotes out of nav; add the two
   NEW pages (/sketch-to-offer, /ales-settings) into the menu; confirm nav flow order.
 
+
+---
+
+## 💡 REJECTED OFFER → drop from ROI but ARCHIVE  (parked 03/07/2026)
+
+**Idea:** When a price offer is sent and the lead REJECTS it, Avshi clicks "נכשל / failed" and:
+- the offer's ROI data is REMOVED from the daily ROI report (rejected money isn't real profit — it shouldn't
+  inflate the live ROI dashboard), BUT
+- the price offer itself is KEPT and ARCHIVED (never deleted — history + re-quote reference).
+
+**How (design):**
+- Add a status to the quote (e.g. quotes.status = 'rejected' / 'lost', or a boolean roi_excluded).
+  The status field already exists (draft/sent/...); add a 'rejected' state + a "סמן כנכשל" button on the quote.
+- ROI query (src/lib/roi/roiData.ts) must FILTER OUT rejected quotes: only count quotes.total_margin where
+  status NOT IN ('rejected','lost'). This is the key change — ROI reads live, so exclusion is just a WHERE clause.
+- The offer stays fully visible in /quotes + /offers-sent with a "נכשל" badge (archived, not gone).
+- Reversible: if the lead comes back, un-mark it → it re-enters ROI.
+
+**Why parked:** small but real feature (status + button + one ROI query filter). Do after the customer-offer
+button is verified. Related: today we're deleting old test/demo quotes manually — this feature is the PROPER
+long-term way to keep ROI clean without deleting anything.
+

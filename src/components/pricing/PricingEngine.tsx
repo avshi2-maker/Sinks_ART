@@ -4,8 +4,9 @@
 // THE ENGINE core — from a sketch to a full price picture, live.
 // Pulls material (calc) + Ales cost settings, takes days + art premium, shows:
 //   true cost -> base offer (XYZ, +commission) -> final offer (UVW, +premium) -> 50/50 split.
-// Save action: freeze the full snapshot into an Ales work order (routes to /po/[id]/ales).
-// (Customer-offer button comes later — sequenced after linking to the existing offer flow.)
+// Two save actions:
+//   🔧 work order  -> freeze full snapshot -> /po/[id]/ales (3-page Ales document)
+//   📄 customer offer -> saveOffer (existing quotes flow) -> confirm + link
 
 import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
@@ -13,6 +14,7 @@ import { calcMaterial, type MaterialSettings, type MaterialFactors } from '@/lib
 import { sketchSpecToDims } from '@/lib/po/sketchSpecToDims';
 import { calcPricing } from '@/lib/pricing/alesCostCalc';
 import { createWorkOrderFromSketch } from '@/lib/po/createWorkOrderFromSketch';
+import { createOfferFromEngine } from '@/lib/offers/createOfferFromEngine';
 import type { AlesCostSettings } from '@/lib/pricing/alesCostTypes';
 
 const FACTORS: MaterialFactors = { laminate: true, wastePct: 12, miterPct: 8, slopePct: 3 };
@@ -35,7 +37,8 @@ export default function PricingEngine({ sketch, materialSettings, costSettings }
   const router = useRouter();
   const [days, setDays] = useState('1.5');
   const [premium, setPremium] = useState('');
-  const [saving, setSaving] = useState(false);
+  const [saving, setSaving] = useState('');
+  const [offerMsg, setOfferMsg] = useState<{ num: string; id: string } | null>(null);
 
   const cut = useMemo(() => {
     if (!sketch) return null;
@@ -55,15 +58,25 @@ export default function PricingEngine({ sketch, materialSettings, costSettings }
 
   async function saveWorkOrder() {
     if (!sketch || !cut) return;
-    setSaving(true);
+    setSaving('wo');
     const res = await createWorkOrderFromSketch({
       sketchId: sketch.id,
       days: Number(days) || 0,
       cutList: cut,
       pricing,
     });
-    if (!res.ok || !res.poId) { window.alert('יצירת הוראת עבודה נכשלה: ' + (res.error || '')); setSaving(false); return; }
+    if (!res.ok || !res.poId) { window.alert('יצירת הוראת עבודה נכשלה: ' + (res.error || '')); setSaving(''); return; }
     router.push('/po/' + res.poId + '/ales');
+  }
+
+  async function saveCustomerOffer() {
+    if (!sketch || !cut) return;
+    setSaving('offer');
+    setOfferMsg(null);
+    const res = await createOfferFromEngine({ sketchId: sketch.id, pricing });
+    setSaving('');
+    if (!res.ok || !res.quoteId) { window.alert('שמירת הצעת מחיר נכשלה: ' + (res.error || '')); return; }
+    setOfferMsg({ num: res.quoteNumber || '', id: res.quoteId });
   }
 
   const box = 'w-full px-2 py-1.5 text-sm border border-stone-300 rounded-md text-left';
@@ -147,10 +160,17 @@ export default function PricingEngine({ sketch, materialSettings, costSettings }
         </div>
       </div>
 
-      <div className="flex gap-2 pt-2 border-t border-stone-200">
-        <button onClick={saveWorkOrder} disabled={!cut || saving} className="text-sm px-4 py-2 bg-blue-600 text-white rounded-md font-semibold hover:bg-blue-700 disabled:opacity-50">{saving ? 'יוצר…' : '🔧 צור הוראת עבודה לאלס'}</button>
-        <button disabled title="בקרוב — יקושר למערכת ההצעות הקיימת" className="text-sm px-4 py-2 bg-stone-100 text-stone-400 rounded-md cursor-not-allowed">📄 צור הצעת מחיר ללקוח (בקרוב)</button>
+      <div className="flex flex-wrap gap-2 pt-2 border-t border-stone-200">
+        <button onClick={saveWorkOrder} disabled={!cut || !!saving} className="text-sm px-4 py-2 bg-blue-600 text-white rounded-md font-semibold hover:bg-blue-700 disabled:opacity-50">{saving === 'wo' ? 'יוצר…' : '🔧 צור הוראת עבודה לאלס'}</button>
+        <button onClick={saveCustomerOffer} disabled={!cut || !!saving} className="text-sm px-4 py-2 bg-emerald-600 text-white rounded-md font-semibold hover:bg-emerald-700 disabled:opacity-50">{saving === 'offer' ? 'שומר…' : '📄 צור הצעת מחיר ללקוח'}</button>
       </div>
+
+      {offerMsg && (
+        <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-sm text-emerald-800 flex items-center justify-between">
+          <span>✓ הצעת מחיר נשמרה · {offerMsg.num}</span>
+          <a href={'/quotes/' + offerMsg.id} className="text-emerald-700 underline">צפה בהצעה →</a>
+        </div>
+      )}
     </div>
   );
 }
