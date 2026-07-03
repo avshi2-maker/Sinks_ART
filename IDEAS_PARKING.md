@@ -1284,3 +1284,40 @@ sheet from this catalog.
 **Why parked:** the catalog itself is a separate build (~weeks out). The engine is being built now with the
 `pricePerM2` seam intact so integration later = add a sheet picker + read catalog, not a rewrite.
 
+
+---
+
+## 💡 MEDIA → SKETCH auto-fill (AI reads photo/video → sketch dimensions)  (parked 02/07/2026)
+
+**Idea:** From a picture or MP4 of a sink (already received from leads), the existing JPG+MP4 analysis
+model extracts the sink's dimensions and AUTO-PLUGS them into the sketch builder's fields (lengthMm,
+widthMm, heightMm, basinDepthMm, wallLeftMm/wallRightMm, drain, etc.) — then save to gallery → price
+via the engine. Closes the loop: lead media → sketch → price offer with zero manual dimension typing.
+- Reuse the existing lead JPG+MP4 analysis model (already built — used elsewhere in CRM).
+- Output must map to the sketch builder's inputs_jsonb keys (see sketchSpecToDims.ts for the key names).
+- Human-in-the-loop: AI fills the boxes, Avshi reviews/corrects before saving (dims drive material cost —
+  never auto-commit an AI-estimated dimension to a price).
+- Entry point: a "נתח תמונה/וידאו" button on the sketch builder, or on the lead/intake record.
+- Ties directly into the live pricing engine — this is the front door to it.
+
+## 💡 CORRESPONDENCE paste → dashboard מעקב היום  (parked 02/07/2026)
+
+**Idea:** Today Avshi pastes Outlook/365 mails into לקוחות → תקשורת. Upgrade that paste area to capture:
+subject + body text + follow-up date. Then surface those follow-ups in the MAIN DASHBOARD "מעקב היום"
+box so nothing slips.
+- Modify the existing תקשורת paste UI (in customers/[id]) to add: subject field, body, follow_up_date.
+- Dashboard "מעקב היום" already flags stale correspondence (>7d red) — extend it to show these follow-ups
+  by date (today / overdue / upcoming).
+- Likely touches: customer_communications table (add subject + follow_up_date columns if missing),
+  the תקשורת component, and the dashboard follow-ups query.
+
+## 🧹 WHOLE-CRM ORGANIZATION PASS  (parked 02/07/2026 — WORKING SESSION, not a build)
+
+**Task (different kind — do LIVE together):** Open and test each main tab + its sub-tabs, remove
+duplicates and old/dead modules, reorganize by logical flow & subject. This is an audit/reorg sweep,
+not a feature build — do it interactively: open each tab, Avshi says what's dead/duplicate/misplaced,
+bot restructures (WorkflowNav + routes). NOTHING deleted without explicit approval (standing rule).
+Good candidate for a dedicated session. Start point: WorkflowNav.tsx + the full route list.
+- Known loose ends already noted: retire הצעת מחיר מהירה (OLD); move old /quotes out of nav; add the two
+  NEW pages (/sketch-to-offer, /ales-settings) into the menu; confirm nav flow order.
+

@@ -1,22 +1,18 @@
 'use server';
 
 // src/lib/po/createWorkOrderFromSketch.ts
-// Turn a saved gallery sketch into an Ales work order — now with the material cut list
-// and the frozen finance snapshot (order amount + commission -> Ales profit).
+// Turn a saved gallery sketch into an Ales work order, freezing the FULL pricing snapshot
+// that the engine already computed (true cost, base offer, art premium, 50/50 split,
+// Ales total, Avshi total) + the material cut list. No recompute here — the engine is the
+// single source of truth; this function just persists what the user saw on screen.
 //
-// FLOW: sketch spec -> sketchSpecToDims (mm->cm) -> calcMaterial (8-panel cut list)
-//       -> one 'sink' line item -> buildFinance -> store snapshot on PO.cut_list (jsonb).
-// Built multi-item ready: lineItems is an array; today it holds one sink, later it can
-// hold more sinks + addons + doors (see workOrderTypes.ts).
+// Stored on production_orders.cut_list (jsonb) as an AlesWorkOrderSnapshot.
 
 import { createClient } from '@supabase/supabase-js';
 import { revalidatePath } from 'next/cache';
 import { createPO } from './poData';
-import { calcMaterial, type MaterialFactors, type MaterialSettings } from '@/lib/offers/materialCalc';
-import { fetchMaterialSettings } from '@/lib/offers/materialSettings';
-import { sketchSpecToDims, sketchLabel } from './sketchSpecToDims';
-import { buildFinance } from './workOrderFinance';
-import type { WorkOrderLine } from './workOrderTypes';
+import type { MaterialResult } from '@/lib/offers/materialCalc';
+import type { PricingResult } from '@/lib/pricing/alesCostTypes';
 
 function sb() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -25,24 +21,36 @@ function sb() {
   return createClient(url, key, { auth: { persistSession: false } });
 }
 
-// Verified Goldman factors — reproduce 4 sheets / 12.96 m² / ₪2,579.
-// Passed in from the finalize panel so a job can override per-order; these are the defaults.
-const DEFAULT_FACTORS: MaterialFactors = { laminate: true, wastePct: 12, miterPct: 8, slopePct: 3 };
-
 export interface WorkOrderResult { ok: boolean; error?: string; poId?: string; poNumber?: string; }
 
+// What the engine sends to freeze a work order. days + cutList travel alongside the
+// PricingResult so the document + future edits have the complete picture.
 export interface CreateWorkOrderInput {
   sketchId: string;
-  orderAmountIls: number;         // what the customer pays (from finalize panel)
-  commissionIls: number;          // Marble Art commission (from finalize panel)
-  factors?: MaterialFactors;      // optional per-job override of waste/miter/slope/laminate
+  days: number;              // days-per-sink used in the pricing
+  cutList: MaterialResult;   // the 8-panel material snapshot for this sink
+  pricing: PricingResult;    // the full engine result (true cost, offers, split, totals)
+}
+
+// The frozen shape stored in production_orders.cut_list. Self-contained so the 3-page
+// Ales document renders entirely from this snapshot, no recompute.
+export interface AlesWorkOrderSnapshot {
+  version: 2;
+  sketchId: string;
+  label: string;
+  sketchSvg: string;
+  days: number;
+  cutList: MaterialResult;
+  pricing: PricingResult;
+  createdAtIso: string;
 }
 
 export async function createWorkOrderFromSketch(input: CreateWorkOrderInput): Promise<WorkOrderResult> {
-  const { sketchId } = input;
+  const { sketchId, days, cutList, pricing } = input;
   if (!sketchId) return { ok: false, error: 'missing sketchId' };
+  if (!pricing) return { ok: false, error: 'missing pricing result' };
 
-  // 1. read the sketch
+  // 1. read the sketch (for svg + label + customer/project links)
   const res = await sb()
     .from('demo_trials')
     .select('sketch_svg, inputs_jsonb, title_he, customer_id, project_id')
@@ -52,41 +60,32 @@ export async function createWorkOrderFromSketch(input: CreateWorkOrderInput): Pr
   if (!s.sketch_svg) return { ok: false, error: 'לשרטוט אין SVG שמור' };
 
   const spec = (s.inputs_jsonb || {}) as Record<string, unknown>;
+  const label = (s.title_he && String(s.title_he).trim()) || 'כיור';
 
-  // 2. map spec -> dims, run the material calc (same math as /material-calc)
-  const settings: MaterialSettings = await fetchMaterialSettings();
-  const dims = sketchSpecToDims(spec);
-  const factors = input.factors || DEFAULT_FACTORS;
-  const cutList = calcMaterial(dims, factors, settings);
-
-  // 3. build the sink line item (multi-item ready — this is one of a future array)
-  const sinkLine: WorkOrderLine = {
-    kind: 'sink',
-    label: sketchLabel(spec, s.title_he || 'כיור'),
-    materialIls: cutList.totalIls,          // Trabelsi material cost incl VAT for this sink
+  // 2. build the frozen snapshot from what the engine already computed
+  const snapshot: AlesWorkOrderSnapshot = {
+    version: 2,
     sketchId,
+    label,
     sketchSvg: s.sketch_svg,
+    days,
     cutList,
+    pricing,
+    createdAtIso: new Date().toISOString(),
   };
 
-  // 4. freeze the finance snapshot
-  const finance = buildFinance({
-    lines: [sinkLine],
-    orderAmountIls: input.orderAmountIls,
-    commissionIls: input.commissionIls,
-  });
-
-  // 5. create the PO, storing spec + svg (as before) AND the finance snapshot in cut_list
+  // 3. create the PO (spec + svg as before; agreed cost = the customer final offer)
   const po = await createPO({
     customerId: s.customer_id || null,
     projectId: s.project_id || null,
     sketchSpec: spec,
     sketchSvg: s.sketch_svg,
+    agreedCostIls: pricing.finalOfferIls,
   });
   if (!po.ok || !po.id) return { ok: false, error: po.error };
 
-  // 6. write the finance snapshot onto the new PO row
-  const upd = await sb().from('production_orders').update({ cut_list: finance }).eq('id', po.id);
+  // 4. freeze the snapshot onto the new PO row
+  const upd = await sb().from('production_orders').update({ cut_list: snapshot }).eq('id', po.id);
   if (upd.error) return { ok: false, error: upd.error.message };
 
   revalidatePath('/po');

@@ -4,12 +4,15 @@
 // THE ENGINE core — from a sketch to a full price picture, live.
 // Pulls material (calc) + Ales cost settings, takes days + art premium, shows:
 //   true cost -> base offer (XYZ, +commission) -> final offer (UVW, +premium) -> 50/50 split.
-// Receives sketch + settings as props (the page/loader fetches them). Pure display + local state.
+// Save action: freeze the full snapshot into an Ales work order (routes to /po/[id]/ales).
+// (Customer-offer button comes later — sequenced after linking to the existing offer flow.)
 
 import { useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { calcMaterial, type MaterialSettings, type MaterialFactors } from '@/lib/offers/materialCalc';
 import { sketchSpecToDims } from '@/lib/po/sketchSpecToDims';
 import { calcPricing } from '@/lib/pricing/alesCostCalc';
+import { createWorkOrderFromSketch } from '@/lib/po/createWorkOrderFromSketch';
 import type { AlesCostSettings } from '@/lib/pricing/alesCostTypes';
 
 const FACTORS: MaterialFactors = { laminate: true, wastePct: 12, miterPct: 8, slopePct: 3 };
@@ -29,8 +32,10 @@ interface Props {
 }
 
 export default function PricingEngine({ sketch, materialSettings, costSettings }: Props) {
+  const router = useRouter();
   const [days, setDays] = useState('1.5');
   const [premium, setPremium] = useState('');
+  const [saving, setSaving] = useState(false);
 
   const cut = useMemo(() => {
     if (!sketch) return null;
@@ -47,6 +52,19 @@ export default function PricingEngine({ sketch, materialSettings, costSettings }
       settings: costSettings,
     });
   }, [cut, days, premium, costSettings]);
+
+  async function saveWorkOrder() {
+    if (!sketch || !cut) return;
+    setSaving(true);
+    const res = await createWorkOrderFromSketch({
+      sketchId: sketch.id,
+      days: Number(days) || 0,
+      cutList: cut,
+      pricing,
+    });
+    if (!res.ok || !res.poId) { window.alert('יצירת הוראת עבודה נכשלה: ' + (res.error || '')); setSaving(false); return; }
+    router.push('/po/' + res.poId + '/ales');
+  }
 
   const box = 'w-full px-2 py-1.5 text-sm border border-stone-300 rounded-md text-left';
   const card = 'bg-white border border-stone-200 rounded-lg p-4';
@@ -127,6 +145,11 @@ export default function PricingEngine({ sketch, materialSettings, costSettings }
           <div className="text-lg font-semibold text-stone-800">{ils(pricing.avshiTotalIls)}</div>
           <div className="text-[11px] text-stone-400">עמלה {ils(pricing.commissionIls)} + פרמיה {ils(pricing.avshiPremiumShareIls)}</div>
         </div>
+      </div>
+
+      <div className="flex gap-2 pt-2 border-t border-stone-200">
+        <button onClick={saveWorkOrder} disabled={!cut || saving} className="text-sm px-4 py-2 bg-blue-600 text-white rounded-md font-semibold hover:bg-blue-700 disabled:opacity-50">{saving ? 'יוצר…' : '🔧 צור הוראת עבודה לאלס'}</button>
+        <button disabled title="בקרוב — יקושר למערכת ההצעות הקיימת" className="text-sm px-4 py-2 bg-stone-100 text-stone-400 rounded-md cursor-not-allowed">📄 צור הצעת מחיר ללקוח (בקרוב)</button>
       </div>
     </div>
   );

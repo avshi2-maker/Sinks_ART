@@ -1,4 +1,4 @@
-'use server';
+﻿'use server';
 
 // src/lib/po/poData.ts
 // Production Order engine: numbering (PO-YYYY-####), create, fetch, issue, log appends.
@@ -31,6 +31,7 @@ export interface ProductionOrder {
   ship_to_city: string | null;
   sketch_spec: Record<string, unknown> | null;
   sketch_svg: string | null;
+  cut_list: Record<string, unknown> | null;
   agreed_cost_ils: number;
   change_orders: ChangeOrder[];
   amendments: Amendment[];
