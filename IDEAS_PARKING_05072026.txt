@@ -1,0 +1,71 @@
+=====================================================================
+MARBLE ART CRM — IDEAS PARKING · MASTER FOLLOW-UP REPORT
+Updated: 05/07/2026 (post-Ziv session)
+Simple text version for Avshi's follow-up. Source of truth: IDEAS_PARKING.md
+=====================================================================
+
+--- NEW THIS SESSION (05/07) ---
+
+[ ] 1. ROI "פעילות" PANEL CLEANUP — customers + leads counts
+    The panel counts 25 customers / 16 leads incl. old tests. Same pattern
+    as projects: add is_archived to customers + leads (leads already has one),
+    archive test rows (item-by-item approval), filter the ROI panel queries.
+
+[ ] 2. TRABELSI PO MODULE — purchase order to Trabelsi from plugged data
+    Generate a printable/WhatsApp PO for Trabelsi based on the material calc:
+    sheets count, sheet size, price/m2, crate, delivery, total. Feeds from the
+    material_calc_snapshot saved on the sketch. Ties into the coming Trabelsi
+    catalog (sheet picker). For the Goldman pair: 4 sheets (295) + 3 (213), or
+    6 combined if Ales can nest the 213 panels into the 295 leftover (ask Ales).
+
+[ ] 3. WHOLE-CRM ORGANIZATION PASS — "i am messed up" (Avshi, 05/07)
+    Live working session: open every tab + sub-tab, remove duplicates and dead
+    modules (e.g. old בונה הצעה vs the engine, old /quotes strays, offers-sent
+    vs quotes overlap), reorganize nav by real workflow. NOTHING deleted
+    without item-by-item approval. Start: WorkflowNav.tsx + route list.
+
+--- ALREADY PARKED (EARLIER) ---
+
+[ ] 4. REJECTED OFFER → drops from ROI, stays archived
+    Half-built 05/07: ROI already filters status in (archived, rejected).
+    Remaining: a "נכשל" button on the quote + 'rejected' badge flow.
+
+[ ] 5. MEDIA→SKETCH AI AUTO-FILL
+    Existing JPG+MP4 lead-analysis model reads sink photo/video → auto-fills
+    sketch builder dims → human review → save → price. Front door to engine.
+
+[ ] 6. CORRESPONDENCE PASTE → dashboard מעקב היום
+    Upgrade לקוחות→תקשורת paste: subject + body + follow-up date; surface
+    follow-ups (today/overdue/upcoming) on the main dashboard.
+
+[ ] 7. TRABELSI CATALOG (few hundred sheets, ~weeks out)
+    Sheet picker feeding pricePerM2 + dims into the material calc seam.
+    Offers/POs snapshot the chosen sheet id + price.
+
+[ ] 8. LEFTOVER / REMNANT INVENTORY
+    Store each job's leftover m2 + slab + PO ref (Goldman 295 leaves 3.09 m2);
+    reuse on future jobs. Links to catalog ids.
+
+[ ] 9. ALES DAYS-PER-SINK FORMULA
+    Day-rate mode currently takes manual days; Ales to provide a size→days
+    formula when business stabilizes.
+
+[ ] 10. MULTI-OPTION OFFERS — deliberately deferred
+    One price per sink for now (Avshi's rule). Revisit only if needed.
+
+[ ] 11. ROI LOWER PANELS — projects part DONE 05/07 (archived 22, kept 2).
+    Remaining piece merged into item 1 (customers/leads).
+
+[ ] 12. ENGINE INPUT MEMORY — DONE 05/07 (per-sketch prefill + 💾 שמור קלט).
+    Possible polish: refresh prefill when switching sketches without reload.
+
+[ ] 13. MaterialCalculator SPLIT into sub-cards — optional polish, low priority.
+
+--- BUSINESS FOLLOW-UPS (not code) ---
+
+[ ] A. WhatsApp to ALES: confirm ₪1,350 two-sink transport saving
+       (one Trabelsi truck ₪350 + one trailer to TA ₪1,000) — his lines.
+[ ] B. Ask ALES: can the 213 panels nest into the 295 leftover? (7 sheets → 6)
+[ ] C. Send ZIV the two-sink mail (draft ready 05/07).
+[ ] D. Future: stable pricing agreement with Ales (day-rate vs lump).
+=====================================================================
