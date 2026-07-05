@@ -1369,3 +1369,5 @@ long-term way to keep ROI clean without deleting anything.
     - Consider: reel scripts from real projects, the Goldman hotel story as flagship content.
     - Related existing asset: Facebook page created for Instagram Reels ads linkage (pending).
 
+
+[ ] 16. ARVO SUPPLIER-PO TEMPLATE: /arvo-offer template is customer-branded; pasting supplier POs works but framing is customer-facing. Small ARVO-branded supplier variant when needed. (05/07 evening)
