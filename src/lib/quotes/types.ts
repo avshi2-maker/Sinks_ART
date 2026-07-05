@@ -12,7 +12,7 @@
 
 // ── Enums ──────────────────────────────────────────────────────────────
 
-export type QuoteStatus = 'draft' | 'sent' | 'approved' | 'rejected' | 'expired';
+export type QuoteStatus = 'draft' | 'sent' | 'approved' | 'rejected' | 'expired' | 'archived';
 export type QuoteSource = 'manual' | 'from_call' | 'from_intake' | 'imported';
 
 /** Who quoted a line's supplier_cost (internal). */
@@ -124,6 +124,7 @@ export const QUOTE_STATUS_LABELS_HE: Record<QuoteStatus, string> = {
   approved: 'אושר',
   rejected: 'נדחה',
   expired:  'פג תוקף',
+  archived: 'בארכיון',
 };
 
 export const QUOTE_STATUS_COLORS: Record<QuoteStatus, string> = {
@@ -132,4 +133,5 @@ export const QUOTE_STATUS_COLORS: Record<QuoteStatus, string> = {
   approved: 'bg-green-50 text-green-800 border-green-200',
   rejected: 'bg-red-50 text-red-700 border-red-200',
   expired:  'bg-amber-50 text-amber-800 border-amber-200',
+  archived: 'bg-stone-100 text-stone-500 border-stone-200',
 };
