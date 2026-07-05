@@ -1,29 +1,60 @@
 'use client';
 
 // src/components/offers/MaterialCalculator.tsx
-// Standalone material calculator: sink dimensions -> 8-panel deployment -> ×lamination
-// -> +waste/miter/slope -> m² needed -> sheets -> leftover -> Trabelsi cost. Copy for offer.
+// Standalone material calculator (INPUTS IN MM, ÷10 to the cm calc engine — engine untouched).
+// - live recalc + explicit 🧮 חשב button with a "מחושב עבור: L×W מ"מ" stamp (user feedback)
+// - 💾 save the calc summary to a gallery sketch (reference + future use)
+// - no presets: the numbers on screen always belong to the dims typed above.
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { calcMaterial, type SinkDims, type MaterialFactors, type MaterialSettings } from '@/lib/offers/materialCalc';
+import { fetchSketchesForPicker, saveMaterialCalcToSketch, type SketchPickLite } from '@/lib/offers/materialCalcToSketch';
 
 function ils(n: number): string { return '₪' + (Math.round(n) || 0).toLocaleString('he-IL'); }
 function m2(n: number): string { return (Math.round(n * 100) / 100).toFixed(2) + ' מ"ר'; }
 
-const GOLDMAN: SinkDims = { lenCm: 295, widCm: 45, heightCm: 25, basinDepthCm: 15, endWallCm: 20, rimCm: 3.5 };
+interface DimsMm { lenMm: number; widMm: number; heightMm: number; basinDepthMm: number; endWallMm: number; rimMm: number; }
+const START: DimsMm = { lenMm: 2950, widMm: 450, heightMm: 250, basinDepthMm: 150, endWallMm: 200, rimMm: 35 };
+function toCm(d: DimsMm): SinkDims {
+  return { lenCm: d.lenMm / 10, widCm: d.widMm / 10, heightCm: d.heightMm / 10, basinDepthCm: d.basinDepthMm / 10, endWallCm: d.endWallMm / 10, rimCm: d.rimMm / 10 };
+}
 
 export default function MaterialCalculator({ settings }: { settings: MaterialSettings }) {
-  const [d, setD] = useState<SinkDims>(GOLDMAN);
+  const [d, setD] = useState<DimsMm>(START);
   const [f, setF] = useState<MaterialFactors>({ laminate: true, wastePct: 12, miterPct: 8, slopePct: 3 });
   const [copied, setCopied] = useState(false);
+  const [stamp, setStamp] = useState('');
+  const [flash, setFlash] = useState(false);
+  const [sketches, setSketches] = useState<SketchPickLite[]>([]);
+  const [pickId, setPickId] = useState('');
+  const [saveMsg, setSaveMsg] = useState('');
+  const [busy, setBusy] = useState(false);
 
-  const r = useMemo(() => calcMaterial(d, f, settings), [d, f, settings]);
+  const r = useMemo(() => calcMaterial(toCm(d), f, settings), [d, f, settings]);
+  function setDim(k: keyof DimsMm, v: string) { setD((p) => ({ ...p, [k]: Number(v) || 0 })); setStamp(''); setSaveMsg(''); }
 
-  function setDim(k: keyof SinkDims, v: string) { setD((p) => ({ ...p, [k]: Number(v) || 0 })); }
+  useEffect(() => {
+    fetchSketchesForPicker().then((list) => { setSketches(list); if (list.length > 0) setPickId(list[0].id); });
+  }, []);
+
+  function doCalc() {
+    setStamp(d.lenMm + ' × ' + d.widMm + ' מ"מ');
+    setFlash(true);
+    setTimeout(() => setFlash(false), 900);
+  }
+
+  async function doSaveToSketch() {
+    if (!pickId) { window.alert('בחר שרטוט לשמירה'); return; }
+    setBusy(true); setSaveMsg('');
+    const res = await saveMaterialCalcToSketch(pickId, r, d.lenMm, d.widMm);
+    setBusy(false);
+    if (!res.ok) { window.alert('שמירה נכשלה: ' + (res.error || '')); return; }
+    setSaveMsg('✓ נשמר לשרטוט בגלריה');
+  }
 
   const summaryText = useMemo(() => {
     const L: string[] = [];
-    L.push('חישוב חומר — כיור ' + (d.lenCm / 100).toFixed(2) + 'מ');
+    L.push('חישוב חומר — כיור ' + (d.lenMm / 1000).toFixed(2) + 'מ');
     L.push('שטח פרוס: ' + m2(r.deployedM2) + (f.laminate ? ' → ×2 למינציה: ' + m2(r.laminatedM2) : ''));
     L.push('מ"ר נדרש (כולל בזבוז/תפר/שיפוע): ' + m2(r.neededM2));
     L.push('לוחות לרכישה: ' + r.sheets + ' (' + m2(r.purchasedM2) + ')');
@@ -40,7 +71,7 @@ export default function MaterialCalculator({ settings }: { settings: MaterialSet
 
   const inp = 'px-2 py-1.5 text-sm border border-stone-300 rounded-md focus:outline-none focus:border-blue-400 bg-white w-full text-left';
   const card = 'bg-white border border-stone-200 rounded-lg p-4 mb-3';
-  const dimField = (label: string, k: keyof SinkDims) => (
+  const dimField = (label: string, k: keyof DimsMm) => (
     <label className="text-xs text-stone-600">{label}<input type="number" value={d[k]} onChange={(e) => setDim(k, e.target.value)} className={inp + ' mt-1'} dir="ltr" /></label>
   );
 
@@ -48,16 +79,17 @@ export default function MaterialCalculator({ settings }: { settings: MaterialSet
     <div dir="rtl">
       {/* dimensions */}
       <div className={card}>
-        <div className="text-sm text-blue-700 mb-2">1 · מידות הכיור (ס"מ)</div>
+        <div className="text-sm text-blue-700 mb-2">1 · מידות הכיור (מ"מ)</div>
         <div className="grid grid-cols-3 gap-2">
-          {dimField('אורך כולל', 'lenCm')}
-          {dimField('רוחב (עומק)', 'widCm')}
-          {dimField('גובה', 'heightCm')}
-          {dimField('עומק אגן', 'basinDepthCm')}
-          {dimField('דופן קצה (×2)', 'endWallCm')}
-          {dimField('שפת מסגרת', 'rimCm')}
+          {dimField('אורך כולל', 'lenMm')}
+          {dimField('רוחב (עומק)', 'widMm')}
+          {dimField('גובה', 'heightMm')}
+          {dimField('עומק אגן', 'basinDepthMm')}
+          {dimField('דופן קצה (×2)', 'endWallMm')}
+          {dimField('שפת מסגרת', 'rimMm')}
         </div>
-        <button onClick={() => setD(GOLDMAN)} className="text-xs text-stone-400 hover:text-blue-600 mt-2">↺ נחום גולדמן 2.70</button>
+        <button onClick={doCalc} className="mt-3 text-sm px-5 py-2 bg-blue-600 text-white rounded-md font-semibold hover:bg-blue-700">🧮 חשב</button>
+        {stamp && (<span className="mr-3 text-sm text-emerald-700 font-medium">✓ מחושב עבור: {stamp}</span>)}
       </div>
 
       {/* panels breakdown */}
@@ -88,7 +120,8 @@ export default function MaterialCalculator({ settings }: { settings: MaterialSet
       </div>
 
       {/* result */}
-      <div className="bg-stone-50 border border-stone-200 rounded-lg p-4 mb-3">
+      <div className={'bg-stone-50 border rounded-lg p-4 mb-3 transition-all ' + (flash ? 'border-emerald-400 ring-2 ring-emerald-200' : 'border-stone-200')}>
+        <div className="flex justify-between text-xs text-stone-500 pb-1 mb-1 border-b border-stone-200"><span>מחושב עבור</span><span className="font-medium text-stone-700" dir="ltr">{d.lenMm} × {d.widMm} מ"מ</span></div>
         <div className="flex justify-between text-sm text-stone-600 py-0.5"><span>פרוס × {f.laminate ? 2 : 1} למינציה</span><span>{m2(r.laminatedM2)}</span></div>
         <div className="flex justify-between text-sm text-stone-600 py-0.5"><span>+ בזבוז {f.wastePct}% · תפר {f.miterPct}% · שיפוע {f.slopePct}%</span><span>+{m2(r.neededM2 - r.laminatedM2)}</span></div>
         <div className="flex justify-between text-base font-semibold text-stone-900 py-1 border-t border-stone-200 mt-1"><span>מ"ר נדרש</span><span>{m2(r.neededM2)}</span></div>
@@ -104,9 +137,18 @@ export default function MaterialCalculator({ settings }: { settings: MaterialSet
         <div className="flex justify-between text-lg font-semibold text-stone-900 py-1 border-t border-stone-200 mt-1"><span>סה"כ עלות חומר</span><span>{ils(r.totalIls)}</span></div>
       </div>
 
-      <button onClick={doCopy} className="text-sm px-4 py-2 border border-blue-300 text-blue-700 rounded-md hover:bg-blue-50">{copied ? 'הועתק ✓' : '📋 העתק לחישוב הצעה'}</button>
+      {/* actions: copy + save-to-sketch */}
+      <div className="flex items-center gap-2 flex-wrap mb-3">
+        <button onClick={doCopy} className="text-sm px-4 py-2 border border-blue-300 text-blue-700 rounded-md hover:bg-blue-50">{copied ? 'הועתק ✓' : '📋 העתק לחישוב הצעה'}</button>
+        <select value={pickId} onChange={(e) => setPickId(e.target.value)} className="text-sm px-2 py-2 border border-stone-300 rounded-md bg-white max-w-[240px]" dir="rtl">
+          {sketches.length === 0 && (<option value="">— אין שרטוטים —</option>)}
+          {sketches.map((s) => (<option key={s.id} value={s.id}>{s.title_he || 'שרטוט'}</option>))}
+        </select>
+        <button onClick={doSaveToSketch} disabled={busy || !pickId} className="text-sm px-4 py-2 border border-emerald-300 text-emerald-700 rounded-md hover:bg-emerald-50 disabled:opacity-50">{busy ? 'שומר…' : '💾 שמור חישוב לשרטוט'}</button>
+        {saveMsg && (<span className="text-sm text-emerald-600">{saveMsg}</span>)}
+      </div>
 
-      <div className="mt-3">
+      <div>
         <div className="text-xs text-stone-400 mb-1">תצוגה מקדימה (מועתק):</div>
         <pre className="bg-white border border-stone-200 rounded-lg p-3 text-sm text-stone-800 whitespace-pre-wrap font-sans">{summaryText}</pre>
       </div>

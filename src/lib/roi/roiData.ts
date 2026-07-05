@@ -33,9 +33,9 @@ export async function fetchRoiMetrics(): Promise<RoiMetrics> {
 
   const [custRes, projRes, leadRes, quoteRes] = await Promise.all([
     sb.from('customers').select('id', { count: 'exact', head: true }).eq('is_active', true),
-    sb.from('projects').select('status, quoted_price_ils'),
+    sb.from('projects').select('status, quoted_price_ils').eq('is_archived', false),
     sb.from('leads').select('id, converted_to_customer_id, is_archived'),
-    sb.from('quotes').select('status, total_grand, total_cost, total_margin'),
+    sb.from('quotes').select('status, total_grand, total_cost, total_margin').not('status', 'in', '(archived,rejected)'),
   ]);
 
   const projects = (projRes.data || []) as { status: string | null; quoted_price_ils: number | null }[];

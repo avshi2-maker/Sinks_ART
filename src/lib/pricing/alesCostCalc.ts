@@ -1,16 +1,10 @@
 // src/lib/pricing/alesCostCalc.ts
 // PLAIN module (no 'use server') — THE PRICING BRAIN. Pure functions, importable anywhere.
 //
-// TWO MODES:
-// dayRate:  overhead/day = monthly fixed ÷ workdays · labor = days × rates
-//           trueCost = material + labor + overhead + consumables
-// lumpSum:  trueCost = Σ Ales's itemized lump lines (his turnkey price incl. his profit)
-//           labor/overhead/consumables not broken out (inside his lump)
-// Both:     baseOffer = trueCost × (1 + commission%)   (XYZ — transparent to Ales)
-//           finalOffer = baseOffer + artPremium        (UVW — customer pays)
-//           premium split (default 50/50): Avshi share + Ales bonus
-//
-// This is where pricing rules live. Change the model here; the UI + document never change.
+// MODES: dayRate (bottom-up from settings) · lumpSum (Σ Ales's itemized turnkey lines).
+// COMMISSION: default = settings %; per-job override as % OR fixed ₪ (Avshi quotes some jobs
+// with a flat markup, e.g. Ziv 213 = lump 11,800 + flat 1,000 = 12,800).
+// Both flow: trueCost + commission (XYZ) -> +artPremium (UVW) -> premium split.
 
 import type { AlesCostSettings, PricingResult, OverheadPerDay, CostMode, LumpSumLine } from './alesCostTypes';
 
@@ -22,16 +16,17 @@ export function overheadPerDay(s: AlesCostSettings): OverheadPerDay {
   return { monthlyFixedIls, workdaysPerMonth: s.workdaysPerMonth, perDayIls: monthlyFixedIls / workdays };
 }
 
+export type CommissionMode = 'pct' | 'fixed';
+export interface CommissionOverride { mode: CommissionMode; value: number; }
+
 export interface PricingInput {
   costMode: CostMode;
-  // dayRate mode inputs:
-  materialIls: number;        // from the material calc (Trabelsi)
-  days: number;               // days-per-sink (manual)
-  // lumpSum mode inputs:
-  lumpSumLines: LumpSumLine[]; // Ales's itemized turnkey quote
-  // both:
+  materialIls: number;
+  days: number;
+  lumpSumLines: LumpSumLine[];
   artPremiumIls: number;
   settings: AlesCostSettings;
+  commission?: CommissionOverride;   // optional; default = settings.commissionPct as %
 }
 
 export function calcPricing(input: PricingInput): PricingResult {
@@ -46,7 +41,7 @@ export function calcPricing(input: PricingInput): PricingResult {
   if (mode === 'lumpSum') {
     lumpSumLines = (input.lumpSumLines || []).map((l) => ({ label: l.label, amountIls: Number(l.amountIls) || 0 }));
     trueCostIls = lumpSumLines.reduce((sum, l) => sum + l.amountIls, 0);
-    alesLaborIncomeIls = trueCostIls;   // his whole lump = his income (incl. his profit)
+    alesLaborIncomeIls = trueCostIls;
   } else {
     const days = input.days > 0 ? input.days : 0;
     materialIls = Number(input.materialIls) || 0;
@@ -57,8 +52,21 @@ export function calcPricing(input: PricingInput): PricingResult {
     alesLaborIncomeIls = laborIls;
   }
 
-  const commissionPct = s.commissionPct;
-  const commissionIls = trueCostIls * (commissionPct / 100);
+  // Commission: per-job override (pct or fixed ₪) or settings default %.
+  const ov = input.commission;
+  let commissionIls: number;
+  let commissionPct: number;
+  if (ov && ov.mode === 'fixed') {
+    commissionIls = Number(ov.value) || 0;
+    commissionPct = trueCostIls > 0 ? Math.round((commissionIls / trueCostIls) * 1000) / 10 : 0; // derived, 1 decimal
+  } else if (ov && ov.mode === 'pct') {
+    commissionPct = Number(ov.value) || 0;
+    commissionIls = trueCostIls * (commissionPct / 100);
+  } else {
+    commissionPct = s.commissionPct;
+    commissionIls = trueCostIls * (commissionPct / 100);
+  }
+
   const baseOfferIls = trueCostIls + commissionIls;
   const finalOfferIls = baseOfferIls + premium;
 

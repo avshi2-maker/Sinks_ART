@@ -1,18 +1,17 @@
 'use client';
 
 // src/components/pricing/PricingEngine.tsx
-// THE ENGINE core — from a sketch to a full price picture, live. TWO COST MODES:
-//   dayRate — bottom-up (days × rates + overhead + consumables + material)
-//   lumpSum — Ales's itemized turnkey quote (full transparency, like Avshi's xlsx)
-// Both flow: trueCost -> +commission (XYZ) -> +premium (UVW) -> split -> save actions.
+// THE ENGINE core — sketch to full price picture, live. TWO COST MODES (dayRate / lumpSum).
+// COMMISSION editable per job: % (default from settings) or fixed ₪ (e.g. Ziv 213 flat 1,000).
+// Chain: trueCost -> +commission (XYZ) -> +premium (UVW) -> split -> save actions.
 
-import { useState, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useMemo, useEffect } from 'react';
 import { calcMaterial, type MaterialSettings, type MaterialFactors } from '@/lib/offers/materialCalc';
 import { sketchSpecToDims } from '@/lib/po/sketchSpecToDims';
-import { calcPricing } from '@/lib/pricing/alesCostCalc';
+import { calcPricing, type CommissionMode } from '@/lib/pricing/alesCostCalc';
 import { createWorkOrderFromSketch } from '@/lib/po/createWorkOrderFromSketch';
 import { createOfferFromEngine } from '@/lib/offers/createOfferFromEngine';
+import { savePricingInputs, type EnginePrefill } from '@/lib/pricing/enginePrefill';
 import { DEFAULT_LUMP_LINES, type AlesCostSettings, type CostMode, type LumpSumLine } from '@/lib/pricing/alesCostTypes';
 
 const FACTORS: MaterialFactors = { laminate: true, wastePct: 12, miterPct: 8, slopePct: 3 };
@@ -32,13 +31,17 @@ interface Props {
 }
 
 export default function PricingEngine({ sketch, materialSettings, costSettings }: Props) {
-  const router = useRouter();
   const [mode, setMode] = useState<CostMode>('dayRate');
   const [days, setDays] = useState('1.5');
   const [premium, setPremium] = useState('');
   const [lines, setLines] = useState<LumpSumLine[]>(DEFAULT_LUMP_LINES.map((l) => ({ ...l })));
+  const [commMode, setCommMode] = useState<CommissionMode>('pct');
+  const [commValue, setCommValue] = useState(String(costSettings.commissionPct));
   const [saving, setSaving] = useState('');
   const [offerMsg, setOfferMsg] = useState<{ num: string; id: string } | null>(null);
+  const [woMsg, setWoMsg] = useState<{ num: string; id: string } | null>(null);
+  const [prefillNote, setPrefillNote] = useState('');
+  const [inputSaveMsg, setInputSaveMsg] = useState('');
 
   const cut = useMemo(() => {
     if (!sketch) return null;
@@ -46,6 +49,20 @@ export default function PricingEngine({ sketch, materialSettings, costSettings }
     if (!dims.lenCm) return null;
     return calcMaterial(dims, FACTORS, materialSettings);
   }, [sketch, materialSettings]);
+
+  // PREFILL: restore the last-typed inputs saved on this sketch (pricing_inputs in its spec).
+  useEffect(() => {
+    setPrefillNote('');
+    const p = sketch?.spec && (sketch.spec as Record<string, unknown>).pricing_inputs as Partial<EnginePrefill> | undefined;
+    if (!p || !p.costMode) return;
+    setMode(p.costMode === 'lumpSum' ? 'lumpSum' : 'dayRate');
+    if (Array.isArray(p.lumpSumLines) && p.lumpSumLines.length > 0) setLines(p.lumpSumLines.map((l) => ({ ...l })));
+    if (p.days) setDays(String(p.days));
+    if (p.commissionMode) { setCommMode(p.commissionMode === 'fixed' ? 'fixed' : 'pct'); setCommValue(String(p.commissionValue ?? '')); }
+    if (p.artPremiumIls) setPremium(String(p.artPremiumIls));
+    setPrefillNote('נטען מהשמירה האחרונה' + (p.savedAtIso ? ' · ' + new Date(String(p.savedAtIso)).toLocaleString('he-IL') : ''));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sketch?.id]);
 
   const pricing = useMemo(() => {
     return calcPricing({
@@ -55,8 +72,9 @@ export default function PricingEngine({ sketch, materialSettings, costSettings }
       lumpSumLines: lines,
       artPremiumIls: Number(premium) || 0,
       settings: costSettings,
+      commission: { mode: commMode, value: Number(commValue) || 0 },
     });
-  }, [mode, cut, days, lines, premium, costSettings]);
+  }, [mode, cut, days, lines, premium, costSettings, commMode, commValue]);
 
   function setLine(i: number, field: 'label' | 'amountIls', v: string) {
     setLines((prev) => prev.map((l, idx) => idx === i ? { ...l, [field]: field === 'amountIls' ? (Number(v) || 0) : v } : l));
@@ -64,23 +82,46 @@ export default function PricingEngine({ sketch, materialSettings, costSettings }
   function addLine() { setLines((prev) => [...prev, { label: '', amountIls: 0 }]); }
   function removeLine(i: number) { setLines((prev) => prev.filter((_, idx) => idx !== i)); }
 
+  function currentPrefill(): EnginePrefill {
+    return {
+      costMode: mode,
+      lumpSumLines: lines,
+      days: Number(days) || 0,
+      commissionMode: commMode,
+      commissionValue: Number(commValue) || 0,
+      artPremiumIls: Number(premium) || 0,
+      savedAtIso: '',
+    };
+  }
+
+  async function saveInputsOnly() {
+    if (!sketch) return;
+    setInputSaveMsg('');
+    const res = await savePricingInputs(sketch.id, currentPrefill());
+    setInputSaveMsg(res.ok ? '✓ הקלט נשמר לשרטוט' : 'שמירת קלט נכשלה');
+  }
+
   async function saveWorkOrder() {
     if (!sketch || !cut) return;
     setSaving('wo');
+    setWoMsg(null);
+    savePricingInputs(sketch.id, currentPrefill());
     const res = await createWorkOrderFromSketch({
       sketchId: sketch.id,
       days: mode === 'dayRate' ? (Number(days) || 0) : 0,
       cutList: cut,
       pricing,
     });
-    if (!res.ok || !res.poId) { window.alert('יצירת הוראת עבודה נכשלה: ' + (res.error || '')); setSaving(''); return; }
-    router.push('/po/' + res.poId + '/ales');
+    setSaving('');
+    if (!res.ok || !res.poId) { window.alert('יצירת הוראת עבודה נכשלה: ' + (res.error || '')); return; }
+    setWoMsg({ num: res.poNumber || '', id: res.poId });
   }
 
   async function saveCustomerOffer() {
     if (!sketch || !cut) return;
     setSaving('offer');
     setOfferMsg(null);
+    savePricingInputs(sketch.id, currentPrefill());
     const res = await createOfferFromEngine({ sketchId: sketch.id, pricing });
     setSaving('');
     if (!res.ok || !res.quoteId) { window.alert('שמירת הצעת מחיר נכשלה: ' + (res.error || '')); return; }
@@ -102,11 +143,15 @@ export default function PricingEngine({ sketch, materialSettings, costSettings }
   const modeBtn = (m: CostMode, label: string) => (
     <button onClick={() => setMode(m)} className={'text-sm px-4 py-1.5 rounded-md font-medium ' + (mode === m ? 'bg-blue-600 text-white' : 'bg-white border border-stone-300 text-stone-600 hover:bg-stone-50')}>{label}</button>
   );
+  const commBtn = (m: CommissionMode, label: string) => (
+    <button onClick={() => { setCommMode(m); setCommValue(m === 'pct' ? String(costSettings.commissionPct) : ''); }}
+      className={'text-xs px-2.5 py-1 rounded-md font-medium ' + (commMode === m ? 'bg-stone-800 text-white' : 'bg-white border border-stone-300 text-stone-600 hover:bg-stone-50')}>{label}</button>
+  );
 
   return (
     <div dir="rtl" className="space-y-3">
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <div className="text-sm text-stone-500">מתמחר: <span className="font-medium text-stone-800">{sketch.title}</span></div>
+        <div className="text-sm text-stone-500">מתמחר: <span className="font-medium text-stone-800">{sketch.title}</span>{prefillNote && (<span className="mr-2 text-xs text-emerald-600">📂 {prefillNote}</span>)}</div>
         <div className="flex gap-2">
           {modeBtn('dayRate', '📅 מחיר יומי')}
           {modeBtn('lumpSum', '📦 מחיר גלובלי מאלס')}
@@ -162,7 +207,15 @@ export default function PricingEngine({ sketch, materialSettings, costSettings }
 
       <div className={card}>
         <div className="text-sm font-medium text-stone-700 mb-2">3 · תמחור</div>
-        {row('עמלת Marble Art (' + pricing.commissionPct + '%)', ils(pricing.commissionIls))}
+        <div className="flex items-center gap-2 flex-wrap mb-1">
+          <span className="text-sm text-stone-600">עמלת Marble Art:</span>
+          {commBtn('pct', '%')}
+          {commBtn('fixed', '₪ קבוע')}
+          <input type="number" value={commValue} onChange={(e) => setCommValue(e.target.value)}
+            className={box + ' w-24'} dir="ltr" placeholder={commMode === 'pct' ? String(costSettings.commissionPct) : '0'} />
+          <span className="text-xs text-stone-400">{commMode === 'pct' ? '%' : '₪'}</span>
+        </div>
+        {row('עמלה (' + pricing.commissionPct + '%)', ils(pricing.commissionIls))}
         {row('הצעת בסיס (XYZ) · שקוף לאלס', ils(pricing.baseOfferIls), true)}
         <label className="text-xs text-stone-600 flex items-center gap-2 mt-3">פרמיית אמנות (ערך מוסף)
           <input type="number" value={premium} onChange={(e) => setPremium(e.target.value)} className={box + ' w-28'} dir="ltr" placeholder="0" />
@@ -198,8 +251,16 @@ export default function PricingEngine({ sketch, materialSettings, costSettings }
       <div className="flex flex-wrap gap-2 pt-2 border-t border-stone-200">
         <button onClick={saveWorkOrder} disabled={!cut || !!saving} className="text-sm px-4 py-2 bg-blue-600 text-white rounded-md font-semibold hover:bg-blue-700 disabled:opacity-50">{saving === 'wo' ? 'יוצר…' : '🔧 צור הוראת עבודה לאלס'}</button>
         <button onClick={saveCustomerOffer} disabled={!cut || !!saving} className="text-sm px-4 py-2 bg-emerald-600 text-white rounded-md font-semibold hover:bg-emerald-700 disabled:opacity-50">{saving === 'offer' ? 'שומר…' : '📄 צור הצעת מחיר ללקוח'}</button>
+        <button onClick={saveInputsOnly} disabled={!sketch} className="text-sm px-4 py-2 border border-stone-300 text-stone-600 rounded-md hover:bg-stone-50">💾 שמור קלט</button>
+        {inputSaveMsg && (<span className="text-sm text-emerald-600 self-center">{inputSaveMsg}</span>)}
       </div>
 
+      {woMsg && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800 flex items-center justify-between">
+          <span>✓ הוראת עבודה נוצרה · {woMsg.num}</span>
+          <a href={'/po/' + woMsg.id + '/ales'} target="_blank" className="text-blue-700 underline">פתח מסמך אלס →</a>
+        </div>
+      )}
       {offerMsg && (
         <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-sm text-emerald-800 flex items-center justify-between">
           <span>✓ הצעת מחיר נשמרה · {offerMsg.num}</span>
