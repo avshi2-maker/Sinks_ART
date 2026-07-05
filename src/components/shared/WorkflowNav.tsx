@@ -1,52 +1,53 @@
 'use client';
+
 // src/components/shared/WorkflowNav.tsx
-// Two-level nav: top bar = workflow areas, second row = tools in the active area.
-// Reorganized into 6 logical areas (workflow-ordered, daily-core first).
+// FERRARI NAV (rebuilt 05/07/2026, Avshi-approved): 5 groups ordered by the business money flow —
+// lead in -> design -> price -> produce/purchase -> money. Retired tabs live in /_backups.
+// Group 4 gets the Trabelsi PO link when that module ships (no dead links).
+
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+
 export interface NavTool { href: string; label: string; icon: string; }
 export interface NavStage { id: string; label: string; tools: NavTool[]; }
+
 export const STAGES: NavStage[] = [
-  // DAILY CORE — where Avshi lives day-to-day
-  { id: 'jobs', label: 'עבודות', tools: [
+  // 1 · LEADS & PEOPLE — daily core: who's coming in, who we work with
+  { id: 'people', label: 'פניות ולקוחות', tools: [
     { href: '/pipeline', label: 'צנרת עבודות', icon: '🔧' },
+    { href: '/leads', label: 'פניות', icon: '📥' },
     { href: '/sinc', label: 'שיחות', icon: '🎙️' },
     { href: '/intake', label: 'מדיה', icon: '📸' },
-    { href: '/leads', label: 'פניות', icon: '📥' },
-  ] },
-  // RELATIONSHIPS
-  { id: 'people', label: 'לקוחות', tools: [
     { href: '/customers', label: 'לקוחות', icon: '👥' },
-    { href: '/suppliers', label: 'ספקים', icon: '🏭' },
     { href: '/sites', label: 'אתרים', icon: '🏨' },
   ] },
-  // DESIGN / VISUALIZE
-  { id: 'design', label: 'עיצוב והדמיה', tools: [
+  // 2 · DESIGN — the pipeline's front door
+  { id: 'design', label: 'עיצוב', tools: [
     { href: '/sketch', label: 'שרטוט', icon: '📐' },
-    { href: '/prompt-builder', label: 'הדמיה', icon: '🖼️' },
     { href: '/demos', label: 'גלריה', icon: '🎨' },
+    { href: '/prompt-builder', label: 'הדמיה', icon: '🖼️' },
   ] },
-  // OFFERS & PRODUCTION — all offer tools together, in flow order
-  { id: 'offers', label: 'הצעות וייצור', tools: [
-    { href: '/price-breaks', label: 'מחירון אלס', icon: '🏷️' },
-    { href: '/ales-settings', label: 'הגדרות עלויות אלס', icon: '⚙️' },
-    { href: '/offer-builder', label: 'בונה הצעה', icon: '🧮' },
-    { href: '/material-calc', label: 'מחשבון חומר', icon: '📐' },
+  // 3 · PRICING & OFFERS — the Queen's court
+  { id: 'pricing', label: 'תמחור והצעות', tools: [
     { href: '/sketch-to-offer', label: 'משרטוט להצעת מחיר', icon: '🧮' },
-    { href: '/rfq-create', label: 'RFQ לאלס', icon: '🏭' },
+    { href: '/material-calc', label: 'מחשבון חומר', icon: '📐' },
+    { href: '/ales-settings', label: 'הגדרות עלויות אלס', icon: '⚙️' },
+    { href: '/quotes', label: 'הצעות', icon: '🧾' },
     { href: '/arvo-offer', label: 'הצעת ARVO', icon: '📄' },
     { href: '/offers-sent', label: 'הצעות שנשלחו', icon: '📌' },
-    { href: '/quotes', label: 'הצעות', icon: '🧾' },
-    { href: '/po', label: 'הזמנות ייצור', icon: '📋' },
   ] },
-  // REFERENCE DATA
-  { id: 'catalogs', label: 'קטלוגים ונתונים', tools: [
-    { href: '/marble', label: 'שיש', icon: '🪨' },
-    { href: '/options', label: 'מחירון ותוספות', icon: '📖' },
-    { href: '/door-catalog', label: 'דלתות', icon: '🚪' },
+  // 4 · PRODUCTION & PURCHASING — Ales work orders + supplier POs
+  { id: 'production', label: 'ייצור ורכש', tools: [
+    { href: '/po', label: 'הזמנות ייצור', icon: '📋' },
+    { href: '/suppliers', label: 'ספקים', icon: '🏭' },
+  ] },
+  // 5 · MONEY & DATA
+  { id: 'money', label: 'כסף ונתונים', tools: [
     { href: '/roi', label: 'ROI', icon: '📊' },
+    { href: '/marble', label: 'שיש', icon: '🪨' },
   ] },
 ];
+
 export default function WorkflowNav({ newLeads = 0 }: { newLeads?: number }) {
   const pathname = usePathname();
   const activeStage = STAGES.find((s) => s.tools.some((t) => pathname.startsWith(t.href))) || null;
@@ -68,7 +69,7 @@ export default function WorkflowNav({ newLeads = 0 }: { newLeads?: number }) {
             const isActive = pathname.startsWith(t.href);
             return (
               <Link key={t.href} href={t.href} className={'relative px-2.5 py-1 rounded text-xs no-underline ' + (isActive ? 'bg-white text-indigo-700 font-medium shadow-sm' : 'text-gray-600 hover:bg-white')}>
-                <span aria-hidden="true">{t.icon}</span> {t.label}
+                {t.icon} {t.label}
                 {t.href === '/leads' && newLeads > 0 && (<span className="absolute -top-1 -left-1 bg-red-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">{newLeads}</span>)}
               </Link>
             );
