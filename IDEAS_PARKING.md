@@ -1343,3 +1343,29 @@ Good candidate for a dedicated session. Start point: WorkflowNav.tsx + the full 
 button is verified. Related: today we're deleting old test/demo quotes manually — this feature is the PROPER
 long-term way to keep ROI clean without deleting anything.
 
+
+--- ADDED 05/07/2026 (evening, during break) ---
+
+[ ] 14. SKETCH → NANO BANANA PROMPT BUILDER (Ferrari rebuild of existing prompt module)
+    The CRM already has a Nano Banana prompt-builder tab. Rebuild it to feed FROM A SAVED SKETCH:
+    - Plug the sketch's real data into the prompt automatically: dimensions (mm), basin layout,
+      wall-hung, drain position, siphon — AND the geometry variants that make each sink unique:
+      * single vs DOUBLE basin
+      * slope from ZERO edge vs slope from a small flat area
+    - Attach ONE porcelain picture (the chosen material) as the render reference.
+    - Output: a unique, sketch-accurate prompt → Nano Banana render of THAT sink, not a generic one.
+    - Architecture: new pipeline on the existing prompt-builder tab; sketch picker (reuse the
+      engine/material-calc picker pattern); reads inputs_jsonb spec; prompt template per geometry
+      variant. "A whole new Ferrari build on existing CRM tab" (Avshi).
+    - Ties into: sketch gallery, marble/porcelain swatch library (picture source), and the
+      honesty rule (renders labeled 🔹 הדמיה).
+
+[ ] 15. INSTAGRAM REVIVAL — full support session (content pipeline, not code-only)
+    @marble_art_sinks is weak. Dedicated working session(s) to:
+    - Audit the current profile/grid and define a content strategy.
+    - Generate stories / reels / videos / posts using CRM modules as the draft factory:
+      sketches, AI renders (idea #14 feeds this!), real job photos (Goldman!), before/after.
+    - Flow: CRM module generates draft/mockup → Canva Pro (polish, brand) → Instagram upload.
+    - Consider: reel scripts from real projects, the Goldman hotel story as flagship content.
+    - Related existing asset: Facebook page created for Instagram Reels ads linkage (pending).
+
