@@ -29,8 +29,10 @@ export const STAGES: NavStage[] = [
   // OFFERS & PRODUCTION — all offer tools together, in flow order
   { id: 'offers', label: 'הצעות וייצור', tools: [
     { href: '/price-breaks', label: 'מחירון אלס', icon: '🏷️' },
+    { href: '/ales-settings', label: 'הגדרות עלויות אלס', icon: '⚙️' },
     { href: '/offer-builder', label: 'בונה הצעה', icon: '🧮' },
     { href: '/material-calc', label: 'מחשבון חומר', icon: '📐' },
+    { href: '/sketch-to-offer', label: 'משרטוט להצעת מחיר', icon: '🧮' },
     { href: '/rfq-create', label: 'RFQ לאלס', icon: '🏭' },
     { href: '/arvo-offer', label: 'הצעת ARVO', icon: '📄' },
     { href: '/offers-sent', label: 'הצעות שנשלחו', icon: '📌' },
