@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 // src/components/shared/WorkflowNav.tsx
 // FERRARI NAV (rebuilt 05/07/2026, Avshi-approved): 5 groups ordered by the business money flow —
@@ -39,6 +39,7 @@ export const STAGES: NavStage[] = [
   // 4 · PRODUCTION & PURCHASING — Ales work orders + supplier POs
   { id: 'production', label: 'ייצור ורכש', tools: [
     { href: '/po', label: 'הזמנות ייצור', icon: '📋' },
+    { href: '/trabelsi-po', label: 'הזמנת רכש טרבלסי', icon: '🛒' },
     { href: '/suppliers', label: 'ספקים', icon: '🏭' },
   ] },
   // 5 · MONEY & DATA
@@ -50,7 +51,8 @@ export const STAGES: NavStage[] = [
 
 export default function WorkflowNav({ newLeads = 0 }: { newLeads?: number }) {
   const pathname = usePathname();
-  const activeStage = STAGES.find((s) => s.tools.some((t) => pathname.startsWith(t.href))) || null;
+  const isPath = (href: string) => pathname === href || pathname.startsWith(href + '/');
+  const activeStage = STAGES.find((s) => s.tools.some((t) => isPath(t.href))) || null;
   return (
     <div className="flex flex-col gap-1">
       <div className="flex gap-1 items-center flex-wrap">
@@ -66,7 +68,7 @@ export default function WorkflowNav({ newLeads = 0 }: { newLeads?: number }) {
       {activeStage && (
         <div className="flex gap-1 items-center bg-gray-50 rounded-md px-2 py-1 flex-wrap">
           {activeStage.tools.map((t) => {
-            const isActive = pathname.startsWith(t.href);
+            const isActive = isPath(t.href);
             return (
               <Link key={t.href} href={t.href} className={'relative px-2.5 py-1 rounded text-xs no-underline ' + (isActive ? 'bg-white text-indigo-700 font-medium shadow-sm' : 'text-gray-600 hover:bg-white')}>
                 {t.icon} {t.label}
