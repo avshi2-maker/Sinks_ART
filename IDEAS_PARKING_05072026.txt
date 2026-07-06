@@ -97,3 +97,66 @@ Simple text version for Avshi's follow-up. Source of truth: IDEAS_PARKING.md
 
 
 [ ] 16. ARVO SUPPLIER-PO TEMPLATE: /arvo-offer template is customer-branded; pasting supplier POs works but framing is customer-facing. Small ARVO-branded supplier variant when needed. (05/07 evening)
+
+--- ADDED 06/07/2026 (Damari / Harel Sagron project — shop-drawing session) ---
+
+CONTEXT: Ales was handed a raw AutoCAD design drawing (Harel Sagron architects) for the
+Damari Center Dimona project — public restrooms, porcelain-granite trough sinks. Ales lacks
+back-office/engineering: cannot turn AutoCAD into shop drawings, cannot price systematically,
+chases the architect for details. Avshi/ARVO provided that layer as a teaser to demonstrate value
+(no partnership demanded yet). Ales responded "תודה רבה מעריך את זה מאוד 🤝🙏" and acknowledged the
+job has "הרבה ניואנסים" — value landed. Owner drives a Maybach; prestige job vs. serious architects.
+
+DELIVERABLES PRODUCED THIS SESSION (all standalone HTML→PNG/PDF via wkhtmltoimage, ARVO-branded,
+Hebrew RTL — NOT in the CRM yet):
+- Two full shop drawings: women's 340cm (4 basins) + men's 320cm (4 basins). Each sheet:
+  plan · section A-A · elevation · steel mounting detail · hidden-drain detail · fabrication notes.
+- Standalone hidden-drain detail sheet.
+- Seam-alignment method sheet (sink vs wall tile grid).
+- Standalone siphon sheet (superseded by hidden-drain).
+- ARVO-branded 2-render presentation document (terrazzo + black slate options).
+
+KEY TECHNICAL FACTS LOCKED (corrected during session):
+- Counters: women's 3400mm, men's 3200mm; both 4 basins × 600mm, 500mm deep, 250mm apron, wall-hung.
+- Material: גרניט פורצלן (porcelain-granite) — architect's own label "כיור גרניט פורצלן". NOT Caesarstone.
+  Two board colours: טרצו (light, flecked 120x120) + אריח שחור (smooth black slate 120x120).
+- Build: 12mm double lamination (2×6mm).
+- MOUNTING: continuous steel ledger + concealed cantilever arms + M12 chemical anchors; weight
+  ~120kg women's / ~110kg men's; MUST confirm wall type (concrete/block = chemical anchor; drywall =
+  steel backing between studs before closing wall). Structural engineer sign-off recommended.
+- HIDDEN DRAIN (Ales's real method): porcelain cover cut from tile, floats on 4 feet (פקקים),
+  flush with basin, 2-3mm perimeter gap all 4 sides → water into inner envelope (מעטפה) → bottle trap.
+  Cover has lift-notches (rounded cut-out) on both short ends to finger-pull for cleaning. Fully hidden.
+- SEAM ALIGNMENT: sink centreline + drain + faucet on one vertical line, ideally on a tile joint/centre;
+  edges relate to horizontal courses; drain not on a seam. Water point set by plumber BEFORE tiling —
+  coordinate centreline with plumber+architect early.
+
+FUTURE CRM EMBEDDING IDEAS (how this becomes a repeatable capability, not one-off files):
+
+[ ] 17. SHOP-DRAWING GENERATOR (CRM module): from a saved sketch's dimensions, auto-generate an
+    ARVO-branded shop-drawing sheet (plan/section/elevation/mounting/drain/notes) as PNG+PDF, the way
+    we did by hand today. Reuse the sketch data + the HTML→image pipeline concept. Per-project title block.
+    This is the single biggest "wow" capability — turns any sketch into a professional submission.
+
+[ ] 18. STANDARD DETAIL LIBRARY (CRM): reusable ARVO detail blocks — hidden-drain (4-feet cover),
+    steel mounting detail, seam-alignment method, siphon options. Pick + drop into any drawing.
+    The mounting detail also feeds parked idea (metal-hanger module).
+
+[ ] 19. ARVO RENDER-PRESENTATION generator (CRM): plug 1-2 render images into the ARVO branded
+    template → sendable PDF, with honesty label (הדמיה) auto-applied. (Did by hand today.) Ties to
+    idea #14 (sketch→Nano Banana prompt) — sketch feeds the prompt, prompt feeds Nano, render feeds this.
+
+[ ] 20. FIELD-SURVEY SHEET generator (CRM): blank ARVO form Ales fills on site (wall photo + tile size,
+    grout width, course height, existing water/waste point) → feeds set-out before fabrication.
+
+[ ] 21. "TAKE ANY INPUT → WORKING SKETCH + PRICE" pipeline (the pitch Avshi made to Ales): photo /
+    video / AutoCAD / hand sketch → CRM builds a working sketch → porcelain sheet calc (how many sheets
+    at Trabelsi price) → 10-minute professional price offer for any architect/big builder. This is the
+    umbrella vision that ideas #14, #17, #19, #20 all serve.
+
+BUSINESS FOLLOW-UPS (Avshi, not code):
+[ ] Ales to confirm with architect: counter material — טרצו or אריח שחור? (decides porcelain order + render)
+[ ] Ales to confirm with architect: wall type (concrete/block vs drywall) — decides mounting/anchoring.
+[ ] Perimeter gap confirmed at 2-3mm (Ales). Lift-notches added per Ales's markup.
+[ ] Renders + shop drawings + render-presentation sent to Ales for the Damari submission.
+
