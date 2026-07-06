@@ -92,7 +92,7 @@ export async function createPO(input: CreatePOInput): Promise<POResult> {
 }
 
 export async function fetchPOs(): Promise<ProductionOrder[]> {
-  const res = await sb().from('production_orders').select('*').order('created_at', { ascending: false });
+  const res = await sb().from('production_orders').select('*').eq('is_archived', false).order('created_at', { ascending: false });
   if (res.error) { console.error('[fetchPOs]', res.error.message); return []; }
   return (res.data || []) as ProductionOrder[];
 }

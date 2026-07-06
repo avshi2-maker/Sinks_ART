@@ -13,6 +13,14 @@ type Step = { t: string; h: string; actions?: Action[] };
 type Flow = { id: string; label: string; icon: string; steps: Step[] };
 
 const FLOWS: Flow[] = [
+  { id: 'marble2ziv', label: 'כיור: שרטוט ← אלס ← טרבלסי', icon: '🪨', steps: [
+    { t: 'שרטטו את הכיור', h: 'צרו שרטוט חדש עם המידות. חובה "שמור לגלריה" ולראות ✓ ירוק — לפני זה השרטוט קיים רק בדפדפן.', actions: [{ label: 'שרטוט', href: '/sketch' }, { label: 'שרטוט ← הצעה', href: '/sketch-to-offer' }] },
+    { t: 'חשבו חומר', h: 'מחשבון החומר — כמה לוחות 12 מ״מ (למינציה כפולה) צריך, לפי מודל 8 הפאנלים.', actions: [{ label: 'מחשבון חומר', href: '/material-calc' }] },
+    { t: 'הזמנת עבודה לאלס', h: 'פתחו הזמנת עבודה חדשה (PO) עם השרטוט והמחיר. בדקו שמופיעות רק הזמנות פעילות.', actions: [{ label: 'הזמנות עבודה', href: '/po' }] },
+    { t: 'הזמנת חומר מטרבלסי', h: 'הזמנת לוחות (TRB) — מספר לוחות, גוון, רמזי קינון. שלחו בוואטסאפ וסמנו סטטוס.', actions: [{ label: 'הזמנת טרבלסי', href: '/trabelsi-po' }] },
+    { t: 'הצעת מחיר ללקוח', h: 'הרכיבו הצעת ARVO (MARB) על בסיס ההזמנות — החומר והעבודה של אלס נשארים חסויים.', actions: [{ label: 'הצעת ARVO', href: '/arvo-offer' }, { label: 'הצעות', href: '/quotes' }] },
+    { t: 'שלחו ועקבו', h: 'שמרו כ-PDF, שלחו ללקוח, וההצעה עוברת למעקב הצעות שנשלחו.', actions: [{ label: 'הצעות שנשלחו', href: '/offers-sent' }] },
+  ] },
   { id: 'lead2offer', label: 'פנייה ← הצעה', icon: '📥', steps: [
     { t: 'בחרו פנייה', h: 'בבלוק "פניות חדשות" למטה — לחצו על הליד.', actions: [{ label: 'פתח פניות', href: '/leads' }] },
     { t: 'המירו ללקוח', h: 'בכרטיס הפנייה לחצו "המר ללקוח חדש" — נוצרים לקוח ופרויקט.' },
@@ -37,7 +45,7 @@ const FLOWS: Flow[] = [
 
 export default function FlowLauncher() {
   const [open, setOpen] = useState(true);
-  const [flowId, setFlowId] = useState('lead2offer');
+  const [flowId, setFlowId] = useState('marble2ziv');
   const [idx, setIdx] = useState(0);
 
   const flow = FLOWS.find((f) => f.id === flowId) || FLOWS[0];
