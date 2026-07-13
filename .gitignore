@@ -76,3 +76,7 @@ files.zip
 /page.tsx
 /priceBreaksData.ts
 /saveOffer.ts
+
+# local backups + build cache (13/07/2026 cleanup)
+_backups/
+tsconfig.tsbuildinfo
