@@ -62,6 +62,10 @@ export default function MarbleManager({ swatches }: { swatches: MarbleSwatch[] }
             )}
           </div>
           <label className="block">
+            <span className="block text-xs font-medium text-stone-600 mb-1">או הדבק קישור מ-Cloudinary (URL)</span>
+            <input value={pendingUrl} onChange={(e) => setPendingUrl(e.target.value.trim())} placeholder="https://res.cloudinary.com/dqdku88vv/..." className="px-2 py-1.5 text-sm border border-stone-300 rounded-md w-72" dir="ltr" />
+          </label>
+          <label className="block">
             <span className="block text-xs font-medium text-stone-600 mb-1">שם (English)</span>
             <input value={nameEn} onChange={(e) => setNameEn(e.target.value)} placeholder="Atlantis Sand" className="px-2 py-1.5 text-sm border border-stone-300 rounded-md" dir="ltr" />
           </label>
