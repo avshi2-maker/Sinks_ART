@@ -24,3 +24,11 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Hide CRM app chrome (top nav, toolbars) from any browser print / Save-as-PDF.
+   Mark any on-screen-only element with className "no-print". */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}

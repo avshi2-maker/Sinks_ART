@@ -11,7 +11,7 @@ export default async function TopNav() {
   try { newLeads = await countNewLeads(); } catch (e) { console.error('[TopNav] countNewLeads failed:', e); }
   const formattedCost = '$' + cost.totalUsd.toFixed(2);
   return (
-    <nav dir="rtl" className="sticky top-0 z-40 bg-white border-b border-gray-200 px-4 py-2">
+    <nav dir="rtl" className="no-print sticky top-0 z-40 bg-white border-b border-gray-200 px-4 py-2">
       <div className="max-w-6xl mx-auto flex items-start justify-between gap-3">
         <div className="flex items-start gap-4">
           <Link href="/dashboard" className="flex items-center gap-2 no-underline text-gray-900 font-medium pt-1">
