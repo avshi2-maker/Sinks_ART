@@ -191,6 +191,7 @@ At-a-glance index of recent shipped work. Full per-item detail lives in the cate
 - `[ ]` (30/04/2026) Append marble texture reference image to every Nano Banana prompt for stone realism
 - `[ ]` (30/04/2026) Library of "approved marble textures" the artists vouch for, organized by stone type
 - `[ ]` (27/08/2026) Cloudinary auto-enhance/upscale for **customer sample** photos in the sketch marble picker (`e_improve` + larger `w_`) — small PDF-crop samples render cleaner & bigger in the «דגימות הלקוח» tab of MarbleBrowser; sharpen/enlarge only, no invented detail. One-line change to the sample image URL. (Surfaced 27/08 building the customer-sample picker; the small crops already work fine as the on-drawing reference thumbnail — this is polish for the modal preview.)
+- `[ ]` (27/08/2026) Auto-fill Nano Banana prompt per saved sketch — the prompt-builder pre-fills each sketch's prompt from its own spec (basin count, length, floor sloped/90°, stone), so a project yields its matched image set with zero manual writing (e.g. נשים·6 + גברים·4 × slope/90° = 4 aligned prompts). Interim/lightweight option: a copy-button prompt sheet or `.txt` export of the ready prompts. (Surfaced 27/08 after writing the 4 restroom prompts by hand.)
 - `[ ]` (30/04/2026) Concept image variations: from one approved concept generate 3-4 variants
 - `[ ]` (30/04/2026) "Customer-specific mockup" — generate concept image with the actual dimensions/room
 - `[?]` (30/04/2026) Multi-shot concept set: front 3/4, top-down, profile, detail crop — all matching the same sink
