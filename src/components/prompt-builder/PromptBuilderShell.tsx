@@ -6,6 +6,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import GeometryFields from './GeometryFields';
 import MediaInputPanel, { EMPTY_SELECTION } from './MediaInputPanel';
 import type { MediaSelection } from './MediaInputPanel';
+import SketchGalleryPicker from './SketchGalleryPicker';
+import type { GallerySketchRow } from '@/lib/demos/demosData';
 import PromptOutputCard from './PromptOutputCard';
 import {
   buildNanoBananaPrompt,
@@ -32,6 +34,30 @@ interface PromptBuilderShellProps {
   mode: 'standalone' | 'per-customer';
   customerId?: string;
   mediaAnalyses?: MediaAnalysis[];
+  sketches?: GallerySketchRow[];
+}
+
+// rasterize a saved sketch's SVG string into a PNG File (for the סקיצה slot)
+async function sketchSvgToFile(svg: string, name: string): Promise<File> {
+  const vb = (svg.match(/viewBox="([^"]+)"/) || [])[1] || '0 0 800 720';
+  const parts = vb.split(/\s+/).map(Number);
+  const w = parts[2] || 800, h = parts[3] || 720;
+  const svgBlob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
+  const url = URL.createObjectURL(svgBlob);
+  try {
+    const img = new Image();
+    await new Promise<void>((resolve, reject) => { img.onload = () => resolve(); img.onerror = () => reject(new Error('svg load failed')); img.src = url; });
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(w * 2.5); canvas.height = Math.round(h * 2.5);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('canvas context unavailable');
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('toBlob failed'))), 'image/png'));
+    return new File([blob], name + '.png', { type: 'image/png' });
+  } finally {
+    URL.revokeObjectURL(url);
+  }
 }
 
 const DEFAULT_INPUTS: PromptBuilderInputs = {
@@ -47,7 +73,7 @@ const DEFAULT_INPUTS: PromptBuilderInputs = {
   mood: 'golden',
 };
 
-export default function PromptBuilderShell({ mode, customerId, mediaAnalyses }: PromptBuilderShellProps) {
+export default function PromptBuilderShell({ mode, customerId, mediaAnalyses, sketches = [] }: PromptBuilderShellProps) {
   const router = useRouter();
   const [inputs, setInputs] = useState<PromptBuilderInputs>(DEFAULT_INPUTS);
   const [pitchMode, setPitchMode] = useState<'none' | 'rim' | 'base' | 'fromrim'>('none');
@@ -75,6 +101,22 @@ export default function PromptBuilderShell({ mode, customerId, mediaAnalyses }: 
     if (model) setInputs((p) => ({ ...p, modelName: model }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // pick a saved sketch from the gallery → rasterize into the סקיצה slot (+ its stone samples)
+  async function pickFromGallery(s: GallerySketchRow) {
+    try {
+      const file = await sketchSvgToFile(s.sketch_svg, (s.title_he || 'sketch').replace(/\s+/g, '_'));
+      const objUrl = URL.createObjectURL(file);
+      setSelection((prev) => ({
+        sketch: { url: objUrl, label: s.title_he || 'שרטוט', isObjectUrl: true, file },
+        sampleA: s.exteriorStoneUrl ? { url: s.exteriorStoneUrl, label: 'שיש חוץ', isObjectUrl: false } : prev.sampleA,
+        sampleB: s.interiorStoneUrl ? { url: s.interiorStoneUrl, label: 'שיש פנים', isObjectUrl: false } : prev.sampleB,
+      }));
+      if (s.title_he) setInputs((p) => ({ ...p, modelName: s.title_he as string }));
+    } catch (e) {
+      window.alert('טעינת השרטוט נכשלה: ' + (e instanceof Error ? e.message : String(e)));
+    }
+  }
 
   const isDoubleSink = /double|כפול|2 אגנים|שני אגנים/i.test((inputs.modelName || '') + ' ' + (inputs.dimensions || ''));
   const nanoBananaPrompt = useMemo(() => (pitchMode === 'rim' ? buildNanoBananaPitchPrompt(inputs) : pitchMode === 'base' ? buildNanoBananaPitchFromBasePrompt(inputs) : pitchMode === 'fromrim' ? buildNanoBananaSlopeFromRimPrompt(inputs, isDoubleSink) : buildNanoBananaPrompt(inputs)), [inputs, pitchMode, isDoubleSink]);
@@ -242,6 +284,14 @@ export default function PromptBuilderShell({ mode, customerId, mediaAnalyses }: 
 
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="space-y-6">
+          {mode === 'standalone' && sketches.length > 0 ? (
+            <div className="rounded-xl border border-slate-200 bg-white p-3">
+              <div className="mb-2 text-sm font-semibold text-slate-700">📐 סקיצה מהגלריה</div>
+              <SketchGalleryPicker sketches={sketches} onPick={pickFromGallery} />
+              <p className="mt-2 text-[11px] text-slate-500">בוחר שרטוט שמור אל תיבת הסקיצה למטה (וגם דגימות שיש A/B אם שמורות בשרטוט).</p>
+            </div>
+          ) : null}
+
           <MediaInputPanel mode={mode} mediaAnalyses={mediaAnalyses} selection={selection} onChange={setSelection} />
 
           <div className="rounded-xl border border-amber-200 bg-amber-50 p-3">

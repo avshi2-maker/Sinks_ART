@@ -167,6 +167,25 @@ export async function fetchSketchSpec(id: string): Promise<SketchLoad | null> {
   return { spec: (res.data.inputs_jsonb || {}) as Record<string, unknown>, title_he: res.data.title_he };
 }
 
+// Saved sketches for the imaging builder's gallery picker (SVG + linked stone URLs).
+export interface GallerySketchRow {
+  id: string;
+  title_he: string | null;
+  sketch_svg: string;
+  exteriorStoneUrl: string | null;
+  interiorStoneUrl: string | null;
+}
+export async function fetchSketchGallery(): Promise<GallerySketchRow[]> {
+  const sb = getServerSupabase();
+  const res = await sb.from('demo_trials').select('id, title_he, sketch_svg, inputs_jsonb').eq('kind', 'sketch').eq('is_archived', false).order('created_at', { ascending: false });
+  if (res.error) { console.error('[fetchSketchGallery]', res.error.message); return []; }
+  const rows = (res.data || []) as { id: string; title_he: string | null; sketch_svg: string | null; inputs_jsonb: Record<string, unknown> | null }[];
+  return rows.filter((r) => !!r.sketch_svg).map((r) => {
+    const spec = (r.inputs_jsonb || {}) as { exteriorStoneUrl?: string; interiorStoneUrl?: string };
+    return { id: r.id, title_he: r.title_he, sketch_svg: r.sketch_svg as string, exteriorStoneUrl: spec.exteriorStoneUrl || null, interiorStoneUrl: spec.interiorStoneUrl || null };
+  });
+}
+
 // ---- pickers for the save-to-gallery panel ----
 
 export interface CustomerPickLite { id: string; name_he: string; }
