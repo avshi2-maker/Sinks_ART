@@ -19,7 +19,7 @@ export interface MarbleBrowserProps {
   interior: string;
   exteriorUrl?: string;
   interiorUrl?: string;
-  onPick: (layer: 'ext' | 'int', name: string, url: string) => void;
+  onPick: (layer: 'ext' | 'int', name: string, url: string, isCustomerSample: boolean) => void;
 }
 
 export default function MarbleBrowser({
@@ -120,7 +120,7 @@ export default function MarbleBrowser({
                     {filtered.map((s) => {
                       const sel = nameOf(s) === curName && !curUrl;
                       return (
-                        <button key={s.id} type="button" onClick={() => onPick(layer, nameOf(s), '')} className={'group rounded-lg overflow-hidden border-2 text-right bg-white ' + (sel ? 'border-blue-500 ring-2 ring-blue-200' : 'border-stone-200 hover:border-stone-400')} title={s.name_en}>
+                        <button key={s.id} type="button" onClick={() => onPick(layer, nameOf(s), s.image_url, false)} className={'group rounded-lg overflow-hidden border-2 text-right bg-white ' + (sel ? 'border-blue-500 ring-2 ring-blue-200' : 'border-stone-200 hover:border-stone-400')} title={s.name_en}>
                           <div className="relative">
                             <img src={s.image_url} alt={s.name_en} className="w-full h-24 object-cover" />
                             {sel && <span className="absolute top-1 left-1 bg-blue-600 text-white text-[10px] px-1.5 py-0.5 rounded-full">✓ נבחר</span>}
@@ -146,7 +146,7 @@ export default function MarbleBrowser({
                     {samples.map((s) => {
                       const sel = curUrl === s.image_url;
                       return (
-                        <button key={s.id} type="button" onClick={() => onPick(layer, s.label, s.image_url)} className={'group rounded-lg overflow-hidden border-2 text-right bg-white ' + (sel ? 'border-blue-500 ring-2 ring-blue-200' : 'border-stone-200 hover:border-stone-400')} title={s.label}>
+                        <button key={s.id} type="button" onClick={() => onPick(layer, s.label, s.image_url, true)} className={'group rounded-lg overflow-hidden border-2 text-right bg-white ' + (sel ? 'border-blue-500 ring-2 ring-blue-200' : 'border-stone-200 hover:border-stone-400')} title={s.label}>
                           <div className="relative">
                             <img src={s.thumbnail_url || s.image_url} alt={s.label} className="w-full h-24 object-cover" />
                             {sel && <span className="absolute top-1 left-1 bg-blue-600 text-white text-[10px] px-1.5 py-0.5 rounded-full">✓ נבחר</span>}

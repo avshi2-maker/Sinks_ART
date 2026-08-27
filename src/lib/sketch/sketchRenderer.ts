@@ -385,8 +385,8 @@ export function renderSinkSketch(rawSpec: SketchSpec): string {
     techRow(colL, 2, 'ניקוז', drainTxtF) +
     techRow(colL, 3, 'התקנה', spec.mount === 'wall' ? 'תלוי קיר' : 'על משטח') +
     techRow(colL, 4, 'סיפון', spec.stoneSiphonCover ? 'מאבן תואמת' : 'סטנדרטי') +
-    `<rect x="92" y="${fy + 134}" width="13" height="13" fill="${FILL_EXT}" stroke="${STROKE}"/><text x="110" y="${fy + 145}" font-size="12" fill="${STROKE}">שיש חוץ: ${esc(spec.exteriorStone || '—')}${spec.exteriorStoneUrl ? ' (דגימת לקוח)' : ''}</text>` +
-    `<rect x="300" y="${fy + 134}" width="13" height="13" fill="${FILL_INT}" stroke="${STROKE}"/><text x="318" y="${fy + 145}" font-size="12" fill="${STROKE}">שיש פנים (אגן): ${esc(spec.interiorStone || '—')}${spec.interiorStoneUrl ? ' (דגימת לקוח)' : ''}</text>`;
+    `<rect x="92" y="${fy + 134}" width="13" height="13" fill="${FILL_EXT}" stroke="${STROKE}"/><text x="110" y="${fy + 145}" font-size="12" fill="${STROKE}">שיש חוץ: ${esc(spec.exteriorStone || '—')}${spec.exteriorStoneThumb ? ' (דגימת לקוח)' : ''}</text>` +
+    `<rect x="300" y="${fy + 134}" width="13" height="13" fill="${FILL_INT}" stroke="${STROKE}"/><text x="318" y="${fy + 145}" font-size="12" fill="${STROKE}">שיש פנים (אגן): ${esc(spec.interiorStone || '—')}${spec.interiorStoneThumb ? ' (דגימת לקוח)' : ''}</text>`;
 
   // ---------- customer sample thumbnails (data-URI = export-safe, no canvas taint) ----------
   const thumbBox = (x: number, dataUri: string, label: string): string =>

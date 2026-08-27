@@ -171,7 +171,10 @@ export default function DemoCard({ demo }: { demo: DemoTrial }) {
       const blob = await svgToPngBlob(demo.sketch_svg, 2.5);
       const file = new File([blob], baseName + '.png', { type: 'image/png' });
       const up = await uploadToCloudinary(file, 'marble-art/sketches-bank');
+      const spec = (demo.inputs_jsonb || {}) as { exteriorStoneUrl?: string; interiorStoneUrl?: string };
       const params = new URLSearchParams({ sketchImg: up.url, model: demo.title_he || 'שרטוט' });
+      if (spec.exteriorStoneUrl) params.set('stoneA', spec.exteriorStoneUrl);
+      if (spec.interiorStoneUrl) params.set('stoneB', spec.interiorStoneUrl);
       router.push('/prompt-builder?' + params.toString());
     } catch (e) {
       window.alert('שליחה להדמיה נכשלה: ' + (e instanceof Error ? e.message : String(e)));

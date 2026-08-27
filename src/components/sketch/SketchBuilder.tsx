@@ -119,11 +119,12 @@ export default function SketchBuilder({ initial, swatches = [], customers = [], 
     setSpec((p) => (layer === 'ext' ? { ...p, exteriorStoneThumb: d } : { ...p, interiorStoneThumb: d }));
   }
   // pick a stone: name + (customer sample) url; clears/loads the reference thumbnail accordingly
-  function pickStone(layer: 'ext' | 'int', name: string, url: string) {
+  function pickStone(layer: 'ext' | 'int', name: string, url: string, isCustomerSample: boolean) {
     setSpec((p) => (layer === 'ext'
       ? { ...p, exteriorStone: name, exteriorStoneUrl: url || undefined, exteriorStoneThumb: undefined }
       : { ...p, interiorStone: name, interiorStoneUrl: url || undefined, interiorStoneThumb: undefined }));
-    if (url) void loadThumb(layer, url);
+    // reference thumbnail on the drawing is for the customer's OWN sample photos only
+    if (url && isCustomerSample) void loadThumb(layer, url);
   }
 
   function downloadPng() {
@@ -384,12 +385,12 @@ export default function SketchBuilder({ initial, swatches = [], customers = [], 
           <label className="block">
             <span className="block text-xs font-medium text-stone-600 mb-1">שיש חוץ (sample A)</span>
             <input value={spec.exteriorStone} onChange={(e) => set('exteriorStone', e.target.value)} placeholder="קרארה" className="w-full px-2 py-1.5 text-sm border border-stone-300 rounded-md" dir="rtl" />
-            {swatches.length > 0 && (<div className="flex gap-1 overflow-x-auto mt-1 pb-1">{swatches.map((sw) => (<button key={sw.id} type="button" title={sw.name_en} onClick={() => setSpec((p) => ({ ...p, exteriorStone: sw.name_he || sw.name_en, exteriorStoneUrl: undefined, exteriorStoneThumb: undefined }))} className={'shrink-0 w-9 h-9 rounded border-2 overflow-hidden ' + (spec.exteriorStone === (sw.name_he || sw.name_en) ? 'border-blue-500' : 'border-transparent')}><img src={sw.image_url} alt={sw.name_en} className="w-full h-full object-cover" /></button>))}</div>)}
+            {swatches.length > 0 && (<div className="flex gap-1 overflow-x-auto mt-1 pb-1">{swatches.map((sw) => (<button key={sw.id} type="button" title={sw.name_en} onClick={() => setSpec((p) => ({ ...p, exteriorStone: sw.name_he || sw.name_en, exteriorStoneUrl: sw.image_url, exteriorStoneThumb: undefined }))} className={'shrink-0 w-9 h-9 rounded border-2 overflow-hidden ' + (spec.exteriorStone === (sw.name_he || sw.name_en) ? 'border-blue-500' : 'border-transparent')}><img src={sw.image_url} alt={sw.name_en} className="w-full h-full object-cover" /></button>))}</div>)}
           </label>
           <label className="block">
             <span className="block text-xs font-medium text-stone-600 mb-1">שיש פנים (sample B)</span>
             <input value={spec.interiorStone} onChange={(e) => set('interiorStone', e.target.value)} placeholder="נרו מרקינה" className="w-full px-2 py-1.5 text-sm border border-stone-300 rounded-md" dir="rtl" />
-            {swatches.length > 0 && (<div className="flex gap-1 overflow-x-auto mt-1 pb-1">{swatches.map((sw) => (<button key={sw.id} type="button" title={sw.name_en} onClick={() => setSpec((p) => ({ ...p, interiorStone: sw.name_he || sw.name_en, interiorStoneUrl: undefined, interiorStoneThumb: undefined }))} className={'shrink-0 w-9 h-9 rounded border-2 overflow-hidden ' + (spec.interiorStone === (sw.name_he || sw.name_en) ? 'border-blue-500' : 'border-transparent')}><img src={sw.image_url} alt={sw.name_en} className="w-full h-full object-cover" /></button>))}</div>)}
+            {swatches.length > 0 && (<div className="flex gap-1 overflow-x-auto mt-1 pb-1">{swatches.map((sw) => (<button key={sw.id} type="button" title={sw.name_en} onClick={() => setSpec((p) => ({ ...p, interiorStone: sw.name_he || sw.name_en, interiorStoneUrl: sw.image_url, interiorStoneThumb: undefined }))} className={'shrink-0 w-9 h-9 rounded border-2 overflow-hidden ' + (spec.interiorStone === (sw.name_he || sw.name_en) ? 'border-blue-500' : 'border-transparent')}><img src={sw.image_url} alt={sw.name_en} className="w-full h-full object-cover" /></button>))}</div>)}
           </label>
         </div>
 
