@@ -1,9 +1,20 @@
 // src/lib/sketch/sketchRenderer.ts
-// SVG technical-sketch generator — auto-scale, dual pitch, and DOUBLE-BASIN (two troughs in one block).
+// SVG technical-sketch generator — auto-scale, N-BASIN (1..10) trough builder.
+// Two customer-selectable build options:
+//   floorType : 'pitched' (sloped floor draining to the low point) | 'flat' (straight 90°, no slope)
+//   drainMode : 'perBasin' (a drain per basin) | 'central' (one shared drain for the whole trough)
+// Back-compat: legacy specs (basinCount 1 or 2, no floorType/drainMode) render exactly as before.
 
 export type SketchShape = 'rectangle' | 'square' | 'triangle' | 'trapezoid' | 'pentagon' | 'custom';
 export type SketchMount = 'wall' | 'countertop';
 export type SketchDrain = 'round' | 'linear';
+export type FloorType = 'pitched' | 'flat';
+export type DrainMode = 'perBasin' | 'central';
+
+export interface BasinCell {
+  widthMm: number;   // inner width of this basin along the length
+  pitchPct: number;  // this basin's floor slope toward its drain (ignored when floorType==='flat')
+}
 
 export interface SketchSpec {
   modelName: string;
@@ -23,11 +34,16 @@ export interface SketchSpec {
   // --- Lead-CAD parity fields (all optional, fall back to legacy) ---
   wallLeftMm?: number;        // left end-wall thickness (the "20" on the left)
   wallRightMm?: number;       // right end-wall thickness (the "20" on the right)
-  pitchLeftPct?: number;      // basin-1 pitch (left basin slope toward its drain)
-  pitchRightPct?: number;     // basin-2 pitch (right basin slope toward its drain)
+  pitchLeftPct?: number;      // legacy: left/basin-1 pitch fallback
+  pitchRightPct?: number;     // legacy: right/basin-2 pitch fallback
   drainRadiusMm?: number;     // drain radius R (e.g. 45 mm)
   stoneSiphonCover?: boolean; // matching-stone trap cover (סיפון מאבן תואמת)
-  basinCount?: number;        // 1 (default) or 2 — double sink: two basins, each its own center drain
+  basinCount?: number;        // 1..10 — number of basins in one build
+  // --- N-basin rebuild fields ---
+  basins?: BasinCell[];       // per-basin split (editable). If length !== basinCount, an equal split is used.
+  floorType?: FloorType;      // default 'pitched'
+  drainMode?: DrainMode;      // default 'perBasin'
+  dividerMm?: number;         // inter-basin rib thickness (defaults to wallThicknessMm)
 }
 
 const PAGE_W = 800;
@@ -36,43 +52,88 @@ const STROKE = '#1e293b';
 const DIM = '#64748b';
 const FILL_EXT = '#f1f5f9';
 const FILL_INT = '#e2e8f0';
+const REC_MAX_PER_DRAIN = 3000; // mm — rule of thumb: single Ø waste, intensive use
 
 function esc(s: string): string {
   return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-// --- Sanity-check "engineer": auto-correct a spec so it always yields a buildable
-// sink, even from non-expert input. Returns the fixed spec + Hebrew notes of what changed.
+const clampN = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+
+// Resolve the buildable basin split for a spec (uses spec.basins when it matches basinCount,
+// otherwise an equal division after reserving the end walls + dividers).
+export interface ResolvedBasin { widthMm: number; pitchPct: number; centerMm: number; x1mm: number; x2mm: number; }
+
+export function resolveBasins(spec: SketchSpec): ResolvedBasin[] {
+  const n = clampN(Math.round(spec.basinCount ?? 1), 1, 10);
+  const wallL = spec.wallLeftMm ?? spec.wallThicknessMm;
+  const wallR = spec.wallRightMm ?? spec.wallThicknessMm;
+  const divider = spec.dividerMm ?? spec.wallThicknessMm;
+  const usable = Math.max(0, spec.lengthMm - wallL - wallR - (n - 1) * divider);
+  const defPitch = spec.pitchLeftPct ?? spec.pitchPct ?? 2;
+  const useProvided = Array.isArray(spec.basins) && spec.basins.length === n;
+  const widths: number[] = useProvided
+    ? spec.basins!.map((b) => (b.widthMm > 0 ? b.widthMm : usable / n))
+    : Array.from({ length: n }, () => usable / n);
+  const pitches: number[] = useProvided
+    ? spec.basins!.map((b) => (b.pitchPct > 0 ? b.pitchPct : defPitch))
+    : Array.from({ length: n }, () => defPitch);
+  const out: ResolvedBasin[] = [];
+  let cursor = wallL;
+  for (let i = 0; i < n; i++) {
+    const w = widths[i];
+    out.push({ widthMm: w, pitchPct: pitches[i], centerMm: cursor + w / 2, x1mm: cursor, x2mm: cursor + w });
+    cursor += w + divider;
+  }
+  return out;
+}
+
+// One-shared-drain estimate (drainMode === 'central').
+export interface OneDrainEstimate { runSideMm: number; fallMm: number; centerDepthMm: number; overLen: boolean; suggestDrains: number; }
+export function estimateCentralDrain(spec: SketchSpec): OneDrainEstimate {
+  const wallL = spec.wallLeftMm ?? spec.wallThicknessMm;
+  const wallR = spec.wallRightMm ?? spec.wallThicknessMm;
+  const runSideMm = Math.max(0, (spec.lengthMm - wallL - wallR) / 2);
+  const slope = spec.floorType === 'flat' ? 0 : (spec.pitchLeftPct ?? spec.pitchPct ?? 2);
+  const fallMm = Math.round(runSideMm * slope / 100);
+  return {
+    runSideMm: Math.round(runSideMm),
+    fallMm,
+    centerDepthMm: spec.basinDepthMm + fallMm,
+    overLen: spec.lengthMm > REC_MAX_PER_DRAIN,
+    suggestDrains: Math.max(1, Math.ceil(spec.lengthMm / REC_MAX_PER_DRAIN)),
+  };
+}
+
+// --- Sanity-check "engineer": auto-correct a spec so it always yields a buildable sink,
+// even from non-expert input. Returns the fixed spec + Hebrew notes of what changed / what to know.
 export interface SanitizeResult { spec: SketchSpec; notes: string[]; }
 
 export function sanitizeSpec(input: SketchSpec): SanitizeResult {
   const notes: string[] = [];
   const s: SketchSpec = { ...input };
-  const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+  const clamp = clampN;
 
   // 1) base dimensions must be positive + within sane physical limits (mm)
   if (!(s.lengthMm > 0)) { s.lengthMm = 600; notes.push('אורך לא תקין — הוגדר 600 מ"מ'); }
   if (!(s.widthMm > 0)) { s.widthMm = 450; notes.push('רוחב לא תקין — הוגדר 450 מ"מ'); }
   if (!(s.heightMm > 0)) { s.heightMm = 250; notes.push('גובה לא תקין — הוגדר 250 מ"מ'); }
   const L0 = s.lengthMm, W0 = s.widthMm, H0 = s.heightMm;
-  s.lengthMm = clamp(s.lengthMm, 200, 4000);
+  s.lengthMm = clamp(s.lengthMm, 200, 6000);
   s.widthMm = clamp(s.widthMm, 150, 1200);
   s.heightMm = clamp(s.heightMm, 80, 600);
-  if (s.lengthMm !== L0) notes.push('אורך תוקן לטווח תקין (200–4000 מ"מ)');
+  if (s.lengthMm !== L0) notes.push('אורך תוקן לטווח תקין (200–6000 מ"מ)');
   if (s.widthMm !== W0) notes.push('רוחב תוקן לטווח תקין (150–1200 מ"מ)');
   if (s.heightMm !== H0) notes.push('גובה תוקן לטווח תקין (80–600 מ"מ)');
 
-  // 2) CORNER TRIANGLE rule: a corner sink is an isosceles right triangle —
-  // the two wall-sides must be equal so it sits flush in a 90° corner.
+  // 2) CORNER TRIANGLE rule
   if (s.shape === 'triangle') {
     if (Math.abs(s.lengthMm - s.widthMm) > 1) {
       const side = Math.max(s.lengthMm, s.widthMm);
       s.lengthMm = side; s.widthMm = side;
-      notes.push('משולש פינתי: שני הצדדים (לאורך הקירות) הושוו ל-' + side + ' מ"מ ליצירת זווית 90° תקנית');
+      notes.push('משולש פינתי: שני הצדדים הושוו ל-' + side + ' מ"מ ליצירת זווית 90° תקנית');
     }
-    // a corner sink hangs on the wall — it has no countertop under it
     if (s.mount !== 'wall') { s.mount = 'wall'; notes.push('כיור פינתי תוקן ל"תלוי קיר"'); }
-    // drain should be round at the corner low-point
     if (s.drain !== 'round') { s.drain = 'round'; notes.push('ניקוז פינתי תוקן לעגול'); }
   }
 
@@ -89,22 +150,61 @@ export function sanitizeSpec(input: SketchSpec): SanitizeResult {
   if (s.wallThicknessMm < 8) { s.wallThicknessMm = 8; notes.push('עובי דופן תוקן למינימום 8 מ"מ'); }
   if (s.wallThicknessMm > maxWall) { s.wallThicknessMm = maxWall; notes.push('עובי דופן תוקן כך שלא יחרוג מרוחב הכיור'); }
 
-  // 5) pitch must drain (1%–5% is the practical buildable range)
+  // 5) N-basin normalisation
+  const nRaw = Math.round(s.basinCount ?? 1);
+  const n = clamp(nRaw, 1, 10);
+  if (n !== nRaw) notes.push('מספר אגנים תוקן לטווח 1–10');
+  s.basinCount = n;
+  if (!s.floorType) s.floorType = 'pitched';
+  if (!s.drainMode) s.drainMode = 'perBasin';
+
+  // 6) pitch band 1%–5% (only meaningful for a pitched floor)
   const fixPitch = (p: number | undefined, label: string): number | undefined => {
     if (p === undefined) return p;
     const c = clamp(p, 1, 5);
     if (c !== p) notes.push(label + ' תוקן לטווח שיפוע תקני (1%–5%)');
     return c;
   };
-  s.pitchPct = fixPitch(s.pitchPct, 'שיפוע');
-  s.pitchLeftPct = fixPitch(s.pitchLeftPct, 'שיפוע שמאל');
-  s.pitchRightPct = fixPitch(s.pitchRightPct, 'שיפוע ימין');
+  if (s.floorType === 'pitched') {
+    s.pitchPct = fixPitch(s.pitchPct, 'שיפוע');
+    s.pitchLeftPct = fixPitch(s.pitchLeftPct, 'שיפוע');
+    s.pitchRightPct = fixPitch(s.pitchRightPct, 'שיפוע');
+    if (Array.isArray(s.basins)) {
+      s.basins = s.basins.map((b, i) => {
+        const c = clamp(b.pitchPct, 1, 5);
+        if (c !== b.pitchPct) notes.push('שיפוע אגן ' + (i + 1) + ' תוקן לטווח 1%–5%');
+        return { widthMm: Math.max(1, b.widthMm), pitchPct: c };
+      });
+    }
+  }
 
-  // 6) double-basin doesn't apply to a corner triangle (single basin only)
-  if (s.shape === 'triangle' && (s.basinCount ?? 1) > 1) {
+  // 7) triangle is single-basin only
+  if (s.shape === 'triangle' && n > 1) {
     s.basinCount = 1;
     notes.push('משולש פינתי תומך באגן יחיד — תוקן לאגן אחד');
   }
+
+  // 8) informational engineering notes (the amber box)
+  const cnt = s.basinCount ?? 1;
+  const wallL = s.wallLeftMm ?? s.wallThicknessMm;
+  const wallR = s.wallRightMm ?? s.wallThicknessMm;
+  const divider = s.dividerMm ?? s.wallThicknessMm;
+  const perBasin = Math.round(Math.max(0, s.lengthMm - wallL - wallR - (cnt - 1) * divider) / cnt);
+  if (cnt > 1) notes.push(cnt + ' אגנים על אורך ' + s.lengthMm + ' מ"מ → כ-' + perBasin + ' מ"מ לאגן (אחרי ניכוי דפנות קצה ' + wallL + '+' + wallR + ' ומחיצות ' + (cnt - 1) + '×' + divider + ').');
+  if (s.floorType === 'flat') {
+    notes.push('תחתית ישרה 90° · ללא שיפוע — לפי בחירת הלקוח. דפנות פנים אנכיות.');
+    notes.push('⚠️ תחתית שטוחה אינה מתנקזת בכוח הכובד — יש לוודא מיקום ניקוז נכון / שיפולת קלה סביב הפתח.');
+  }
+  if (s.drainMode === 'central') {
+    const e = estimateCentralDrain(s);
+    notes.push('מבנה: תעלה משותפת · ניקוז מרכזי אחד. ריצת שיפוע לכל צד ≈ ' + e.runSideMm + ' מ"מ.');
+    if (s.floorType !== 'flat') notes.push('ירידה מהקצה למרכז ≈ ' + e.fallMm + ' מ"מ · עומק במרכז ≈ ' + e.centerDepthMm + ' מ"מ.');
+    if (e.overLen) notes.push('⚠️ אורך ' + s.lengthMm + ' מ"מ ארוך לניקוז יחיד (כלל אצבע ~' + REC_MAX_PER_DRAIN + ' מ"מ) — מומלץ ' + e.suggestDrains + ' נקזים או «אגנים נפרדים».');
+    else notes.push('אורך ' + s.lengthMm + ' מ"מ בתחום הסביר לניקוז יחיד (~עד ' + REC_MAX_PER_DRAIN + ' מ"מ).');
+  } else if (cnt > 1) {
+    notes.push('מבנה: אגנים נפרדים · ' + cnt + ' ניקוזים (ניקוז ממורכז לכל אגן).');
+  }
+  if (s.lengthMm > 4000) notes.push('אורך חורג מ-4000 מ"מ — ייתכן פיצול לשני חלקי שיש (תפר מוסתר) בייצור.');
 
   return { spec: s, notes };
 }
@@ -138,11 +238,11 @@ export function renderSinkSketch(rawSpec: SketchSpec): string {
   }
   const wallL = spec.wallLeftMm ?? spec.wallThicknessMm;
   const wallR = spec.wallRightMm ?? spec.wallThicknessMm;
-  const pitch1 = spec.pitchLeftPct ?? spec.pitchPct ?? 0;   // basin 1 (left)
-  const pitch2 = spec.pitchRightPct ?? spec.pitchPct ?? 0;  // basin 2 (right)
   const drainR = spec.drainRadiusMm ?? 0;
-  const isDouble = (spec.basinCount ?? 1) >= 2;
-  const dividerMm = spec.wallThicknessMm; // divider rib = wall thickness (structural consistency)
+  const flat = spec.floorType === 'flat';
+  const central = spec.drainMode === 'central';
+  const basins = resolveBasins(spec);
+  const n = basins.length;
 
   // ---------- TOP VIEW ----------
   const topBoxX = 90, topBoxY = 90, topBoxW = 620, topBoxH = 150;
@@ -153,39 +253,25 @@ export function renderSinkSketch(rawSpec: SketchSpec): string {
   const ox = topBoxX, oy = topBoxY;
   const pts = poly.map((p) => `${ox + p.x * scaleTop},${oy + p.y * scaleTop}`).join(' ');
   const wt = spec.wallThicknessMm * scaleTop;
-
-  // basin pocket(s) in top view + drain(s)
-  let topBasins = '';
-  let topDrains = '';
   const innerTop = oy + wt;
   const innerBot = oy + Wpx - wt;
   const drainCy = oy + Wpx / 2;
-  const drainEl = (cx: number) => spec.drain === 'linear'
+  const drainEl = (cx: number, big = false) => spec.drain === 'linear'
     ? `<rect x="${cx - 22}" y="${drainCy - 3}" width="44" height="6" rx="2" fill="none" stroke="${STROKE}" stroke-width="1.2"/>`
-    : `<circle cx="${cx}" cy="${drainCy}" r="6" fill="none" stroke="${STROKE}" stroke-width="1.2"/>`;
+    : `<circle cx="${cx}" cy="${drainCy}" r="${big ? 8 : 6}" fill="none" stroke="${STROKE}" stroke-width="1.2"/>`;
 
-  if (!isDouble) {
-    const ix1 = ox + wallL * scaleTop;
-    const ix2 = ox + Lpx - wallR * scaleTop;
-    topBasins = `<rect x="${ix1}" y="${innerTop}" width="${ix2 - ix1}" height="${innerBot - innerTop}" fill="${FILL_INT}" stroke="${STROKE}" stroke-width="1" stroke-dasharray="4 2"/>`;
-    const dcx = (ix1 + ix2) / 2;
-    topDrains = drainEl(dcx);
+  const mmx = (mm: number) => ox + mm * scaleTop;
+  let topBasins = '';
+  basins.forEach((b) => {
+    topBasins += `<rect x="${mmx(b.x1mm)}" y="${innerTop}" width="${(b.x2mm - b.x1mm) * scaleTop}" height="${innerBot - innerTop}" fill="${FILL_INT}" stroke="${STROKE}" stroke-width="1" stroke-dasharray="4 2"/>`;
+  });
+  let topDrains = '';
+  if (central) {
+    topDrains = drainEl(mmx(spec.lengthMm / 2), true);
   } else {
-    // two equal basins separated by a divider rib
-    const usable = spec.lengthMm - wallL - wallR - dividerMm;
-    const basinLenMm = usable / 2;
-    const b1x1 = ox + wallL * scaleTop;
-    const b1x2 = b1x1 + basinLenMm * scaleTop;
-    const b2x1 = b1x2 + dividerMm * scaleTop;
-    const b2x2 = b2x1 + basinLenMm * scaleTop;
-    topBasins =
-      `<rect x="${b1x1}" y="${innerTop}" width="${b1x2 - b1x1}" height="${innerBot - innerTop}" fill="${FILL_INT}" stroke="${STROKE}" stroke-width="1" stroke-dasharray="4 2"/>` +
-      `<rect x="${b2x1}" y="${innerTop}" width="${b2x2 - b2x1}" height="${innerBot - innerTop}" fill="${FILL_INT}" stroke="${STROKE}" stroke-width="1" stroke-dasharray="4 2"/>`;
-    topDrains = drainEl((b1x1 + b1x2) / 2) + drainEl((b2x1 + b2x2) / 2);
+    basins.forEach((b) => { topDrains += drainEl(mmx(b.centerMm)); });
   }
-  const firstDrainCx = isDouble
-    ? ox + (wallL + (spec.lengthMm - wallL - wallR - dividerMm) / 4) * scaleTop
-    : ox + Lpx / 2;
+  const firstDrainCx = central ? mmx(spec.lengthMm / 2) : mmx(basins[0].centerMm);
   const drainRLabel = drainR > 0
     ? `<line x1="${firstDrainCx + 6}" y1="${drainCy - 6}" x2="${firstDrainCx + 26}" y2="${drainCy - 22}" stroke="${DIM}" stroke-width="1"/><text x="${firstDrainCx + 28}" y="${drainCy - 22}" font-size="11" fill="${DIM}" font-family="monospace">R${drainR}</text>`
     : '';
@@ -202,78 +288,66 @@ export function renderSinkSketch(rawSpec: SketchSpec): string {
   const floorThk = spec.wallThicknessMm * scaleSec;
   const basinTop = sy + (spec.heightMm - spec.basinDepthMm) * scaleSec;
   const floorEdgeY = sy + secH - floorThk;
+  const smx = (mm: number) => sx + mm * scaleSec;
+  const outerBox = `<path d="M ${sx} ${sy} L ${sx + secW} ${sy} L ${sx + secW} ${sy + secH} L ${sx} ${sy + secH} Z" fill="${FILL_EXT}" stroke="${STROKE}" stroke-width="1.5"/>`;
 
-  let section = '';
+  // one trough profile (flat rectangle, or V sloping to a low point at lowMm)
+  const trough = (x1mm: number, x2mm: number, lowMm: number, pitch: number): { path: string; lowY: number; lowX: number } => {
+    const xL = smx(x1mm), xR = smx(x2mm), lowX = smx(lowMm);
+    if (flat || !(pitch > 0)) {
+      return { path: `M ${xL} ${basinTop} L ${xR} ${basinTop} L ${xR} ${floorEdgeY} L ${xL} ${floorEdgeY} Z`, lowY: floorEdgeY, lowX };
+    }
+    const runL = Math.abs(lowMm - x1mm), runR = Math.abs(x2mm - lowMm);
+    const dropL = Math.max(runL * (pitch / 100) * scaleSec, 12);
+    const dropR = Math.max(runR * (pitch / 100) * scaleSec, 12);
+    const lowY = floorEdgeY + Math.max(dropL, dropR);
+    const leftY = lowY - dropL, rightY = lowY - dropR;
+    return { path: `M ${xL} ${basinTop} L ${xR} ${basinTop} L ${xR} ${rightY} L ${lowX} ${lowY} L ${xL} ${leftY} Z`, lowY, lowX };
+  };
+
+  let section = outerBox;
   let drainSecSvg = '';
   let pitchLabel = '';
   let sectionDims = '';
-  const outerBox = `<path d="M ${sx} ${sy} L ${sx + secW} ${sy} L ${sx + secW} ${sy + secH} L ${sx} ${sy + secH} Z" fill="${FILL_EXT}" stroke="${STROKE}" stroke-width="1.5"/>`;
+  const dimBreakY = sy + secH + 40;
 
-  if (!isDouble) {
-    const swtL = wallL * scaleSec;
-    const swtR = wallR * scaleSec;
-    const trueDropL = (spec.lengthMm / 2) * (pitch1 / 100) * scaleSec;
-    const trueDropR = (spec.lengthMm / 2) * (pitch2 / 100) * scaleSec;
-    const dropPxL = pitch1 > 0 ? Math.max(trueDropL, 14) : 0;
-    const dropPxR = pitch2 > 0 ? Math.max(trueDropR, 14) : 0;
-    const centerY = floorEdgeY + Math.max(dropPxL, dropPxR);
-    const leftEdgeY = centerY - dropPxL;
-    const rightEdgeY = centerY - dropPxR;
-    const cx = sx + secW / 2;
-    section = outerBox + `<path d="M ${sx + swtL} ${basinTop} L ${sx + secW - swtR} ${basinTop} L ${sx + secW - swtR} ${rightEdgeY} L ${cx} ${centerY} L ${sx + swtL} ${leftEdgeY} Z" fill="white" stroke="${STROKE}" stroke-width="1.2" stroke-linejoin="round"/>`;
-    drainSecSvg = `<circle cx="${cx}" cy="${centerY - 3}" r="3.5" fill="none" stroke="${STROKE}" stroke-width="1"/>`;
-    pitchLabel =
-      (pitch1 > 0 ? `<text x="${sx + secW * 0.26}" y="${leftEdgeY - 6}" font-size="10" fill="${DIM}" font-family="monospace" font-style="italic">שיפוע ${pitch1}%</text>` : '') +
-      (pitch2 > 0 ? `<text x="${sx + secW * 0.64}" y="${rightEdgeY - 6}" font-size="10" fill="${DIM}" font-family="monospace" font-style="italic">${pitch2}%</text>` : '');
-    const innerLen = Math.max(0, spec.lengthMm - wallL - wallR);
-    const dimBreakY = sy + secH + 40;
-    sectionDims =
-      dimLineH(sx, sx + swtL, dimBreakY, wallL + '') +
-      dimLineH(sx + swtL, sx + secW - swtR, dimBreakY, innerLen + '') +
-      dimLineH(sx + secW - swtR, sx + secW, dimBreakY, wallR + '');
+  if (central) {
+    // one shared trough across the whole inner span, single drain at the geometric center
+    const spanL = wallL, spanR = spec.lengthMm - wallR, mid = spec.lengthMm / 2;
+    const pitch = flat ? 0 : (basins[0]?.pitchPct ?? 0);
+    const t = trough(spanL, spanR, mid, pitch);
+    section += t.path;
+    // decorative divider ribs (do not separate the water)
+    for (let i = 0; i < n - 1; i++) {
+      const dvMm = basins[i].x2mm + (spec.dividerMm ?? spec.wallThicknessMm) / 2;
+      section += `<line x1="${smx(dvMm)}" y1="${basinTop}" x2="${smx(dvMm)}" y2="${basinTop + (floorEdgeY - basinTop) * 0.35}" stroke="${STROKE}" stroke-width="1" stroke-dasharray="3 2"/>`;
+    }
+    drainSecSvg = `<circle cx="${t.lowX}" cy="${t.lowY - 3}" r="4" fill="none" stroke="${STROKE}" stroke-width="1.2"/>`;
+    pitchLabel = flat
+      ? `<text x="${t.lowX}" y="${basinTop - 6}" text-anchor="middle" font-size="10" fill="${DIM}" font-family="monospace" font-style="italic">ישר 90°</text>`
+      : `<text x="${t.lowX}" y="${basinTop - 6}" text-anchor="middle" font-size="10" fill="${DIM}" font-family="monospace" font-style="italic">${basins[0]?.pitchPct ?? 0}% → מרכז</text>`;
+    sectionDims = dimLineH(sx, smx(wallL), dimBreakY, wallL + '') +
+      dimLineH(smx(wallL), smx(spec.lengthMm - wallR), dimBreakY, Math.round(spec.lengthMm - wallL - wallR) + '') +
+      dimLineH(smx(spec.lengthMm - wallR), sx + secW, dimBreakY, wallR + '');
   } else {
-    // DOUBLE: two basins each sloping to its own center drain, divider rib between
-    const usableMm = spec.lengthMm - wallL - wallR - dividerMm;
-    const basinLenMm = usableMm / 2;
-    const wL = wallL * scaleSec;
-    const wR = wallR * scaleSec;
-    const div = dividerMm * scaleSec;
-    const bLen = basinLenMm * scaleSec;
-    // basin 1 x-range
-    const b1L = sx + wL;
-    const b1R = b1L + bLen;
-    const b1C = (b1L + b1R) / 2;
-    // basin 2 x-range
-    const b2L = b1R + div;
-    const b2R = b2L + bLen;
-    const b2C = (b2L + b2R) / 2;
-    // drops (each basin half-length to its center)
-    const drop1 = pitch1 > 0 ? Math.max((basinLenMm / 2) * (pitch1 / 100) * scaleSec, 12) : 0;
-    const drop2 = pitch2 > 0 ? Math.max((basinLenMm / 2) * (pitch2 / 100) * scaleSec, 12) : 0;
-    const edge1 = floorEdgeY;
-    const center1 = edge1 + drop1;
-    const edge2 = floorEdgeY;
-    const center2 = edge2 + drop2;
-    section = outerBox +
-      // basin 1 trough
-      `<path d="M ${b1L} ${basinTop} L ${b1R} ${basinTop} L ${b1R} ${edge1} L ${b1C} ${center1} L ${b1L} ${edge1} Z" fill="white" stroke="${STROKE}" stroke-width="1.2" stroke-linejoin="round"/>` +
-      // basin 2 trough
-      `<path d="M ${b2L} ${basinTop} L ${b2R} ${basinTop} L ${b2R} ${edge2} L ${b2C} ${center2} L ${b2L} ${edge2} Z" fill="white" stroke="${STROKE}" stroke-width="1.2" stroke-linejoin="round"/>` +
-      // divider rib top hatch (solid stone between basins)
-      `<rect x="${b1R}" y="${basinTop}" width="${div}" height="${floorEdgeY - basinTop}" fill="${FILL_INT}" stroke="${STROKE}" stroke-width="1"/>`;
-    drainSecSvg =
-      `<circle cx="${b1C}" cy="${center1 - 3}" r="3.5" fill="none" stroke="${STROKE}" stroke-width="1"/>` +
-      `<circle cx="${b2C}" cy="${center2 - 3}" r="3.5" fill="none" stroke="${STROKE}" stroke-width="1"/>`;
-    pitchLabel =
-      (pitch1 > 0 ? `<text x="${b1C}" y="${edge1 - 6}" text-anchor="middle" font-size="10" fill="${DIM}" font-family="monospace" font-style="italic">${pitch1}%</text>` : '') +
-      (pitch2 > 0 ? `<text x="${b2C}" y="${edge2 - 6}" text-anchor="middle" font-size="10" fill="${DIM}" font-family="monospace" font-style="italic">${pitch2}%</text>` : '');
-    const dimBreakY = sy + secH + 40;
-    sectionDims =
-      dimLineH(sx, b1L, dimBreakY, wallL + '') +
-      dimLineH(b1L, b1R, dimBreakY, Math.round(basinLenMm) + '') +
-      dimLineH(b1R, b2L, dimBreakY, dividerMm + ' מחיצה') +
-      dimLineH(b2L, b2R, dimBreakY, Math.round(basinLenMm) + '') +
-      dimLineH(b2R, sx + secW, dimBreakY, wallR + '');
+    // a separate trough per basin, each draining to its own center
+    const divider = spec.dividerMm ?? spec.wallThicknessMm;
+    basins.forEach((b) => {
+      const t = trough(b.x1mm, b.x2mm, b.centerMm, b.pitchPct);
+      section += t.path;
+      drainSecSvg += `<circle cx="${t.lowX}" cy="${t.lowY - 3}" r="3.5" fill="none" stroke="${STROKE}" stroke-width="1"/>`;
+      const tag = flat ? '90°' : (b.pitchPct > 0 ? b.pitchPct + '%' : '');
+      if (tag) pitchLabel += `<text x="${t.lowX}" y="${basinTop - 6}" text-anchor="middle" font-size="10" fill="${DIM}" font-family="monospace" font-style="italic">${tag}</text>`;
+    });
+    // solid divider ribs between basins
+    for (let i = 0; i < n - 1; i++) {
+      const rL = smx(basins[i].x2mm), rW = divider * scaleSec;
+      section += `<rect x="${rL}" y="${basinTop}" width="${rW}" height="${floorEdgeY - basinTop}" fill="${FILL_INT}" stroke="${STROKE}" stroke-width="1"/>`;
+    }
+    // dimension line: wallL | basin1 | ... | wallR  (compact — show end walls + first basin width)
+    sectionDims = dimLineH(sx, smx(wallL), dimBreakY, wallL + '') +
+      dimLineH(smx(basins[0].x1mm), smx(basins[0].x2mm), dimBreakY, Math.round(basins[0].widthMm) + (n > 1 ? ' ×' + n : '')) +
+      dimLineH(smx(spec.lengthMm - wallR), sx + secW, dimBreakY, wallR + '');
   }
 
   const mountLabel = spec.mount === 'wall' ? 'תלוי קיר (ללא משטח)' : 'מונח על משטח';
@@ -282,8 +356,13 @@ export function renderSinkSketch(rawSpec: SketchSpec): string {
     : `<line x1="${sx - 4}" y1="${sy + secH}" x2="${sx + secW + 4}" y2="${sy + secH}" stroke="${STROKE}" stroke-width="2"/>`;
 
   // ---------- FOOTER: technical data panel ----------
-  const pitchTxtF = (pitch1 > 0 || pitch2 > 0) ? (pitch1 === pitch2 ? pitch1 + '%' : pitch1 + '% / ' + pitch2 + '%') : '—';
-  const drainTxtF = (spec.drain === 'linear' ? 'תעלה' : 'עגול') + (drainR > 0 ? ' · R' + drainR : '');
+  const pitchSet = Array.from(new Set(basins.map((b) => b.pitchPct)));
+  const pitchTxtF = flat ? 'ישר 90° (ללא שיפוע)'
+    : (pitchSet.length === 1 ? pitchSet[0] + '%' : Math.min(...pitchSet) + '%–' + Math.max(...pitchSet) + '%');
+  const drainTxtF = central
+    ? '1 · מרכזי' + (spec.drain === 'linear' ? ' · תעלה' : ' · עגול') + (drainR > 0 ? ' R' + drainR : '')
+    : n + ' · ' + (spec.drain === 'linear' ? 'תעלה' : 'עגול') + (drainR > 0 ? ' R' + drainR : '');
+  const buildTxt = (central ? 'תעלה משותפת' : 'אגנים נפרדים') + ' · ' + n + ' אגנים · ' + (flat ? 'תחתית ישרה 90°' : 'תחתית משופעת');
   const fy = PAGE_H - 172;
   const techRow = (col: number, i: number, label: string, val: string): string =>
     `<text x="${col}" y="${fy + 50 + i * 21}" text-anchor="end" font-size="13" fill="${STROKE}"><tspan fill="${DIM}">${esc(label)}: </tspan>${esc(val)}</text>`;
@@ -297,15 +376,14 @@ export function renderSinkSketch(rawSpec: SketchSpec): string {
     techRow(colR, 2, 'גובה', spec.heightMm + ' מ"מ') +
     techRow(colR, 3, 'עומק אגן', spec.basinDepthMm + ' מ"מ') +
     techRow(colR, 4, 'דפנות קצה', wallL + ' / ' + wallR + ' מ"מ') +
-    techRow(colL, 0, 'תצורה', isDouble ? 'כיור כפול · 2 אגנים' : 'כיור יחיד') +
-    techRow(colL, 1, 'שיפוע ניקוז', pitchTxtF) +
+    techRow(colL, 0, 'מבנה', buildTxt) +
+    techRow(colL, 1, 'שיפוע', pitchTxtF) +
     techRow(colL, 2, 'ניקוז', drainTxtF) +
     techRow(colL, 3, 'התקנה', spec.mount === 'wall' ? 'תלוי קיר' : 'על משטח') +
     techRow(colL, 4, 'סיפון', spec.stoneSiphonCover ? 'מאבן תואמת' : 'סטנדרטי') +
     `<rect x="92" y="${fy + 134}" width="13" height="13" fill="${FILL_EXT}" stroke="${STROKE}"/><text x="110" y="${fy + 145}" font-size="12" fill="${STROKE}">שיש חוץ: ${esc(spec.exteriorStone || '—')}</text>` +
     `<rect x="300" y="${fy + 134}" width="13" height="13" fill="${FILL_INT}" stroke="${STROKE}"/><text x="318" y="${fy + 145}" font-size="12" fill="${STROKE}">שיש פנים (אגן): ${esc(spec.interiorStone || '—')}</text>`;
 
-  return `<svg viewBox="0 0 ${PAGE_W} ${PAGE_H}" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, sans-serif" style="direction:ltr"><rect x="0" y="0" width="${PAGE_W}" height="${PAGE_H}" fill="white"/><text x="${PAGE_W / 2}" y="34" text-anchor="middle" font-size="18" font-weight="600" fill="${STROKE}">${esc(spec.modelName || 'כיור שיש')}</text><text x="${PAGE_W / 2}" y="54" text-anchor="middle" font-size="12" fill="${DIM}">שרטוט ייצור · מידות במ"מ${isDouble ? ' · כיור כפול' : ''}</text><text x="${topBoxX}" y="${topBoxY - 12}" font-size="13" font-weight="600" fill="${STROKE}">מבט על (TOP)</text><polygon points="${pts}" fill="${FILL_EXT}" stroke="${STROKE}" stroke-width="1.5"/>${topBasins}${topDrains}${drainRLabel}${tapSvg}${dimLineH(ox, ox + Lpx, oy + Wpx + 24, spec.lengthMm + '')}${dimLineV(oy, oy + Wpx, ox - 22, spec.widthMm + '')}<text x="${secBoxX}" y="${secBoxY - 12}" font-size="13" font-weight="600" fill="${STROKE}">חתך צד (SECTION)</text>${section}${drainSecSvg}${pitchLabel}${wallHatch}${dimLineV(sy, sy + secH, sx + secW + 24, spec.heightMm + '')}${sectionDims}<text x="${sx + secW / 2}" y="${sy + secH + 18}" text-anchor="middle" font-size="11" fill="${DIM}">${esc(mountLabel)}</text>${techPanel}</svg>`;
+  const subtitle = 'שרטוט ייצור · מידות במ"מ · ' + n + ' אגנים · ' + (central ? 'ניקוז מרכזי' : 'ניקוז לכל אגן') + (flat ? ' · ישר 90°' : '');
+  return `<svg viewBox="0 0 ${PAGE_W} ${PAGE_H}" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, sans-serif" style="direction:ltr"><rect x="0" y="0" width="${PAGE_W}" height="${PAGE_H}" fill="white"/><text x="${PAGE_W / 2}" y="34" text-anchor="middle" font-size="18" font-weight="600" fill="${STROKE}">${esc(spec.modelName || 'כיור שיש')}</text><text x="${PAGE_W / 2}" y="54" text-anchor="middle" font-size="12" fill="${DIM}">${esc(subtitle)}</text><text x="${topBoxX}" y="${topBoxY - 12}" font-size="13" font-weight="600" fill="${STROKE}">מבט על (TOP)</text><polygon points="${pts}" fill="${FILL_EXT}" stroke="${STROKE}" stroke-width="1.5"/>${topBasins}${topDrains}${drainRLabel}${tapSvg}${dimLineH(ox, ox + Lpx, oy + Wpx + 24, spec.lengthMm + '')}${dimLineV(oy, oy + Wpx, ox - 22, spec.widthMm + '')}<text x="${secBoxX}" y="${secBoxY - 12}" font-size="13" font-weight="600" fill="${STROKE}">חתך צד (SECTION)</text>${section}${drainSecSvg}${pitchLabel}${wallHatch}${dimLineV(sy, sy + secH, sx + secW + 24, spec.heightMm + '')}${sectionDims}<text x="${sx + secW / 2}" y="${sy + secH + 18}" text-anchor="middle" font-size="11" fill="${DIM}">${esc(mountLabel)}</text>${techPanel}</svg>`;
 }
-
-
