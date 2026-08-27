@@ -162,6 +162,23 @@ export default function DemoCard({ demo }: { demo: DemoTrial }) {
     setExporting('');
   }
 
+  // rasterize the sketch → Cloudinary → open the imaging builder pre-loaded with it as the סקיצה
+  async function sendToImaging() {
+    if (!demo.sketch_svg) return;
+    if (!isCloudinaryConfigured()) { window.alert('Cloudinary לא מוגדר'); return; }
+    setExporting('imaging');
+    try {
+      const blob = await svgToPngBlob(demo.sketch_svg, 2.5);
+      const file = new File([blob], baseName + '.png', { type: 'image/png' });
+      const up = await uploadToCloudinary(file, 'marble-art/sketches-bank');
+      const params = new URLSearchParams({ sketchImg: up.url, model: demo.title_he || 'שרטוט' });
+      router.push('/prompt-builder?' + params.toString());
+    } catch (e) {
+      window.alert('שליחה להדמיה נכשלה: ' + (e instanceof Error ? e.message : String(e)));
+      setExporting('');
+    }
+  }
+
   function sendWhatsApp() {
     const txt = encodeURIComponent((demo.title_he || 'פריט') + (demo.cloudinary_url ? '\n' + demo.cloudinary_url : ''));
     window.open('https://api.whatsapp.com/send?text=' + txt, '_blank');
@@ -222,6 +239,7 @@ export default function DemoCard({ demo }: { demo: DemoTrial }) {
                   <button onClick={pngToCloudinary} disabled={!!exporting} title="העלה PNG ל-Cloudinary" className="hover:text-blue-600 text-sm disabled:opacity-40">{exporting === 'cloud' ? '⏳' : '☁️'}</button>
                   <button onClick={exportPdf} disabled={!!exporting} title="ייצא PDF ללקוח" className="hover:text-blue-600 text-sm disabled:opacity-40">{exporting === 'pdf' ? '⏳' : '📄 PDF'}</button>
                   <button onClick={() => router.push('/sketch-to-offer?sketch=' + demo.id)} title="תמחור — משרטוט להצעת מחיר" className="hover:text-blue-600 text-sm">🧮 תמחור</button>
+                  <button onClick={sendToImaging} disabled={!!exporting} title="שלח להדמיה — בונה פרומפטים" className="hover:text-blue-600 text-sm disabled:opacity-40">{exporting === 'imaging' ? '⏳' : '🖼️ הדמיה'}</button>
                 </>
               ) : demo.cloudinary_url ? (
                 <a href={demo.cloudinary_url} download title="הורד" className="hover:text-blue-600 text-sm">⬇️</a>

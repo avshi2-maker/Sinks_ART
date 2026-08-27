@@ -1,8 +1,8 @@
 // src/components/prompt-builder/PromptBuilderShell.tsx
 'use client';
 
-import { useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useMemo, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import GeometryFields from './GeometryFields';
 import MediaInputPanel, { EMPTY_SELECTION } from './MediaInputPanel';
 import type { MediaSelection } from './MediaInputPanel';
@@ -57,6 +57,24 @@ export default function PromptBuilderShell({ mode, customerId, mediaAnalyses }: 
   const [saving, setSaving] = useState(false);
   const [savedVersion, setSavedVersion] = useState<number | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+
+  // Pre-load a sketch (and optional stone samples) handed over from the gallery via URL params
+  // — e.g. /prompt-builder?sketchImg=<url>&stoneA=<url>&stoneB=<url>&model=<name>
+  useEffect(() => {
+    const sketchImg = searchParams.get('sketchImg');
+    const stoneA = searchParams.get('stoneA');
+    const stoneB = searchParams.get('stoneB');
+    const model = searchParams.get('model');
+    if (!sketchImg && !stoneA && !stoneB && !model) return;
+    setSelection((prev) => ({
+      sketch: sketchImg ? { url: sketchImg, label: 'שרטוט מהגלריה', isObjectUrl: false } : prev.sketch,
+      sampleA: stoneA ? { url: stoneA, label: 'שיש חוץ', isObjectUrl: false } : prev.sampleA,
+      sampleB: stoneB ? { url: stoneB, label: 'שיש פנים', isObjectUrl: false } : prev.sampleB,
+    }));
+    if (model) setInputs((p) => ({ ...p, modelName: model }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const isDoubleSink = /double|כפול|2 אגנים|שני אגנים/i.test((inputs.modelName || '') + ' ' + (inputs.dimensions || ''));
   const nanoBananaPrompt = useMemo(() => (pitchMode === 'rim' ? buildNanoBananaPitchPrompt(inputs) : pitchMode === 'base' ? buildNanoBananaPitchFromBasePrompt(inputs) : pitchMode === 'fromrim' ? buildNanoBananaSlopeFromRimPrompt(inputs, isDoubleSink) : buildNanoBananaPrompt(inputs)), [inputs, pitchMode, isDoubleSink]);
