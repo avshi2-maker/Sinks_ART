@@ -49,3 +49,44 @@ export async function deleteSwatch(id: string): Promise<MarbleResult> {
   revalidatePath('/sketch');
   return { ok: true, id };
 }
+
+// --- Customer's OWN uploaded sample photos (from their media, not the shared catalog) ---
+// Pulls image rows from media_analyses for one customer so a real customer sample can be
+// picked as the exterior/interior stone reference for the sketch imaging.
+export interface CustomerSample {
+  id: string;
+  label: string;
+  image_url: string;
+  thumbnail_url: string | null;
+  stone_hint: string | null;
+}
+
+interface MediaSampleRow {
+  id: string;
+  cloudinary_url: string | null;
+  thumbnail_url: string | null;
+  source_filename: string | null;
+  extracted_stone_type: string | null;
+}
+
+export async function fetchCustomerSamples(customerId: string): Promise<CustomerSample[]> {
+  if (!customerId) return [];
+  const res = await sb()
+    .from('media_analyses')
+    .select('id, cloudinary_url, thumbnail_url, source_filename, extracted_stone_type')
+    .eq('customer_id', customerId)
+    .eq('media_type', 'photo')
+    .not('cloudinary_url', 'is', null)
+    .order('created_at', { ascending: false });
+  if (res.error) { console.error('[fetchCustomerSamples]', res.error.message); return []; }
+  const rows = (res.data || []) as MediaSampleRow[];
+  return rows
+    .filter((r) => !!r.cloudinary_url)
+    .map((r) => ({
+      id: r.id,
+      label: r.extracted_stone_type || r.source_filename || 'דגימת לקוח',
+      image_url: r.cloudinary_url as string,
+      thumbnail_url: r.thumbnail_url,
+      stone_hint: r.extracted_stone_type,
+    }));
+}

@@ -44,6 +44,8 @@ export interface SketchSpec {
   floorType?: FloorType;      // default 'pitched'
   drainMode?: DrainMode;      // default 'perBasin'
   dividerMm?: number;         // inter-basin rib thickness (defaults to wallThicknessMm)
+  exteriorStoneUrl?: string;  // customer's own sample photo used as the exterior reference
+  interiorStoneUrl?: string;  // customer's own sample photo used as the interior reference
 }
 
 const PAGE_W = 800;
@@ -381,8 +383,8 @@ export function renderSinkSketch(rawSpec: SketchSpec): string {
     techRow(colL, 2, 'ניקוז', drainTxtF) +
     techRow(colL, 3, 'התקנה', spec.mount === 'wall' ? 'תלוי קיר' : 'על משטח') +
     techRow(colL, 4, 'סיפון', spec.stoneSiphonCover ? 'מאבן תואמת' : 'סטנדרטי') +
-    `<rect x="92" y="${fy + 134}" width="13" height="13" fill="${FILL_EXT}" stroke="${STROKE}"/><text x="110" y="${fy + 145}" font-size="12" fill="${STROKE}">שיש חוץ: ${esc(spec.exteriorStone || '—')}</text>` +
-    `<rect x="300" y="${fy + 134}" width="13" height="13" fill="${FILL_INT}" stroke="${STROKE}"/><text x="318" y="${fy + 145}" font-size="12" fill="${STROKE}">שיש פנים (אגן): ${esc(spec.interiorStone || '—')}</text>`;
+    `<rect x="92" y="${fy + 134}" width="13" height="13" fill="${FILL_EXT}" stroke="${STROKE}"/><text x="110" y="${fy + 145}" font-size="12" fill="${STROKE}">שיש חוץ: ${esc(spec.exteriorStone || '—')}${spec.exteriorStoneUrl ? ' (דגימת לקוח)' : ''}</text>` +
+    `<rect x="300" y="${fy + 134}" width="13" height="13" fill="${FILL_INT}" stroke="${STROKE}"/><text x="318" y="${fy + 145}" font-size="12" fill="${STROKE}">שיש פנים (אגן): ${esc(spec.interiorStone || '—')}${spec.interiorStoneUrl ? ' (דגימת לקוח)' : ''}</text>`;
 
   const subtitle = 'שרטוט ייצור · מידות במ"מ · ' + n + ' אגנים · ' + (central ? 'ניקוז מרכזי' : 'ניקוז לכל אגן') + (flat ? ' · ישר 90°' : '');
   return `<svg viewBox="0 0 ${PAGE_W} ${PAGE_H}" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, sans-serif" style="direction:ltr"><rect x="0" y="0" width="${PAGE_W}" height="${PAGE_H}" fill="white"/><text x="${PAGE_W / 2}" y="34" text-anchor="middle" font-size="18" font-weight="600" fill="${STROKE}">${esc(spec.modelName || 'כיור שיש')}</text><text x="${PAGE_W / 2}" y="54" text-anchor="middle" font-size="12" fill="${DIM}">${esc(subtitle)}</text><text x="${topBoxX}" y="${topBoxY - 12}" font-size="13" font-weight="600" fill="${STROKE}">מבט על (TOP)</text><polygon points="${pts}" fill="${FILL_EXT}" stroke="${STROKE}" stroke-width="1.5"/>${topBasins}${topDrains}${drainRLabel}${tapSvg}${dimLineH(ox, ox + Lpx, oy + Wpx + 24, spec.lengthMm + '')}${dimLineV(oy, oy + Wpx, ox - 22, spec.widthMm + '')}<text x="${secBoxX}" y="${secBoxY - 12}" font-size="13" font-weight="600" fill="${STROKE}">חתך צד (SECTION)</text>${section}${drainSecSvg}${pitchLabel}${wallHatch}${dimLineV(sy, sy + secH, sx + secW + 24, spec.heightMm + '')}${sectionDims}<text x="${sx + secW / 2}" y="${sy + secH + 18}" text-anchor="middle" font-size="11" fill="${DIM}">${esc(mountLabel)}</text>${techPanel}</svg>`;

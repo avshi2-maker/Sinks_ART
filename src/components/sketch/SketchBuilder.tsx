@@ -10,6 +10,8 @@ import SaveSketchToGallery from '@/components/sketch/SaveSketchToGallery';
 import { useRouter } from 'next/navigation';
 import { createPO } from '@/lib/po/poData';
 import { MarbleSwatch } from '@/lib/marble/marbleData';
+import MarbleBrowser from '@/components/sketch/MarbleBrowser';
+import type { PickerItem } from '@/components/shared/EntityPicker';
 import {
   renderSinkSketch, sanitizeSpec, resolveBasins, estimateCentralDrain,
   SketchSpec, SketchShape, SketchMount, SketchDrain, FloorType, DrainMode,
@@ -24,7 +26,13 @@ const SHAPES: { v: SketchShape; he: string }[] = [
   { v: 'custom', he: 'חופשי' },
 ];
 
-export interface SketchBuilderProps { initial?: Partial<SketchSpec>; swatches?: MarbleSwatch[]; }
+export interface SketchBuilderProps {
+  initial?: Partial<SketchSpec>;
+  swatches?: MarbleSwatch[];
+  customers?: PickerItem[];
+  initialCustomerId?: string;
+  initialCustomerLabel?: string;
+}
 
 const DEFAULTS: SketchSpec = {
   modelName: '', shape: 'rectangle',
@@ -35,7 +43,7 @@ const DEFAULTS: SketchSpec = {
   floorType: 'pitched', drainMode: 'perBasin', dividerMm: 40,
 };
 
-export default function SketchBuilder({ initial, swatches = [] }: SketchBuilderProps) {
+export default function SketchBuilder({ initial, swatches = [], customers = [], initialCustomerId = '', initialCustomerLabel = '' }: SketchBuilderProps) {
   const router = useRouter();
   const [poBusy, setPoBusy] = useState(false);
   const [cmIn, setCmIn] = useState(0);
@@ -330,16 +338,32 @@ export default function SketchBuilder({ initial, swatches = [] }: SketchBuilderP
           <span>סיפון מאבן תואמת</span>
         </label>
 
+        <div className="pt-1">
+          <div className="text-xs font-semibold text-stone-700 mb-1.5">בחירת דגימת שיש של הלקוח (לבניית ההדמיה)</div>
+          <MarbleBrowser
+            swatches={swatches}
+            customers={customers}
+            initialCustomerId={initialCustomerId}
+            initialCustomerLabel={initialCustomerLabel}
+            exterior={spec.exteriorStone}
+            interior={spec.interiorStone}
+            exteriorUrl={spec.exteriorStoneUrl || ''}
+            interiorUrl={spec.interiorStoneUrl || ''}
+            onPick={(layer, name, url) => setSpec((p) => (layer === 'ext'
+              ? { ...p, exteriorStone: name, exteriorStoneUrl: url || undefined }
+              : { ...p, interiorStone: name, interiorStoneUrl: url || undefined }))}
+          />
+        </div>
         <div className="grid grid-cols-2 gap-2">
           <label className="block">
             <span className="block text-xs font-medium text-stone-600 mb-1">שיש חוץ (sample A)</span>
             <input value={spec.exteriorStone} onChange={(e) => set('exteriorStone', e.target.value)} placeholder="קרארה" className="w-full px-2 py-1.5 text-sm border border-stone-300 rounded-md" dir="rtl" />
-            {swatches.length > 0 && (<div className="flex gap-1 overflow-x-auto mt-1 pb-1">{swatches.map((sw) => (<button key={sw.id} type="button" title={sw.name_en} onClick={() => set('exteriorStone', sw.name_he || sw.name_en)} className={'shrink-0 w-9 h-9 rounded border-2 overflow-hidden ' + (spec.exteriorStone === (sw.name_he || sw.name_en) ? 'border-blue-500' : 'border-transparent')}><img src={sw.image_url} alt={sw.name_en} className="w-full h-full object-cover" /></button>))}</div>)}
+            {swatches.length > 0 && (<div className="flex gap-1 overflow-x-auto mt-1 pb-1">{swatches.map((sw) => (<button key={sw.id} type="button" title={sw.name_en} onClick={() => setSpec((p) => ({ ...p, exteriorStone: sw.name_he || sw.name_en, exteriorStoneUrl: undefined }))} className={'shrink-0 w-9 h-9 rounded border-2 overflow-hidden ' + (spec.exteriorStone === (sw.name_he || sw.name_en) ? 'border-blue-500' : 'border-transparent')}><img src={sw.image_url} alt={sw.name_en} className="w-full h-full object-cover" /></button>))}</div>)}
           </label>
           <label className="block">
             <span className="block text-xs font-medium text-stone-600 mb-1">שיש פנים (sample B)</span>
             <input value={spec.interiorStone} onChange={(e) => set('interiorStone', e.target.value)} placeholder="נרו מרקינה" className="w-full px-2 py-1.5 text-sm border border-stone-300 rounded-md" dir="rtl" />
-            {swatches.length > 0 && (<div className="flex gap-1 overflow-x-auto mt-1 pb-1">{swatches.map((sw) => (<button key={sw.id} type="button" title={sw.name_en} onClick={() => set('interiorStone', sw.name_he || sw.name_en)} className={'shrink-0 w-9 h-9 rounded border-2 overflow-hidden ' + (spec.interiorStone === (sw.name_he || sw.name_en) ? 'border-blue-500' : 'border-transparent')}><img src={sw.image_url} alt={sw.name_en} className="w-full h-full object-cover" /></button>))}</div>)}
+            {swatches.length > 0 && (<div className="flex gap-1 overflow-x-auto mt-1 pb-1">{swatches.map((sw) => (<button key={sw.id} type="button" title={sw.name_en} onClick={() => setSpec((p) => ({ ...p, interiorStone: sw.name_he || sw.name_en, interiorStoneUrl: undefined }))} className={'shrink-0 w-9 h-9 rounded border-2 overflow-hidden ' + (spec.interiorStone === (sw.name_he || sw.name_en) ? 'border-blue-500' : 'border-transparent')}><img src={sw.image_url} alt={sw.name_en} className="w-full h-full object-cover" /></button>))}</div>)}
           </label>
         </div>
 

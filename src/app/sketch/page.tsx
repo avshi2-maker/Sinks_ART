@@ -5,15 +5,24 @@ import Link from 'next/link';
 import SketchBuilder from '@/components/sketch/SketchBuilder';
 import { fetchSwatches } from '@/lib/marble/marbleData';
 import { fetchSketchSpec } from '@/lib/demos/demosData';
+import { fetchCustomersList } from '@/lib/customers/fetchCustomersList';
 import type { SketchSpec } from '@/lib/sketch/sketchRenderer';
+import type { PickerItem } from '@/components/shared/EntityPicker';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-export default async function SketchPage({ searchParams }: { searchParams: Promise<{ load?: string }> }) {
+export default async function SketchPage({ searchParams }: { searchParams: Promise<{ load?: string; customer?: string }> }) {
   const sp = await searchParams;
   const loadId = sp?.load || '';
-  const swatches = await fetchSwatches();
+  const [swatches, customers] = await Promise.all([fetchSwatches(), fetchCustomersList()]);
+  const customerItems: PickerItem[] = customers.map((c) => ({
+    id: c.id,
+    label: c.name_he || c.name_en || '(ללא שם)',
+    sublabel: c.phone,
+  }));
+  const initialCustomerId = sp?.customer || '';
+  const initialCustomerLabel = customerItems.find((c) => c.id === initialCustomerId)?.label || '';
 
   let initial: Partial<SketchSpec> | undefined = undefined;
   let editingTitle = '';
@@ -42,7 +51,13 @@ export default async function SketchPage({ searchParams }: { searchParams: Promi
           ✏️ עריכת שרטוט שמור{editingTitle ? ': ' + editingTitle : ''} — שינוי המידות יישמר כשרטוט <span className="font-semibold">חדש</span>. השרטוט המקורי נשמר.
         </div>
       )}
-      <SketchBuilder initial={initial} swatches={swatches} />
+      <SketchBuilder
+        initial={initial}
+        swatches={swatches}
+        customers={customerItems}
+        initialCustomerId={initialCustomerId}
+        initialCustomerLabel={initialCustomerLabel}
+      />
     </div>
   );
 }
