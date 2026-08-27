@@ -44,8 +44,10 @@ export interface SketchSpec {
   floorType?: FloorType;      // default 'pitched'
   drainMode?: DrainMode;      // default 'perBasin'
   dividerMm?: number;         // inter-basin rib thickness (defaults to wallThicknessMm)
-  exteriorStoneUrl?: string;  // customer's own sample photo used as the exterior reference
-  interiorStoneUrl?: string;  // customer's own sample photo used as the interior reference
+  exteriorStoneUrl?: string;    // customer's own sample photo used as the exterior reference (full URL, for imaging)
+  interiorStoneUrl?: string;    // customer's own sample photo used as the interior reference (full URL, for imaging)
+  exteriorStoneThumb?: string;  // small data-URI thumbnail of the exterior sample (drawn on the sketch; export-safe)
+  interiorStoneThumb?: string;  // small data-URI thumbnail of the interior sample (drawn on the sketch; export-safe)
 }
 
 const PAGE_W = 800;
@@ -386,6 +388,18 @@ export function renderSinkSketch(rawSpec: SketchSpec): string {
     `<rect x="92" y="${fy + 134}" width="13" height="13" fill="${FILL_EXT}" stroke="${STROKE}"/><text x="110" y="${fy + 145}" font-size="12" fill="${STROKE}">שיש חוץ: ${esc(spec.exteriorStone || '—')}${spec.exteriorStoneUrl ? ' (דגימת לקוח)' : ''}</text>` +
     `<rect x="300" y="${fy + 134}" width="13" height="13" fill="${FILL_INT}" stroke="${STROKE}"/><text x="318" y="${fy + 145}" font-size="12" fill="${STROKE}">שיש פנים (אגן): ${esc(spec.interiorStone || '—')}${spec.interiorStoneUrl ? ' (דגימת לקוח)' : ''}</text>`;
 
+  // ---------- customer sample thumbnails (data-URI = export-safe, no canvas taint) ----------
+  const thumbBox = (x: number, dataUri: string, label: string): string =>
+    `<image href="${dataUri}" xlink:href="${dataUri}" x="${x}" y="8" width="52" height="40" preserveAspectRatio="xMidYMid slice"/>` +
+    `<rect x="${x}" y="8" width="52" height="40" fill="none" stroke="${STROKE}" stroke-width="1"/>` +
+    `<text x="${x + 26}" y="57" text-anchor="middle" font-size="8" fill="${DIM}">${esc(label)}</text>`;
+  let thumbs = '';
+  if (spec.exteriorStoneThumb || spec.interiorStoneThumb) {
+    thumbs += `<text x="712" y="6" text-anchor="end" font-size="8" fill="${DIM}">דגימת לקוח</text>`;
+    if (spec.exteriorStoneThumb) thumbs += thumbBox(602, spec.exteriorStoneThumb, 'חוץ');
+    if (spec.interiorStoneThumb) thumbs += thumbBox(660, spec.interiorStoneThumb, 'פנים');
+  }
+
   const subtitle = 'שרטוט ייצור · מידות במ"מ · ' + n + ' אגנים · ' + (central ? 'ניקוז מרכזי' : 'ניקוז לכל אגן') + (flat ? ' · ישר 90°' : '');
-  return `<svg viewBox="0 0 ${PAGE_W} ${PAGE_H}" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, sans-serif" style="direction:ltr"><rect x="0" y="0" width="${PAGE_W}" height="${PAGE_H}" fill="white"/><text x="${PAGE_W / 2}" y="34" text-anchor="middle" font-size="18" font-weight="600" fill="${STROKE}">${esc(spec.modelName || 'כיור שיש')}</text><text x="${PAGE_W / 2}" y="54" text-anchor="middle" font-size="12" fill="${DIM}">${esc(subtitle)}</text><text x="${topBoxX}" y="${topBoxY - 12}" font-size="13" font-weight="600" fill="${STROKE}">מבט על (TOP)</text><polygon points="${pts}" fill="${FILL_EXT}" stroke="${STROKE}" stroke-width="1.5"/>${topBasins}${topDrains}${drainRLabel}${tapSvg}${dimLineH(ox, ox + Lpx, oy + Wpx + 24, spec.lengthMm + '')}${dimLineV(oy, oy + Wpx, ox - 22, spec.widthMm + '')}<text x="${secBoxX}" y="${secBoxY - 12}" font-size="13" font-weight="600" fill="${STROKE}">חתך צד (SECTION)</text>${section}${drainSecSvg}${pitchLabel}${wallHatch}${dimLineV(sy, sy + secH, sx + secW + 24, spec.heightMm + '')}${sectionDims}<text x="${sx + secW / 2}" y="${sy + secH + 18}" text-anchor="middle" font-size="11" fill="${DIM}">${esc(mountLabel)}</text>${techPanel}</svg>`;
+  return `<svg viewBox="0 0 ${PAGE_W} ${PAGE_H}" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" font-family="system-ui, sans-serif" style="direction:ltr"><rect x="0" y="0" width="${PAGE_W}" height="${PAGE_H}" fill="white"/>${thumbs}<text x="${PAGE_W / 2}" y="34" text-anchor="middle" font-size="18" font-weight="600" fill="${STROKE}">${esc(spec.modelName || 'כיור שיש')}</text><text x="${PAGE_W / 2}" y="54" text-anchor="middle" font-size="12" fill="${DIM}">${esc(subtitle)}</text><text x="${topBoxX}" y="${topBoxY - 12}" font-size="13" font-weight="600" fill="${STROKE}">מבט על (TOP)</text><polygon points="${pts}" fill="${FILL_EXT}" stroke="${STROKE}" stroke-width="1.5"/>${topBasins}${topDrains}${drainRLabel}${tapSvg}${dimLineH(ox, ox + Lpx, oy + Wpx + 24, spec.lengthMm + '')}${dimLineV(oy, oy + Wpx, ox - 22, spec.widthMm + '')}<text x="${secBoxX}" y="${secBoxY - 12}" font-size="13" font-weight="600" fill="${STROKE}">חתך צד (SECTION)</text>${section}${drainSecSvg}${pitchLabel}${wallHatch}${dimLineV(sy, sy + secH, sx + secW + 24, spec.heightMm + '')}${sectionDims}<text x="${sx + secW / 2}" y="${sy + secH + 18}" text-anchor="middle" font-size="11" fill="${DIM}">${esc(mountLabel)}</text>${techPanel}</svg>`;
 }

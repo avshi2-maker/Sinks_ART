@@ -98,6 +98,34 @@ export default function SketchBuilder({ initial, swatches = [], customers = [], 
     });
   }
 
+  // fetch a small, CORS-clean data-URI thumbnail of a customer sample (export-safe on the canvas)
+  async function toThumbDataUri(url: string): Promise<string> {
+    try {
+      const small = url.includes('/upload/') ? url.replace('/upload/', '/upload/w_200,h_150,c_fill,q_auto,f_jpg/') : url;
+      const res = await fetch(small, { mode: 'cors' });
+      if (!res.ok) return '';
+      const blob = await res.blob();
+      return await new Promise<string>((resolve) => {
+        const fr = new FileReader();
+        fr.onload = () => resolve(String(fr.result || ''));
+        fr.onerror = () => resolve('');
+        fr.readAsDataURL(blob);
+      });
+    } catch { return ''; }
+  }
+  async function loadThumb(layer: 'ext' | 'int', url: string) {
+    const d = await toThumbDataUri(url);
+    if (!d) return;
+    setSpec((p) => (layer === 'ext' ? { ...p, exteriorStoneThumb: d } : { ...p, interiorStoneThumb: d }));
+  }
+  // pick a stone: name + (customer sample) url; clears/loads the reference thumbnail accordingly
+  function pickStone(layer: 'ext' | 'int', name: string, url: string) {
+    setSpec((p) => (layer === 'ext'
+      ? { ...p, exteriorStone: name, exteriorStoneUrl: url || undefined, exteriorStoneThumb: undefined }
+      : { ...p, interiorStone: name, interiorStoneUrl: url || undefined, interiorStoneThumb: undefined }));
+    if (url) void loadThumb(layer, url);
+  }
+
   function downloadPng() {
     const d = new Date();
     const stamp = String(d.getDate()).padStart(2, '0') + String(d.getMonth() + 1).padStart(2, '0') + d.getFullYear();
@@ -349,21 +377,19 @@ export default function SketchBuilder({ initial, swatches = [], customers = [], 
             interior={spec.interiorStone}
             exteriorUrl={spec.exteriorStoneUrl || ''}
             interiorUrl={spec.interiorStoneUrl || ''}
-            onPick={(layer, name, url) => setSpec((p) => (layer === 'ext'
-              ? { ...p, exteriorStone: name, exteriorStoneUrl: url || undefined }
-              : { ...p, interiorStone: name, interiorStoneUrl: url || undefined }))}
+            onPick={pickStone}
           />
         </div>
         <div className="grid grid-cols-2 gap-2">
           <label className="block">
             <span className="block text-xs font-medium text-stone-600 mb-1">שיש חוץ (sample A)</span>
             <input value={spec.exteriorStone} onChange={(e) => set('exteriorStone', e.target.value)} placeholder="קרארה" className="w-full px-2 py-1.5 text-sm border border-stone-300 rounded-md" dir="rtl" />
-            {swatches.length > 0 && (<div className="flex gap-1 overflow-x-auto mt-1 pb-1">{swatches.map((sw) => (<button key={sw.id} type="button" title={sw.name_en} onClick={() => setSpec((p) => ({ ...p, exteriorStone: sw.name_he || sw.name_en, exteriorStoneUrl: undefined }))} className={'shrink-0 w-9 h-9 rounded border-2 overflow-hidden ' + (spec.exteriorStone === (sw.name_he || sw.name_en) ? 'border-blue-500' : 'border-transparent')}><img src={sw.image_url} alt={sw.name_en} className="w-full h-full object-cover" /></button>))}</div>)}
+            {swatches.length > 0 && (<div className="flex gap-1 overflow-x-auto mt-1 pb-1">{swatches.map((sw) => (<button key={sw.id} type="button" title={sw.name_en} onClick={() => setSpec((p) => ({ ...p, exteriorStone: sw.name_he || sw.name_en, exteriorStoneUrl: undefined, exteriorStoneThumb: undefined }))} className={'shrink-0 w-9 h-9 rounded border-2 overflow-hidden ' + (spec.exteriorStone === (sw.name_he || sw.name_en) ? 'border-blue-500' : 'border-transparent')}><img src={sw.image_url} alt={sw.name_en} className="w-full h-full object-cover" /></button>))}</div>)}
           </label>
           <label className="block">
             <span className="block text-xs font-medium text-stone-600 mb-1">שיש פנים (sample B)</span>
             <input value={spec.interiorStone} onChange={(e) => set('interiorStone', e.target.value)} placeholder="נרו מרקינה" className="w-full px-2 py-1.5 text-sm border border-stone-300 rounded-md" dir="rtl" />
-            {swatches.length > 0 && (<div className="flex gap-1 overflow-x-auto mt-1 pb-1">{swatches.map((sw) => (<button key={sw.id} type="button" title={sw.name_en} onClick={() => setSpec((p) => ({ ...p, interiorStone: sw.name_he || sw.name_en, interiorStoneUrl: undefined }))} className={'shrink-0 w-9 h-9 rounded border-2 overflow-hidden ' + (spec.interiorStone === (sw.name_he || sw.name_en) ? 'border-blue-500' : 'border-transparent')}><img src={sw.image_url} alt={sw.name_en} className="w-full h-full object-cover" /></button>))}</div>)}
+            {swatches.length > 0 && (<div className="flex gap-1 overflow-x-auto mt-1 pb-1">{swatches.map((sw) => (<button key={sw.id} type="button" title={sw.name_en} onClick={() => setSpec((p) => ({ ...p, interiorStone: sw.name_he || sw.name_en, interiorStoneUrl: undefined, interiorStoneThumb: undefined }))} className={'shrink-0 w-9 h-9 rounded border-2 overflow-hidden ' + (spec.interiorStone === (sw.name_he || sw.name_en) ? 'border-blue-500' : 'border-transparent')}><img src={sw.image_url} alt={sw.name_en} className="w-full h-full object-cover" /></button>))}</div>)}
           </label>
         </div>
 
