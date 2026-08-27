@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import { updateDemo, deleteDemo, setDemoImage, DemoTrial } from '@/lib/demos/demosData';
 import { uploadToCloudinary, isCloudinaryConfigured } from '@/lib/intake/cloudinary';
 import { getVideoFrameUrl } from '@/lib/intake/cloudinary';
+import { buildWorkshopHtml, WorkshopSpecInput } from '@/lib/sketch/workshopSheet';
 
 // --- helper: rasterize an SVG string to a PNG blob via canvas (no libraries) ---
 async function svgToPngBlob(svg: string, scale: number): Promise<Blob> {
@@ -162,6 +163,15 @@ export default function DemoCard({ demo }: { demo: DemoTrial }) {
     setExporting('');
   }
 
+  // generate the full per-module workshop sheet (HTML → print/Save-as-PDF) from this sketch's spec
+  function openWorkshop() {
+    if (!demo.inputs_jsonb) { window.alert('אין מפרט לשרטוט הסדנה'); return; }
+    const html = buildWorkshopHtml(demo.inputs_jsonb as unknown as WorkshopSpecInput);
+    const w = window.open('', '_blank');
+    if (!w) { window.alert('חלון נחסם — אפשר חלונות קופצים לאתר'); return; }
+    w.document.write(html); w.document.close();
+  }
+
   // rasterize the sketch → Cloudinary → open the imaging builder pre-loaded with it as the סקיצה
   async function sendToImaging() {
     if (!demo.sketch_svg) return;
@@ -243,6 +253,7 @@ export default function DemoCard({ demo }: { demo: DemoTrial }) {
                   <button onClick={exportPdf} disabled={!!exporting} title="ייצא PDF ללקוח" className="hover:text-blue-600 text-sm disabled:opacity-40">{exporting === 'pdf' ? '⏳' : '📄 PDF'}</button>
                   <button onClick={() => router.push('/sketch-to-offer?sketch=' + demo.id)} title="תמחור — משרטוט להצעת מחיר" className="hover:text-blue-600 text-sm">🧮 תמחור</button>
                   <button onClick={sendToImaging} disabled={!!exporting} title="שלח להדמיה — בונה פרומפטים" className="hover:text-blue-600 text-sm disabled:opacity-40">{exporting === 'imaging' ? '⏳' : '🖼️ הדמיה'}</button>
+                  <button onClick={openWorkshop} title="שרטוט סדנה (PDF)" className="hover:text-blue-600 text-sm">🏭 סדנה</button>
                 </>
               ) : demo.cloudinary_url ? (
                 <a href={demo.cloudinary_url} download title="הורד" className="hover:text-blue-600 text-sm">⬇️</a>
