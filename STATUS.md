@@ -11,6 +11,24 @@ A running log of development sessions. **Newest at the top.** Append, never rewr
 
 ---
 
+## 2026-08-30 — Sketch library cleanup + Als slope sketches seeded
+
+### Done
+- Archived 3 duplicate gallery sketches (soft delete, `is_archived=true`, reversible): 2× "אסף" re-saves, 1× "כיור רחב כפול" re-save.
+- Seeded 2 new library sketches into `demo_trials` (`kind='sketch'`) from Als's hand sketches, SVG rendered from `SketchSpec` via `renderSinkSketch`:
+  - **אלס · תחנה משופעת (ניקוז מרכזי)** — single station, 1000×400×500 mm, basin depth 150, central round drain R45, pitched 2%, end decks 250/250.
+  - **אלס · יחידה משופעת 50×30** — single unit, 500×300×200 mm, basin depth 150, wall 50, per-basin drain R45, pitched 2%.
+- Gallery now 9 active sketches, no duplicates. The 4-basin male + 6-basin female modules (saved 08/27) were already present and untouched.
+
+### Decisions
+- Rejected a separate hardcoded `ספריית שרטוטים` presets file (`sketchPresets.ts` + builder dropdown) — it would duplicate the DB gallery, which already reopens any saved sketch in the builder via the ✏️ `/sketch?load=<id>` flow. One library = the `demo_trials` gallery. **No code shipped**; this was a DB-only change.
+- Basin depth 150 mm and drain radius R45 on the two Als rows are placeholder defaults (marked לאישור) pending Als's real numbers.
+
+### Next session
+- Confirm Als's real basin depth + drain radius; regenerate the two rows if they differ.
+
+---
+
 ## 2026-06-02 — Infra Session — Supabase cost cleanup (GadiW + Beni archived) + TCM → SRC rebuild decision
 
 ### Goals
