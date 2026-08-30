@@ -5,6 +5,7 @@
 import type { ProjectRow } from '@/lib/customers/types';
 import ProjectStatusBadge from './ProjectStatusBadge';
 import AddProjectForm from './AddProjectForm';
+import AttachOfferButton from './AttachOfferButton';
 interface Props {
   projects:   ProjectRow[];
   customerId: string;
@@ -44,6 +45,7 @@ export function ProjectsList({ projects, customerId, sites = [] }: Props) {
                 <th className="py-2 px-2 font-medium">הצעה</th>
                 <th className="py-2 px-2 font-medium">מסירה</th>
                 <th className="py-2 px-2 font-medium">סכום</th>
+                <th className="py-2 px-2 font-medium">הצעה</th>
               </tr>
             </thead>
             <tbody>
@@ -62,6 +64,7 @@ export function ProjectsList({ projects, customerId, sites = [] }: Props) {
                   <td className="py-3 px-2 text-stone-700">{formatDate(p.quote_sent_date)}</td>
                   <td className="py-3 px-2 text-stone-700">{formatDate(p.delivery_date)}</td>
                   <td className="py-3 px-2 text-stone-900 font-medium">{formatIls(p.quoted_price_ils)}</td>
+                  <td className="py-3 px-2"><AttachOfferButton customerId={customerId} projectId={p.id} /></td>
                 </tr>
               ))}
             </tbody>
