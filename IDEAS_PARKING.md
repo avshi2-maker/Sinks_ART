@@ -1,3 +1,9 @@
+﻿## 🆕 (16/09/2026) AI FOLLOW-UP MESSAGE GENERATOR — parked (build when lead volume grows)
+**What:** After `analyze-dm` extracts a lead, a button drafts the personalized FOLLOW-UP WhatsApp message to that customer (the 2nd+ message, after they answer with specifics) — references their real details (sink, city, budget, space) in Marble Art voice, with a send-to-WhatsApp link to the lead's own number.
+**Why parked (honest):** First touch is already solved by the static "/" quick-reply (thanks + form link). An AI first-reply would duplicate it. Genuine gap = personalized follow-ups, but at ~1 lead/10 days each is handled personally — ROI marginal now. Build when inbound volume makes hand-writing follow-ups a bottleneck.
+**Scope:** new /api/draft-reply (mirrors analyze-dm: server-side key, Sonnet, JSON, cost meter) + button/textarea in PastedLeadIntake.tsx. Reuses existing key/pattern/lead data. No new tables. Medium-small. Lives inside the CRM.
+
+---
 # Marble Art Sinks — Ideas Parking Lot
 
 A living document. Add ideas as they come up — no filtering, no judgement, no prioritization needed at the time of capture. Triage and prioritize later.
@@ -1435,4 +1441,5 @@ BUSINESS FOLLOW-UPS (Avshi, not code):
 [ ] Ales to confirm with architect: wall type (concrete/block vs drywall) — decides mounting/anchoring.
 [ ] Perimeter gap confirmed at 2-3mm (Ales). Lift-notches added per Ales's markup.
 [ ] Renders + shop drawings + render-presentation sent to Ales for the Damari submission.
+
 
