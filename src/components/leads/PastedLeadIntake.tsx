@@ -32,6 +32,10 @@ export default function PastedLeadIntake() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
+  // first-reply drafting
+  const [reply, setReply] = useState<string>('');
+  const [drafting, setDrafting] = useState(false);
+  const [replyCopied, setReplyCopied] = useState(false);
 
   // customer extract (unchanged shape)
   const [extracted, setExtracted] = useState<null | { full_name: string; phone: string; city_he: string; style_he: string; sinks_he: string; notes_he: string }>(null);
@@ -39,7 +43,7 @@ export default function PastedLeadIntake() {
   const [sup, setSup] = useState<SupplierExtract | null>(null);
   const [saveToDir, setSaveToDir] = useState(true);
 
-  function resetOut() { setExtracted(null); setSup(null); setError(null); setOk(null); }
+  function resetOut() { setExtracted(null); setSup(null); setError(null); setOk(null); setReply(''); }
 
   async function analyze() {
     resetOut();
@@ -91,6 +95,38 @@ export default function PastedLeadIntake() {
   }
   function addItem() { if (sup) setSup({ ...sup, line_items: [...sup.line_items, { desc: '', price: 0 }] }); }
   function removeItem(i: number) { if (sup) setSup({ ...sup, line_items: sup.line_items.filter((_, idx) => idx !== i) }); }
+
+  async function draftReply() {
+    if (!extracted) return;
+    setDrafting(true); setError(null);
+    try {
+      const res = await fetch('/api/draft-reply', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ full_name: extracted.full_name, city_he: extracted.city_he, sinks_he: extracted.sinks_he, notes_he: extracted.notes_he, style_he: extracted.style_he }),
+      });
+      const data = await res.json();
+      setDrafting(false);
+      if (!data.success) { setError(data.error || 'ניסוח נכשל'); return; }
+      setReply(data.reply_he || '');
+    } catch (e) {
+      setDrafting(false);
+      setError('שגיאת רשת: ' + (e instanceof Error ? e.message : String(e)));
+    }
+  }
+
+  function copyReply() {
+    navigator.clipboard.writeText(reply);
+    setReplyCopied(true);
+    setTimeout(() => setReplyCopied(false), 1400);
+  }
+
+  function replyWaLink(): string {
+    const digits = (extracted?.phone || '').replace(/\D/g, '');
+    const intl = digits.startsWith('0') ? '972' + digits.slice(1) : digits;
+    const base = 'https://api.whatsapp.com/send';
+    return intl ? base + '?phone=' + intl + '&text=' + encodeURIComponent(reply) : base + '?text=' + encodeURIComponent(reply);
+  }
 
   async function saveCustomer() {
     if (!extracted) return;
@@ -165,6 +201,18 @@ export default function PastedLeadIntake() {
           {source === 'whatsapp' && !extracted.phone.trim() && (<div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2 py-1 mb-2">📱 הוסף את מספר הוואטסאפ של השולח לפני שמירה</div>)}
           <input value={extracted.sinks_he} onChange={(e) => setExtracted({ ...extracted, sinks_he: e.target.value })} placeholder="כיורים / מידות" className="w-full px-2 py-1.5 text-sm border border-stone-300 rounded-md mb-2" dir="rtl" />
           <textarea value={extracted.notes_he} onChange={(e) => setExtracted({ ...extracted, notes_he: e.target.value })} placeholder="הערות" rows={2} className="w-full px-2 py-1.5 text-sm border border-stone-300 rounded-md resize-y" dir="rtl" />
+          <div className="border-t border-stone-200 pt-2 mt-1">
+            <button onClick={draftReply} disabled={drafting} className="text-sm px-4 py-1.5 rounded-md bg-gradient-to-r from-green-500 to-emerald-500 text-white font-semibold hover:opacity-90 disabled:opacity-50">{drafting ? 'מנסח…' : '💬 נסח תגובה ראשונה'}</button>
+            {reply && (
+              <div className="mt-2 space-y-2">
+                <textarea value={reply} onChange={(e) => setReply(e.target.value)} rows={4} className="w-full px-2 py-1.5 text-sm border border-emerald-300 bg-emerald-50/40 rounded-md resize-y" dir="rtl" />
+                <div className="flex items-center gap-2">
+                  <button onClick={copyReply} className="text-xs px-3 py-1.5 rounded-md border border-emerald-500 text-emerald-700 font-semibold hover:bg-emerald-50">{replyCopied ? '✓ הועתק' : 'העתק'}</button>
+                  <a href={replyWaLink()} target="_blank" rel="noopener noreferrer" className="text-xs px-3 py-1.5 rounded-md bg-green-600 text-white font-semibold hover:bg-green-700">שלח בוואטסאפ</a>
+                </div>
+              </div>
+            )}
+          </div>
           <button onClick={saveCustomer} disabled={saving} className="text-sm px-4 py-1.5 bg-emerald-600 text-white rounded-md font-semibold hover:bg-emerald-700 disabled:opacity-50">{saving ? 'שומר…' : '✓ צור ליד ב-CRM'}</button>
         </div>
       )}
