@@ -46,7 +46,7 @@ export const STAGES: NavStage[] = [
   // 6 · ALES CASE FILES — finished field jobs → case study → published + indexed (23.09.2026)
   { id: 'cases', label: 'תיקי פרויקטים מאלס', tools: [
     { href: '/case-studies', label: 'תיקי פרויקט', icon: '📂' },
-    { href: '/index-tracker', label: 'אינדוקס גוגל', icon: '🔎' },
+    { href: '/index-tracker', label: 'אינדוקס גוגל + בינג', icon: '🔎' },
   ] },
   // 5 · MONEY & DATA
   { id: 'money', label: 'כסף ונתונים', tools: [
