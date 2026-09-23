@@ -39,6 +39,7 @@ export const STAGES: NavStage[] = [
   // 4 · PRODUCTION & PURCHASING — Ales work orders + supplier POs
   { id: 'production', label: 'ייצור ורכש', tools: [
     { href: '/po', label: 'הזמנות ייצור', icon: '📋' },
+    { href: '/rfq-create', label: 'RFQ לאלס', icon: '📨' },
     { href: '/trabelsi-po', label: 'הזמנת רכש טרבלסי', icon: '🛒' },
     { href: '/suppliers', label: 'ספקים', icon: '🏭' },
   ] },
