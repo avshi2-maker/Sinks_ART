@@ -42,12 +42,15 @@ export const STAGES: NavStage[] = [
     { href: '/trabelsi-po', label: 'הזמנת רכש טרבלסי', icon: '🛒' },
     { href: '/suppliers', label: 'ספקים', icon: '🏭' },
   ] },
+  // 6 · ALES CASE FILES — finished field jobs → case study → published + indexed (23.09.2026)
+  { id: 'cases', label: 'תיקי פרויקטים מאלס', tools: [
+    { href: '/case-studies', label: 'תיקי פרויקט', icon: '📂' },
+    { href: '/index-tracker', label: 'אינדוקס גוגל', icon: '🔎' },
+  ] },
   // 5 · MONEY & DATA
   { id: 'money', label: 'כסף ונתונים', tools: [
     { href: '/roi', label: 'ROI', icon: '📊' },
     { href: '/marble', label: 'שיש', icon: '🪨' },
-    { href: '/case-studies', label: 'תיקי פרויקט', icon: '📂' },
-    { href: '/index-tracker', label: 'אינדוקס גוגל', icon: '🔎' },
   ] },
 ];
 

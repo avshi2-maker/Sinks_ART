@@ -1,9 +1,9 @@
 'use client';
-// src/components/case/CaseFacts.tsx · updated 23.09.2026 10:35 (Asia/Jerusalem)
+// src/components/case/CaseFacts.tsx · updated 23.09.2026 11:18 (Asia/Jerusalem)
 // Left panel: what Ales captured (read-only facts) + customer recording + 🎙️ transcribe.
 
 import type { CaseStudy } from '@/lib/case/caseTypes';
-import { TYPE_HE } from '@/lib/case/caseTypes';
+import { TYPE_HE, mp3Url } from '@/lib/case/caseTypes';
 
 const pill = 'text-[11px] font-semibold px-2 py-0.5 rounded';
 const box = 'bg-white border border-stone-200 rounded-lg p-3 flex flex-col gap-2';
@@ -46,7 +46,8 @@ export default function CaseFacts({ c, transcript, busy, onTranscribe }: Props) 
         {c.quote ? <blockquote className="text-sm text-stone-800 bg-amber-50 rounded p-2">&quot;{c.quote}&quot;{c.first_name ? ' — ' + c.first_name : ''}</blockquote> : <div className="text-xs text-stone-500">אין ציטוט כתוב</div>}
         {c.voice?.url ? (
           <>
-            <audio src={c.voice.url} controls preload="none" className="w-full" />
+            <audio src={mp3Url(c.voice.url)} controls preload="metadata" className="w-full" />
+            <a href={c.voice.url} target="_blank" rel="noreferrer" className="text-[11px] text-stone-500 underline">קובץ מקורי</a>
             <button type="button" className={tBtn} disabled={busy} onClick={onTranscribe}>{busy ? 'מתמלל…' : transcript ? '🎙️ תמלל מחדש' : '🎙️ תמלל הקלטה (ElevenLabs)'}</button>
             {transcript && <pre className="text-xs whitespace-pre-wrap bg-violet-50 rounded p-2 max-h-56 overflow-auto">{transcript}</pre>}
           </>

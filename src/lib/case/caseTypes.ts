@@ -1,4 +1,4 @@
-// src/lib/case/caseTypes.ts · updated 23.09.2026 10:33 (Asia/Jerusalem)
+// src/lib/case/caseTypes.ts · updated 23.09.2026 11:18 (Asia/Jerusalem)
 // Case-study types shared by CRM pages, API routes and gates.
 
 export type CaseStatus = 'new' | 'generated' | 'published' | 'archived';
@@ -77,4 +77,12 @@ export function publishedImages(c: Pick<CaseStudy, 'after_media' | 'before_media
 export function fieldStr(c: CaseStudy, key: string): string {
   const v = (c.fields || {})[key];
   return typeof v === 'string' || typeof v === 'number' ? String(v) : '';
+}
+
+// Phone recordings arrive as webm (Android) or m4a/mp4 (iPhone); some players and ElevenLabs reject them.
+// Cloudinary transcodes on the fly when the extension is changed to .mp3.
+export function mp3Url(url: string): string {
+  if (!url || !url.includes('res.cloudinary.com')) return url;
+  const u = url.replace('/image/upload/', '/video/upload/').replace('/raw/upload/', '/video/upload/');
+  return /\.[a-z0-9]{2,5}$/i.test(u) ? u.replace(/\.[a-z0-9]{2,5}$/i, '.mp3') : u + '.mp3';
 }

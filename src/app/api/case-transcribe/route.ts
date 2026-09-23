@@ -1,10 +1,11 @@
-// src/app/api/case-transcribe/route.ts · updated 23.09.2026 10:34 (Asia/Jerusalem)
+// src/app/api/case-transcribe/route.ts · updated 23.09.2026 11:18 (Asia/Jerusalem)
 // POST { id } → the job's customer recording (Cloudinary) → existing ElevenLabs Scribe pipeline → case_studies.transcript.
 
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchCase, crmDb } from '@/lib/case/caseData';
 import { transcribeAudio } from '@/lib/sinc/elevenlabs';
 import { calcElevenLabsCost } from '@/lib/sinc/apiMeter';
+import { mp3Url } from '@/lib/case/caseTypes';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -18,7 +19,7 @@ export async function POST(req: NextRequest) {
     if (!c) return NextResponse.json({ ok: false, error: 'לא נמצא' }, { status: 404 });
     if (!c.voice?.url) return NextResponse.json({ ok: false, error: 'אין הקלטה לעבודה הזו' }, { status: 400 });
     const durationSec = Number(c.voice.durationSec || 60);
-    const t = await transcribeAudio({ audioUrl: c.voice.url, durationSec });
+    const t = await transcribeAudio({ audioUrl: mp3Url(c.voice.url), durationSec });
     const text = t.bubbles && t.bubbles.length
       ? t.bubbles.map((b) => (b.speaker_label || b.speaker_id || '') + ': ' + b.text).join('\n')
       : t.rawText;
