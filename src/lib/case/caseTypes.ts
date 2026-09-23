@@ -1,4 +1,4 @@
-// src/lib/case/caseTypes.ts · updated 23.09.2026 11:36 (Asia/Jerusalem)
+// src/lib/case/caseTypes.ts · updated 23.09.2026 16:51 (Asia/Jerusalem)
 // Case-study types shared by CRM pages, API routes and gates.
 
 export type CaseStatus = 'new' | 'generated' | 'published' | 'archived';
@@ -52,6 +52,8 @@ export interface CaseStudy {
   gen_cost: number | null;
   published_at: string | null;
   social_log?: Record<string, { posted_at: string }>;
+  sketches?: MediaItem[];
+  sketch_analysis?: import('@/components/case/SketchCracker').SketchReading[];
   created_at: string;
   updated_at: string;
 }

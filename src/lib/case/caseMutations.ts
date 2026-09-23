@@ -1,5 +1,5 @@
 'use server';
-// src/lib/case/caseMutations.ts · updated 23.09.2026 13:07 (Asia/Jerusalem)
+// src/lib/case/caseMutations.ts · updated 23.09.2026 16:51 (Asia/Jerusalem)
 // Server Actions for /case-studies: sync, save edits, publish (gates re-checked server-side), unpublish, archive, link customer.
 
 import { revalidatePath } from 'next/cache';
@@ -73,6 +73,12 @@ export async function addCaseMedia(id: string, items: { url: string; type: strin
   if (!c) return { ok: false, error: 'לא נמצא' };
   const after = [...(c.after_media || []), ...items];
   const { error } = await crmDb().from('case_studies').update({ after_media: after, updated_at: new Date().toISOString() }).eq('id', id);
+  touch(id);
+  return error ? { ok: false, error: error.message } : { ok: true };
+}
+
+export async function saveSketchAnalysis(id: string, readings: unknown[]): Promise<{ ok: boolean; error?: string }> {
+  const { error } = await crmDb().from('case_studies').update({ sketch_analysis: readings, updated_at: new Date().toISOString() }).eq('id', id);
   touch(id);
   return error ? { ok: false, error: error.message } : { ok: true };
 }

@@ -1,4 +1,4 @@
-// src/lib/case/caseData.ts · updated 23.09.2026 10:34 (Asia/Jerusalem)
+// src/lib/case/caseData.ts · updated 23.09.2026 16:51 (Asia/Jerusalem)
 // Server-side data for /case-studies. Includes the Ales → CRM bridge (pull model):
 // finished jobs are read from the Ales Supabase project and inserted as 'new' case studies.
 // Pull = no webhook secret anywhere; runs every time the inbox opens + on the 🔄 button.
@@ -27,6 +27,7 @@ interface AlesRow {
   fields: Record<string, unknown> | null; notes: string | null; media: unknown[] | null; after_media: unknown[] | null;
   testimonial: { rating?: number; quote?: string; first_name?: string; voice?: unknown } | null;
   consent: Record<string, unknown> | null; finish_date: string | null; created_at: string;
+  sketches?: unknown[] | null;
 }
 
 export async function syncFromAles(): Promise<SyncResult> {
@@ -60,12 +61,21 @@ export async function syncFromAles(): Promise<SyncResult> {
       consent: r.consent || {},
       finish_date: r.finish_date,
       ales_created_at: r.created_at,
+      sketches: r.sketches || [],
     };
   });
   if (!fresh.length) return { ok: true, added: 0, seen: rows.length };
   const ins = await sb.from('case_studies').insert(fresh);
   if (ins.error) return { ok: false, added: 0, seen: rows.length, error: 'case_studies: ' + ins.error.message };
   return { ok: true, added: fresh.length, seen: rows.length };
+}
+
+// Jobs Ales opened but hasn't finished (read-only, live).
+export async function fetchOpenAlesJobs() {
+  const ales = alesDb();
+  if (!ales) return [];
+  const { data } = await ales.from('ales_jobs').select('id,title,city,customer,job_type,created_at,media,sketches,fields').eq('status', 'open').neq('job_type', 'testimonial').order('created_at', { ascending: false });
+  return (data || []) as import('@/components/case/OpenAlesJobs').OpenJob[];
 }
 
 export async function fetchCases(): Promise<CaseStudy[]> {

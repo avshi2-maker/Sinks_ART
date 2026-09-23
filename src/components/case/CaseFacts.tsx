@@ -1,9 +1,10 @@
 'use client';
-// src/components/case/CaseFacts.tsx · updated 23.09.2026 11:18 (Asia/Jerusalem)
+// src/components/case/CaseFacts.tsx · updated 23.09.2026 16:51 (Asia/Jerusalem)
 // Left panel: what Ales captured (read-only facts) + customer recording + 🎙️ transcribe.
 
 import type { CaseStudy } from '@/lib/case/caseTypes';
 import { TYPE_HE, mp3Url } from '@/lib/case/caseTypes';
+import SketchCracker from './SketchCracker';
 
 const pill = 'text-[11px] font-semibold px-2 py-0.5 rounded';
 const box = 'bg-white border border-stone-200 rounded-lg p-3 flex flex-col gap-2';
@@ -40,6 +41,8 @@ export default function CaseFacts({ c, transcript, busy, onTranscribe }: Props) 
           ))}
         </div>
       </div>
+
+      <SketchCracker sketches={c.sketches || []} caseId={c.id} initial={c.sketch_analysis || []} subject={c.title_raw || ''} />
 
       <div className={box}>
         <div className="text-sm font-semibold text-stone-800">⭐ המלצה {c.rating ? '· ' + '★'.repeat(c.rating) : ''}</div>

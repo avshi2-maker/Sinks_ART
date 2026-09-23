@@ -1,8 +1,9 @@
-// src/app/case-studies/page.tsx · updated 23.09.2026 11:36 (Asia/Jerusalem)
+// src/app/case-studies/page.tsx · updated 23.09.2026 16:51 (Asia/Jerusalem)
 // 📂 Case studies inbox: finished Ales jobs → generate → validate → publish to marble-art.co.il/projects.
 
 import Link from 'next/link';
-import { fetchCases, syncFromAles } from '@/lib/case/caseData';
+import { fetchCases, syncFromAles, fetchOpenAlesJobs } from '@/lib/case/caseData';
+import OpenAlesJobs from '@/components/case/OpenAlesJobs';
 import { STATUS_HE, TYPE_HE, publishedImages, SITE_URL } from '@/lib/case/caseTypes';
 import type { CaseStatus } from '@/lib/case/caseTypes';
 import SyncButton from '@/components/case/SyncButton';
@@ -26,6 +27,7 @@ function d(iso: string | null) {
 export default async function CaseStudiesPage() {
   const sync = await syncFromAles();
   const cases = await fetchCases();
+  const openJobs = await fetchOpenAlesJobs();
   const order: CaseStatus[] = ['new', 'generated', 'published', 'archived'];
   const count = (s: CaseStatus) => cases.filter((c) => c.status === s).length;
 
@@ -45,6 +47,8 @@ export default async function CaseStudiesPage() {
       {!sync.ok && <div className="text-sm bg-red-50 border border-red-200 text-red-700 rounded-md p-3">{sync.error}</div>}
       {sync.ok && sync.added > 0 && <div className="text-sm bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-md p-3">✓ נוספו {sync.added} עבודות חדשות מאלס</div>}
 
+      <OpenAlesJobs jobs={openJobs} />
+
       {cases.length === 0 && <div className="p-8 text-center text-stone-500 text-sm bg-white border border-stone-200 rounded-lg">עדיין אין עבודות שהסתיימו. כשאלס לוחץ ״שמור וסיים״ באפליקציה, העבודה תופיע כאן.</div>}
 
       <div className="flex flex-col gap-2">
@@ -59,6 +63,7 @@ export default async function CaseStudiesPage() {
                   <span className={'text-[11px] font-semibold px-2 py-0.5 rounded ' + ST_CLS[c.status]}>{STATUS_HE[c.status]}</span>
                   <span className="text-[11px] px-2 py-0.5 rounded bg-stone-100 text-stone-600">{TYPE_HE[c.job_type || ''] || c.job_type}</span>
                   {Object.keys(c.social_log || {}).length > 0 && <span className="text-[11px] px-2 py-0.5 rounded bg-violet-100 text-violet-800">📣 {Object.keys(c.social_log || {}).length}/3 ברשתות</span>}
+                  {(c.sketches || []).length > 0 && <span className="text-[11px] px-2 py-0.5 rounded bg-sky-100 text-sky-800">📐 {(c.sketches || []).length} שרטוטים</span>}
                   {c.voice?.url && <span className="text-[11px] px-2 py-0.5 rounded bg-violet-100 text-violet-800">🎙️ {c.transcript ? 'תומלל' : 'הקלטה'}</span>}
                 </div>
                 <div className="text-sm font-medium text-stone-900 truncate">{title}</div>
