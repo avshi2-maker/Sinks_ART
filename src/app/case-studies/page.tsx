@@ -1,4 +1,4 @@
-// src/app/case-studies/page.tsx · updated 23.09.2026 10:35 (Asia/Jerusalem)
+// src/app/case-studies/page.tsx · updated 23.09.2026 11:36 (Asia/Jerusalem)
 // 📂 Case studies inbox: finished Ales jobs → generate → validate → publish to marble-art.co.il/projects.
 
 import Link from 'next/link';
@@ -58,6 +58,7 @@ export default async function CaseStudiesPage() {
                 <div className="flex flex-wrap gap-2 items-center">
                   <span className={'text-[11px] font-semibold px-2 py-0.5 rounded ' + ST_CLS[c.status]}>{STATUS_HE[c.status]}</span>
                   <span className="text-[11px] px-2 py-0.5 rounded bg-stone-100 text-stone-600">{TYPE_HE[c.job_type || ''] || c.job_type}</span>
+                  {Object.keys(c.social_log || {}).length > 0 && <span className="text-[11px] px-2 py-0.5 rounded bg-violet-100 text-violet-800">📣 {Object.keys(c.social_log || {}).length}/3 ברשתות</span>}
                   {c.voice?.url && <span className="text-[11px] px-2 py-0.5 rounded bg-violet-100 text-violet-800">🎙️ {c.transcript ? 'תומלל' : 'הקלטה'}</span>}
                 </div>
                 <div className="text-sm font-medium text-stone-900 truncate">{title}</div>

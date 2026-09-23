@@ -1,5 +1,5 @@
 'use client';
-// src/components/case/CaseEditor.tsx · updated 23.09.2026 10:36 (Asia/Jerusalem)
+// src/components/case/CaseEditor.tsx · updated 23.09.2026 11:36 (Asia/Jerusalem)
 // Case-study cockpit: facts ← | → generate (Claude) · edit · 10 gates · approve & publish.
 // Built-ins per house rule: ApiCostMeter (live tokens + cost) + ExportFooter (5 buttons).
 
@@ -91,7 +91,9 @@ export default function CaseEditor({ c, customers, slugTaken }: Props) {
 
       <div className="flex flex-col gap-3">
         <div className="bg-white border border-stone-200 rounded-lg p-3 flex flex-wrap gap-2 items-center justify-between">
-          <div className="text-xs text-stone-600">סטטוס: <b>{STATUS_HE[c.status]}</b>{isPub && <> · <a href={pubUrl} target="_blank" rel="noreferrer" className="text-emerald-700" dir="ltr">{pubUrl.replace('https://', '')}</a></>}</div>
+          <div className="text-xs text-stone-600 flex flex-wrap gap-2 items-center">סטטוס: <b>{STATUS_HE[c.status]}</b>
+            {hasGen && <a href={'https://studio.marble-art.co.il/cases#' + c.id} target="_blank" rel="noreferrer" className="px-2 py-0.5 rounded bg-violet-600 text-white no-underline">📣 פתח בסטודיו</a>}
+            {['ig', 'fb', 'pin'].map((n) => <span key={n} className={'px-1.5 py-0.5 rounded ' + (c.social_log?.[n] ? 'bg-emerald-100 text-emerald-800' : 'bg-stone-100 text-stone-500')}>{c.social_log?.[n] ? '✓ ' : ''}{n.toUpperCase()}</span>)}{isPub && <> · <a href={pubUrl} target="_blank" rel="noreferrer" className="text-emerald-700" dir="ltr">{pubUrl.replace('https://', '')}</a></>}</div>
           <select className="text-xs border border-stone-300 rounded px-2 py-1" value={c.customer_id || ''} onChange={(e) => link(e.target.value)}>
             <option value="">— קשר ללקוח ב-CRM —</option>
             {customers.map((u) => <option key={u.id} value={u.id}>{u.name_he}</option>)}

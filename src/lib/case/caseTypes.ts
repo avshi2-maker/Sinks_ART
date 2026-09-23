@@ -1,4 +1,4 @@
-// src/lib/case/caseTypes.ts · updated 23.09.2026 11:18 (Asia/Jerusalem)
+// src/lib/case/caseTypes.ts · updated 23.09.2026 11:36 (Asia/Jerusalem)
 // Case-study types shared by CRM pages, API routes and gates.
 
 export type CaseStatus = 'new' | 'generated' | 'published' | 'archived';
@@ -51,6 +51,7 @@ export interface CaseStudy {
   gen_tokens_out: number | null;
   gen_cost: number | null;
   published_at: string | null;
+  social_log?: Record<string, { posted_at: string }>;
   created_at: string;
   updated_at: string;
 }
