@@ -46,6 +46,7 @@ export const STAGES: NavStage[] = [
   { id: 'money', label: 'כסף ונתונים', tools: [
     { href: '/roi', label: 'ROI', icon: '📊' },
     { href: '/marble', label: 'שיש', icon: '🪨' },
+    { href: '/index-tracker', label: 'אינדוקס גוגל', icon: '🔎' },
   ] },
 ];
 
