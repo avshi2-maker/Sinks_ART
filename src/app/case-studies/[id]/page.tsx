@@ -1,9 +1,9 @@
-// src/app/case-studies/[id]/page.tsx · updated 23.09.2026 10:36 (Asia/Jerusalem)
+// src/app/case-studies/[id]/page.tsx · updated 23.09.2026 14:22 (Asia/Jerusalem)
 // One case study: facts, generate, edit, gates, publish.
 
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { fetchCase, isSlugTaken } from '@/lib/case/caseData';
+import { fetchCase, isSlugTaken, crmDb } from '@/lib/case/caseData';
 import { fetchCustomersLite } from '@/lib/leads/leadsData';
 import CaseEditor from '@/components/case/CaseEditor';
 
@@ -14,6 +14,8 @@ export default async function CaseStudyPage({ params }: { params: Promise<{ id: 
   const { id } = await params;
   const c = await fetchCase(id);
   if (!c) notFound();
+  // First open stops the daily email reminders.
+  if (!(c as unknown as { opened_at?: string }).opened_at) await crmDb().from('case_studies').update({ opened_at: new Date().toISOString() }).eq('id', c.id);
   const customers = await fetchCustomersLite();
   const slugTaken = await isSlugTaken(c.gen?.slug || '', c.id);
   return (

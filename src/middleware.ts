@@ -1,11 +1,11 @@
-// src/middleware.ts
+﻿// src/middleware.ts
 // Site-wide password gate + stamps the request path into a header so the root
 // layout can render public pages (/rfq) without the CRM nav.
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 // Paths that must stay public (no login): the gate itself + Ales RFQ pages.
-const PUBLIC_PATHS = ['/login', '/api/login', '/rfq'];
+const PUBLIC_PATHS = ['/login', '/api/login', '/rfq', '/api/ales-notify']; // ales-notify: Vercel Cron, guarded by CRON_SECRET
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
