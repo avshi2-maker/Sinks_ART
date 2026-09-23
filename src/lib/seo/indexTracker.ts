@@ -1,4 +1,4 @@
-// src/lib/seo/indexTracker.ts · updated 23.09.2026 07:57 (Asia/Jerusalem)
+// src/lib/seo/indexTracker.ts · updated 23.09.2026 13:07 (Asia/Jerusalem)
 // Reads the LIVE sitemap of marble-art.co.il, registers any new URL in index_log,
 // and returns the merged list. The sitemap is the single source of truth, so new
 // project/case pages appear here the moment the public site publishes them.
@@ -70,6 +70,8 @@ export async function fetchTrackedUrls(): Promise<{ rows: TrackedUrl[]; error: s
       first_seen: r.first_seen,
       submitted_at: r.submitted_at,
       indexed_at: r.indexed_at,
+      bing_sent_at: r.bing_sent_at ?? null,
+      bing_indexed_at: r.bing_indexed_at ?? null,
       status,
       inSitemap: lastmodBy.has(r.url) || !live.length,
     };

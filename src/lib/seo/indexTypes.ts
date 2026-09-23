@@ -1,4 +1,4 @@
-// src/lib/seo/indexTypes.ts · updated 23.09.2026 07:57 (Asia/Jerusalem)
+// src/lib/seo/indexTypes.ts · updated 23.09.2026 13:07 (Asia/Jerusalem)
 // Shared types for the Google indexing tracker (/index-tracker).
 
 export type UrlKind = 'project' | 'guide' | 'city' | 'core' | 'video';
@@ -12,6 +12,8 @@ export interface TrackedUrl {
   first_seen: string | null;
   submitted_at: string | null;
   indexed_at: string | null;
+  bing_sent_at: string | null;
+  bing_indexed_at: string | null;
   status: IndexStatus;
   inSitemap: boolean;    // false = was in the sitemap once, now removed
 }

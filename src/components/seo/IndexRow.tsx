@@ -1,5 +1,5 @@
 'use client';
-// src/components/seo/IndexRow.tsx · updated 23.09.2026 07:57 (Asia/Jerusalem)
+// src/components/seo/IndexRow.tsx · updated 23.09.2026 13:07 (Asia/Jerusalem)
 // One URL row: path, kind, dates, copy / Search Console / Google check / status buttons.
 
 import type { TrackedUrl } from '@/lib/seo/indexTypes';
@@ -21,6 +21,7 @@ const STATUS_TXT: Record<string, string> = { new: '🆕 חדש', submitted: '�
 const btn = 'text-xs px-2 py-1 rounded border border-stone-300 bg-white hover:bg-stone-50 no-underline text-stone-700 whitespace-nowrap';
 const btnGo = 'text-xs px-2 py-1 rounded bg-emerald-600 text-white hover:bg-emerald-700 whitespace-nowrap';
 const btnSky = 'text-xs px-2 py-1 rounded bg-sky-600 text-white hover:bg-sky-700 whitespace-nowrap';
+const btnTeal = 'text-xs px-2 py-1 rounded bg-teal-700 text-white hover:bg-teal-800 whitespace-nowrap';
 
 interface Props {
   row: TrackedUrl;
@@ -29,12 +30,16 @@ interface Props {
   busy: boolean;
   onCheck: (url: string) => void;
   onCopy: (text: string) => void;
-  onStatus: (urls: string[], action: 'submitted' | 'indexed' | 'reset') => void;
+  onStatus: (urls: string[], action: 'submitted' | 'indexed' | 'reset' | 'bing_indexed' | 'bing_reset') => void;
+  onBing: (urls: string[]) => void;
 }
 
-export default function IndexRow({ row, gscProperty, checked, busy, onCheck, onCopy, onStatus }: Props) {
+export default function IndexRow({ row, gscProperty, checked, busy, onCheck, onCopy, onStatus, onBing }: Props) {
   const gsc = 'https://search.google.com/search-console/inspect?resource_id=' + encodeURIComponent(gscProperty) + '&id=' + encodeURIComponent(row.url);
   const siteCheck = 'https://www.google.com/search?q=' + encodeURIComponent('site:' + row.url);
+  const bingCheck = 'https://www.bing.com/search?q=' + encodeURIComponent('url:' + row.url);
+  const bingSt = row.bing_indexed_at ? 'bg-emerald-100 text-emerald-800' : row.bing_sent_at ? 'bg-sky-100 text-sky-800' : 'bg-stone-100 text-stone-500';
+  const bingTxt = row.bing_indexed_at ? '🅱️ Bing ✅' : row.bing_sent_at ? '🅱️ Bing 📨' : '🅱️ Bing —';
   const rowCls = 'flex flex-col gap-2 p-3 border-b border-stone-200 ' + (row.inSitemap ? '' : 'opacity-50');
   return (
     <div className={rowCls}>
@@ -43,11 +48,12 @@ export default function IndexRow({ row, gscProperty, checked, busy, onCheck, onC
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <span className={'text-[11px] font-semibold px-2 py-0.5 rounded ' + STATUS_CLS[row.status]}>{STATUS_TXT[row.status]}</span>
+            <span className={'text-[11px] font-semibold px-2 py-0.5 rounded ' + bingSt}>{bingTxt}</span>
             <span className="text-[11px] px-2 py-0.5 rounded bg-stone-100 text-stone-600">{KIND_LABEL[row.kind]}</span>
             {!row.inSitemap && <span className="text-[11px] px-2 py-0.5 rounded bg-red-100 text-red-700">הוסר מה-sitemap</span>}
           </div>
           <div className="font-mono text-[13px] text-stone-900 break-all mt-1" dir="ltr">{row.path}</div>
-          <div className="text-[11px] text-stone-500 mt-0.5">נראה לראשונה {d(row.first_seen)} · נשלח {d(row.submitted_at)} · אונדקס {d(row.indexed_at)}</div>
+          <div className="text-[11px] text-stone-500 mt-0.5">נראה לראשונה {d(row.first_seen)} · נשלח {d(row.submitted_at)} · אונדקס {d(row.indexed_at)} · Bing נשלח {d(row.bing_sent_at)} · Bing אונדקס {d(row.bing_indexed_at)}</div>
         </div>
       </div>
       <div className="flex flex-wrap gap-1.5 ps-6">
@@ -57,6 +63,10 @@ export default function IndexRow({ row, gscProperty, checked, busy, onCheck, onC
         {row.status === 'new' && <button type="button" className={btnSky} disabled={busy} onClick={() => onStatus([row.url], 'submitted')}>📨 סמן נשלח</button>}
         {row.status !== 'indexed' && <button type="button" className={btnGo} disabled={busy} onClick={() => onStatus([row.url], 'indexed')}>✅ סמן מאונדקס</button>}
         {row.status !== 'new' && <button type="button" className={btn} disabled={busy} onClick={() => onStatus([row.url], 'reset')}>↺ אפס</button>}
+        <span className="w-px bg-stone-200 mx-1" />
+        <button type="button" className={btnTeal} disabled={busy} onClick={() => onBing([row.url])}>🅱️ שלח לבינג</button>
+        <a className={btn} href={bingCheck} target="_blank" rel="noreferrer">🔍 בדוק בבינג</a>
+        {!row.bing_indexed_at && <button type="button" className={btn} disabled={busy} onClick={() => onStatus([row.url], 'bing_indexed')}>✅ מאונדקס בבינג</button>}
       </div>
     </div>
   );

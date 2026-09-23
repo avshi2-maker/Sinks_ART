@@ -1,5 +1,5 @@
 'use client';
-// src/components/case/CaseEditor.tsx · updated 23.09.2026 11:36 (Asia/Jerusalem)
+// src/components/case/CaseEditor.tsx · updated 23.09.2026 13:07 (Asia/Jerusalem)
 // Case-study cockpit: facts ← | → generate (Claude) · edit · 10 gates · approve & publish.
 // Built-ins per house rule: ApiCostMeter (live tokens + cost) + ExportFooter (5 buttons).
 
@@ -17,6 +17,7 @@ import type { ReportSnapshot } from '@/lib/shared/exportFormats';
 import CaseFacts from './CaseFacts';
 import GenFields from './GenFields';
 import GatesPanel from './GatesPanel';
+import AddPhotos from './AddPhotos';
 
 interface Props { c: CaseStudy; customers: { id: string; name_he: string }[]; slugTaken: boolean }
 
@@ -109,6 +110,7 @@ export default function CaseEditor({ c, customers, slugTaken }: Props) {
           {isPub && <button type="button" className={plain} disabled={pending} onClick={() => status('generated')}>⏸️ הורד מהאתר</button>}
           {!isPub && c.status !== 'archived' && <button type="button" className={plain} disabled={pending} onClick={() => status('archived')}>🗄️ ארכיון</button>}
         </div>
+        <AddPhotos id={c.id} />
         {msg && <div className="text-sm bg-stone-50 border border-stone-200 rounded-md p-2 break-words">{msg}</div>}
 
         {hasGen ? (

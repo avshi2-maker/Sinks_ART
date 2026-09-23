@@ -1,4 +1,4 @@
-// src/app/index-tracker/page.tsx · updated 23.09.2026 07:57 (Asia/Jerusalem)
+// src/app/index-tracker/page.tsx · updated 23.09.2026 13:07 (Asia/Jerusalem)
 // Google indexing tracker — every public URL of marble-art.co.il, synced from the live sitemap.
 
 import Link from 'next/link';
@@ -21,7 +21,7 @@ export default async function IndexTrackerPage() {
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-md bg-stone-100 flex items-center justify-center text-xl">🔎</div>
           <div>
-            <div className="text-lg font-medium text-stone-900">אינדוקס בגוגל</div>
+            <div className="text-lg font-medium text-stone-900">אינדוקס בגוגל ובבינג</div>
             <div className="text-xs text-stone-500">{rows.length} כתובות באתר · {fresh} חדשות לשליחה · {projects} עמודי פרויקט</div>
           </div>
         </div>
@@ -32,6 +32,7 @@ export default async function IndexTrackerPage() {
         <b>איך עובדים:</b> כל עמוד חדש באתר (כולל כל תיק פרויקט שמתפרסם) מופיע כאן אוטומטית תחת &quot;חדשים&quot;.
         לוחצים 🔍 Search Console → &quot;Request indexing&quot; בגוגל → חוזרים ולוחצים 📨 סמן נשלח.
         אחרי כמה ימים לוחצים 🌐 בדוק בגוגל, ואם העמוד מופיע — ✅ סמן מאונדקס. גוגל מגביל בערך 10 בקשות אינדוקס ביום, אז עדיף פרויקטים קודם.
+        <br /><b>בינג:</b> 🅱️ שלח לבינג שולח מיד ב-IndexNow (בלי הגבלה מעשית, מגיע גם ל-ChatGPT ו-Copilot). כל פרסום תיק פרויקט נשלח לבינג אוטומטית.
       </div>
 
       {error && <div className="text-sm bg-red-50 border border-red-200 text-red-700 rounded-md p-3">{error}</div>}

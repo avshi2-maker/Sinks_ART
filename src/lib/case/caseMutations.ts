@@ -1,5 +1,5 @@
 'use server';
-// src/lib/case/caseMutations.ts · updated 23.09.2026 10:34 (Asia/Jerusalem)
+// src/lib/case/caseMutations.ts · updated 23.09.2026 13:07 (Asia/Jerusalem)
 // Server Actions for /case-studies: sync, save edits, publish (gates re-checked server-side), unpublish, archive, link customer.
 
 import { revalidatePath } from 'next/cache';
@@ -57,12 +57,22 @@ export async function publishCase(id: string, gen: CaseGen): Promise<{ ok: boole
   if (error) return { ok: false, error: error.message };
   const url = SITE_URL + '/projects/' + c.gen.slug;
   const ping = await pingIndexNow(url);
+  if (/ 20[02]$/.test(ping)) await crmDb().from('index_log').upsert({ url, kind: 'project', bing_sent_at: new Date().toISOString() }, { onConflict: 'url' });
   touch(id);
   return { ok: true, url, ping };
 }
 
 export async function setCaseStatus(id: string, status: CaseStatus): Promise<{ ok: boolean; error?: string }> {
   const { error } = await crmDb().from('case_studies').update({ status, updated_at: new Date().toISOString() }).eq('id', id);
+  touch(id);
+  return error ? { ok: false, error: error.message } : { ok: true };
+}
+
+export async function addCaseMedia(id: string, items: { url: string; type: string; public_id: string }[]): Promise<{ ok: boolean; error?: string }> {
+  const c = await fetchCase(id);
+  if (!c) return { ok: false, error: 'לא נמצא' };
+  const after = [...(c.after_media || []), ...items];
+  const { error } = await crmDb().from('case_studies').update({ after_media: after, updated_at: new Date().toISOString() }).eq('id', id);
   touch(id);
   return error ? { ok: false, error: error.message } : { ok: true };
 }

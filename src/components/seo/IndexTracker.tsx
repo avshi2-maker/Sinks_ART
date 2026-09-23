@@ -1,5 +1,5 @@
 'use client';
-// src/components/seo/IndexTracker.tsx · updated 23.09.2026 07:57 (Asia/Jerusalem)
+// src/components/seo/IndexTracker.tsx · updated 23.09.2026 13:07 (Asia/Jerusalem)
 // Google indexing work-list: filters, bulk copy, bulk status, per-URL actions.
 // Flow: new URL appears (auto from sitemap) -> copy -> Search Console "Request indexing" -> mark submitted -> later mark indexed.
 
@@ -7,7 +7,7 @@ import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import type { TrackedUrl, IndexStatus, UrlKind } from '@/lib/seo/indexTypes';
 import { KIND_LABEL } from '@/lib/seo/indexTypes';
-import { setIndexStatus, type IndexAction } from '@/lib/seo/indexMutations';
+import { setIndexStatus, sendToBing, type IndexAction } from '@/lib/seo/indexMutations';
 import IndexRow from './IndexRow';
 
 type StatusFilter = 'all' | IndexStatus;
@@ -63,6 +63,14 @@ export default function IndexTracker({ rows, gscProperty, sitemapUrl }: { rows: 
     });
   }
 
+  function bing(urls: string[]) {
+    start(async () => {
+      const r = await sendToBing(urls);
+      flash(r.ok ? '✓ נשלחו ' + urls.length + ' לבינג (IndexNow ' + r.status + ')' : 'שגיאה: ' + r.error);
+      if (r.ok) { setSel(new Set()); router.refresh(); }
+    });
+  }
+
   const selected = Array.from(sel);
   const target = selected.length ? selected : shown.map((r) => r.url);
 
@@ -83,13 +91,14 @@ export default function IndexTracker({ rows, gscProperty, sitemapUrl }: { rows: 
         <button type="button" className={bulkBtn} onClick={() => copy(target.join('\n'))} disabled={!target.length}>📋 העתק {selected.length ? selected.length + ' נבחרים' : 'את כל ' + shown.length}</button>
         <button type="button" className={bulkBtn} onClick={() => act(target, 'submitted')} disabled={!target.length || pending}>📨 סמן נשלח</button>
         <button type="button" className={bulkBtn} onClick={() => act(target, 'indexed')} disabled={!target.length || pending}>✅ סמן מאונדקס</button>
+        <button type="button" className={bulkBtn + ' border-teal-600 text-teal-800'} onClick={() => bing(target)} disabled={!target.length || pending}>🅱️ שלח {selected.length ? selected.length + ' נבחרים' : 'הכל'} לבינג</button>
         <button type="button" className={bulkBtn} onClick={() => copy(sitemapUrl)}>🗺️ העתק כתובת sitemap</button>
         {toast && <span className="text-sm font-semibold text-emerald-700">{toast}</span>}
       </div>
 
       <div className="bg-white border border-stone-200 rounded-md">
         {shown.length ? shown.map((r) => (
-          <IndexRow key={r.url} row={r} gscProperty={gscProperty} checked={sel.has(r.url)} busy={pending} onCheck={check} onCopy={copy} onStatus={act} />
+          <IndexRow key={r.url} row={r} gscProperty={gscProperty} checked={sel.has(r.url)} busy={pending} onCheck={check} onCopy={copy} onStatus={act} onBing={bing} />
         )) : <div className="p-8 text-center text-stone-500 text-sm">אין כתובות בסינון הזה.</div>}
       </div>
     </div>
