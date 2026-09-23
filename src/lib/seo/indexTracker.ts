@@ -7,7 +7,7 @@ import { createClient } from '@supabase/supabase-js';
 import type { TrackedUrl, UrlKind, IndexStatus } from './indexTypes';
 
 export const SITEMAP_URL = 'https://www.marble-art.co.il/sitemap.xml';
-export const GSC_PROPERTY = process.env.GSC_PROPERTY || 'sc-domain:marble-art.co.il';
+export const GSC_PROPERTY = process.env.GSC_PROPERTY || 'https://www.marble-art.co.il/';
 
 function db() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
