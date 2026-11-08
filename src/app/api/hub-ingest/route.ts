@@ -1,4 +1,5 @@
-// route.ts (src/app/api/hub-ingest/route.ts) · updated 29.10.2026 07:45 (Asia/Jerusalem)
+// route.ts (src/app/api/hub-ingest/route.ts) · updated 08.11.2026 18:10 (Asia/Jerusalem)
+// GET (same x-hub-key) → open tasks due today / late (+ customer name) for the Hub "☀️ My day".
 // Door for Sapirim Hub (hub.marble-art.co.il): a WhatsApp message tagged "כיורי שיש" is filed here directly — no copy/paste.
 // POST JSON { name?, phone?, text, media?: string[], at? } + header x-hub-key: HUB_INGEST_KEY
 // Known phone (customer or any contact) → WhatsApp entry in that customer's timeline (+ follow-up task if none open).
@@ -70,4 +71,14 @@ export async function POST(req: Request) {
 
   revalidatePath('/customers'); revalidatePath('/dashboard'); revalidatePath('/tasks');
   return NextResponse.json({ ok: true, created, ref: customerId, url: `${CRM_URL}/customers/${customerId}` });
+}
+
+export async function GET(req: Request) {
+  const secret = process.env.HUB_INGEST_KEY;
+  if (!secret || req.headers.get('x-hub-key') !== secret) return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 });
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jerusalem' });
+  const { data, error } = await sb().from('tasks').select('id,title_he,due_date,customer_id,status,customers(name_he)').eq('status', 'open').lte('due_date', today).order('due_date').limit(100);
+  if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+  const tasks = (data || []).map((t: any) => { const c = Array.isArray(t.customers) ? t.customers[0] : t.customers; return { id: t.id, title: t.title_he, due: t.due_date, customer: c?.name_he || null, url: t.customer_id ? `${CRM_URL}/customers/${t.customer_id}` : `${CRM_URL}/tasks` }; });
+  return NextResponse.json({ ok: true, today, tasks });
 }
