@@ -1,4 +1,4 @@
-// route.ts (src/app/api/hub-ingest/route.ts) · updated 08.11.2026 18:10 (Asia/Jerusalem)
+// route.ts (src/app/api/hub-ingest/route.ts) · updated 08.11.2026 18:45 (Asia/Jerusalem) · POST {task:{title,due,customer}} = 🎙️ dictated task from the Hub voice inbox · 18:10
 // GET (same x-hub-key) → open tasks due today / late (+ customer name) for the Hub "☀️ My day".
 // Door for Sapirim Hub (hub.marble-art.co.il): a WhatsApp message tagged "כיורי שיש" is filed here directly — no copy/paste.
 // POST JSON { name?, phone?, text, media?: string[], at? } + header x-hub-key: HUB_INGEST_KEY
@@ -21,7 +21,16 @@ function sb() {
 export async function POST(req: Request) {
   const secret = process.env.HUB_INGEST_KEY;
   if (!secret || req.headers.get('x-hub-key') !== secret) return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 });
-  const b = (await req.json().catch(() => null)) as { name?: string; phone?: string; text?: string; media?: string[]; at?: string } | null;
+  const b = (await req.json().catch(() => null)) as { name?: string; phone?: string; text?: string; media?: string[]; at?: string; task?: { title?: string; due?: string; customer?: string | null } } | null;
+  if (b?.task?.title) { // 🎙️ Hub voice inbox: a task Avshi dictated (customer matched by name when possible)
+    const db0 = sb(); let customerId: string | null = null; const cn = String(b.task.customer || '').trim();
+    if (cn) { const c = await db0.from('customers').select('id,name_he').ilike('name_he', `%${cn.replace(/[%_,]/g, ' ')}%`).limit(1); customerId = c.data?.[0]?.id ?? null; }
+    const due = /^\d{4}-\d{2}-\d{2}$/.test(String(b.task.due)) ? String(b.task.due) : new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jerusalem' });
+    const ins = await db0.from('tasks').insert({ title_he: String(b.task.title).slice(0, 200), notes_he: cn && !customerId ? 'לקוח (מהקלטה): ' + cn : null, due_date: due, customer_id: customerId, source: 'whatsapp', status: 'open' }).select('id').single();
+    if (ins.error) return NextResponse.json({ ok: false, error: ins.error.message }, { status: 500 });
+    revalidatePath('/tasks'); revalidatePath('/dashboard');
+    return NextResponse.json({ ok: true, task: ins.data.id, matched: !!customerId, url: customerId ? `${CRM_URL}/customers/${customerId}` : `${CRM_URL}/tasks` });
+  }
   const text = String(b?.text || '').trim();
   if (!text) return NextResponse.json({ ok: false, error: 'text required' }, { status: 400 });
   const db = sb();
