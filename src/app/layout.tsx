@@ -51,6 +51,7 @@ export default async function RootLayout({
             {children}
           </div>
         )}
+        <span title="🛡️ Vercel Firewall · protected site (10/11/2026)" aria-label="protected" style={{ position: "fixed", left: 6, bottom: 4, zIndex: 40, fontSize: 13, opacity: 0.7, lineHeight: 1 }}>🛡️</span>
       </body>
     </html>
   );

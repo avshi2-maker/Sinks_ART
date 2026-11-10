@@ -1,6 +1,48 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "crons": [
-    { "path": "/api/ales-notify", "schedule": "*/10 * * * *" }
+    {
+      "path": "/api/ales-notify",
+      "schedule": "*/10 * * * *"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)(wp-admin|wp-login|wp-content|wp-includes|xmlrpc\\.php|phpmyadmin|phpMyAdmin|\\.env|\\.git/|\\.aws|\\.ssh|cgi-bin|vendor/phpunit|server-status|\\.sql|\\.bak)(.*)",
+      "mitigate": {
+        "action": "deny"
+      }
+    },
+    {
+      "src": "/(.*)",
+      "missing": [
+        {
+          "type": "header",
+          "key": "user-agent"
+        }
+      ],
+      "mitigate": {
+        "action": "deny"
+      }
+    },
+    {
+      "src": "/(.*)",
+      "methods": [
+        "PUT",
+        "DELETE",
+        "PATCH",
+        "TRACE",
+        "CONNECT"
+      ],
+      "mitigate": {
+        "action": "deny"
+      }
+    },
+    {
+      "src": "/(.*)(\\.\\./|%2e%2e|%2E%2E|<script|%3cscript|%3Cscript|union(%20|\\+)select|UNION(%20|\\+)SELECT|etc/passwd)(.*)",
+      "mitigate": {
+        "action": "deny"
+      }
+    }
   ]
 }
